@@ -43,6 +43,8 @@ require_once __DIR__ . '/../config.php';
 $router = new \App\Core\Router();
 
 // --- Módulos (Views com layout) ---
+$router->add('GET', '/', 'DashboardController@index');
+$router->add('GET', '/dashboard', 'DashboardController@index');
 $router->add('GET', '/tecnologia', 'TecnologiaController@index');
 $router->add('POST', '/tecnologia', 'TecnologiaController@store');
 

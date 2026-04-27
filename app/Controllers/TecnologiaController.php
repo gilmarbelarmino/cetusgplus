@@ -152,13 +152,16 @@ class TecnologiaController extends Controller {
 
         // === ANOTAÇÕES (Páginas/Notas) ===
         if ($action === 'save_note') {
+            // Processar imagens Base64 e salvar em disco
+            $content = \App\Core\Uploader::processHtmlBase64($_POST['content'], 'editor');
+
             if (!empty($_POST['id'])) {
                 $stmt = $pdo->prepare("UPDATE tech_notes SET title = ?, content = ? WHERE id = ?");
-                $stmt->execute([$_POST['title'], $_POST['content'], $_POST['id']]);
+                $stmt->execute([$_POST['title'], $content, $_POST['id']]);
                 Logger::audit('edit_note', 'tecnologia', 'ID: ' . $_POST['id']);
             } else {
                 $stmt = $pdo->prepare("INSERT INTO tech_notes (section_id, title, content) VALUES (?, ?, ?)");
-                $stmt->execute([$_POST['section_id'], $_POST['title'], $_POST['content']]);
+                $stmt->execute([$_POST['section_id'], $_POST['title'], $content]);
                 Logger::audit('add_note', 'tecnologia', 'Título: ' . $_POST['title']);
             }
             return $this->redirect('/tecnologia?tab=anotacoes&section_id=' . $_POST['section_id'] . '&success=13');
