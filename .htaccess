@@ -1,0 +1,13 @@
+# Cetusg MVC - URL Rewriting
+# IMPORTANTE: Preservar compatibilidade com o sistema legado
+
+RewriteEngine On
+
+# Se o arquivo ou diretório existe fisicamente, servir normalmente (preserva o sistema atual)
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Rotas limpas: apenas URLs que NÃO correspondem a arquivos existentes
+# são redirecionadas ao novo Front Controller MVC
+RewriteRule ^(.+)$ public/index.php [L,QSA]

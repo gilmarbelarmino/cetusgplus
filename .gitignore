@@ -1,0 +1,29 @@
+# Cetusg - Git Ignore
+# ====================
+
+# Logs
+storage/logs/*.log
+
+# Uploads do usuário (não versionar dados pessoais)
+uploads/
+storage/uploads/
+
+# Configuração local (senhas, variáveis de ambiente)
+.env
+
+# IDE / Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema Operacional
+Thumbs.db
+.DS_Store
+
+# Node (caso venha a usar no futuro)
+node_modules/
+
+# Temporários
+*.tmp
+*.bak
