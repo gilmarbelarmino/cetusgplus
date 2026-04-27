@@ -32,6 +32,7 @@ require_once __DIR__ . '/../config.php';
 // Injetar PDO nas classes Core
 \App\Core\Model::setConnection($pdo);
 \App\Core\Logger::setConnection($pdo);
+\App\Core\Auth::setConnection($pdo);
 
 // Verificação CSRF em todas as requisições POST
 \App\Core\Csrf::check();
@@ -41,23 +42,14 @@ require_once __DIR__ . '/../config.php';
 // ============================
 $router = new \App\Core\Router();
 
-// Tecnologia
+// --- Módulos (Views com layout) ---
 $router->add('GET', '/tecnologia', 'TecnologiaController@index');
 $router->add('POST', '/tecnologia', 'TecnologiaController@store');
 
-// Futuras rotas (adicionar conforme migração):
-// $router->add('GET', '/dashboard', 'DashboardController@index');
-// $router->add('GET', '/emprestimos', 'EmprestimosController@index');
-// $router->add('POST', '/emprestimos', 'EmprestimosController@store');
-// $router->add('GET', '/usuarios', 'UsuariosController@index');
-// $router->add('GET', '/relatorios', 'RelatoriosController@index');
-// $router->add('GET', '/configuracoes', 'ConfiguracoesController@index');
-
-// ============================
-// API REST (Futuro)
-// ============================
-// $router->add('GET', '/api/users', 'Api\UserController@index');
-// $router->add('GET', '/api/dashboard', 'Api\DashboardController@stats');
+// --- API REST (JSON) ---
+$router->add('GET', '/api/dashboard', 'Api\\DashboardApiController@index');
+$router->add('GET', '/api/dashboard/stats', 'Api\\DashboardApiController@stats');
+$router->add('GET', '/api/audit', 'Api\\AuditApiController@index');
 
 // Dispatch
 $router->dispatch($_SERVER['REQUEST_URI'], $_SERVER['REQUEST_METHOD']);
