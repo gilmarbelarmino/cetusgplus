@@ -1,0 +1,61 @@
+@font-face {
+    font-family: 'Font Awesome 6 Free';
+    font-style: normal;
+    font-weight: 900;
+    font-display: optional;
+    src: url('../webfonts/fa-solid-900.woff2') format('woff2'),
+         url('../webfonts/fa-solid-900.ttf') format('truetype');
+}
+
+.fa-solid {
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    display: inline-block;
+    width: 1.25em;
+    text-align: center;
+}
+
+.fa-gauge::before { content: "\f625"; }
+.fa-box-archive::before { content: "\f187"; }
+.fa-users::before { content: "\f0c0"; }
+.fa-headset::before { content: "\f590"; }
+.fa-right-left::before { content: "\f362"; }
+.fa-cart-shopping::before { content: "\f07a"; }
+.fa-heart::before { content: "\f004"; }
+.fa-chart-bar::before { content: "\f080"; }
+.fa-gear::before { content: "\f013"; }
+.fa-right-from-bracket::before { content: "\f2f5"; }
+.fa-magnifying-glass::before { content: "\f002"; }
+.fa-bell::before { content: "\f0f3"; }
+.fa-desktop::before { content: "\f108"; }
+.fa-circle-check::before { content: "\f058"; }
+.fa-circle-exclamation::before { content: "\f06a"; }
+.fa-plus::before { content: "\2b"; }
+.fa-floppy-disk::before { content: "\f0c7"; }
+.fa-pen::before { content: "\f304"; }
+.fa-key::before { content: "\f084"; }
+.fa-eye::before { content: "\f06e"; }
+.fa-download::before { content: "\f019"; }
+.fa-upload::before { content: "\f093"; }
+.fa-print::before { content: "\f02f"; }
+.fa-clock-rotate-left::before { content: "\f1da"; }
+.fa-award::before { content: "\f559"; }
+.fa-file-lines::before { content: "\f15c"; }
+.fa-check::before { content: "\f00c"; }
+.fa-xmark::before { content: "\f00d"; }
+.fa-building::before { content: "\f1ad"; }
+.fa-database::before { content: "\f1c0"; }
+.fa-layer-group::before { content: "\f5fd"; }
+.fa-chart-pie::before { content: "\f200"; }
+.fa-arrow-trend-up::before { content: "\e098"; }
+.fa-arrow-trend-down::before { content: "\e097"; }
+.fa-wave-square::before { content: "\f83e"; }
+.fa-list::before { content: "\f03a"; }
+.fa-triangle-exclamation::before { content: "\f071"; }
+.fa-box::before { content: "\f466"; }
+.fa-shield-halved::before { content: "\f3ed"; }
+.fa-edit::before { content: "\f044"; }

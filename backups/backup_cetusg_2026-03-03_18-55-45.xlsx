@@ -1,0 +1,102 @@
+### Usuários ###
+id	name	email	sector	unit_id	role	status	avatar_url	phone	login_name	password	created_at
+1	Andr├® Mendes	andre.mendes@empresa.com.br	Tecnologia e Inova├º├úo	U1	Administrador	Ativo		(11) 98888-7777	andre.mendes	$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	2026-03-02 09:18:07
+2	Beatriz Rocha	beatriz.rocha@empresa.com.br	Opera├º├Áes Patrimoniais	U2	Respons├ível de Setor	Ativo		(11) 97777-6666	beatriz.rocha	$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	2026-03-02 09:18:07
+U1772455478	gilmar belarmino da silva	gilmar.tecnologo@gmail.com	Tecnologia e Inova├º├úo	U3	Administrador	Ativo		1196152667	giba	$2y$10$JnHul5sX0LU1IQc2kiF.sOxF5PapFe8adzOWBGgaty5bb3hFguzR6	2026-03-02 09:44:38
+U1772455737	Gimar Belarmino	gilmar@teste.com	TI	U1	Administrador	Ativo		1158885544	gil	$2y$10$sQGXzlxVeSjOJGG6J4npkO./3uFgMb.jby5g7vGkZYPFV1ZHlsifi	2026-03-02 09:48:57
+U1772470772	Marcos 	mais@teste.com.br	Tecnologia e Inova├º├úo	U1	Administrador	Ativo		1125665555	marcos	$2y$10$Lp8klEyur2m38e.97AeDPe8miQBlllzKGv0xwvoXs/KkARbv3561a	2026-03-02 13:59:32
+U1772470821	Sabrina 	sa@ti.com.br	Tecnologia e Inova├º├úo	U1	Administrador	Ativo		11558855	sabrina	$2y$10$kLeNCILgEcRxMDNb7z2LTOMWLQZW4I./ez5M8quL2OWKpFGe9Kz7u	2026-03-02 14:00:21
+U1772475553	LEILA	le@teste.com.br	TI	U1	Colaborador	Ativo		1196152667	leila	$2y$10$3W8mbTkpsxgEfaXLIRYeB.3aDqXHZdrS5Ofqq5lafoYLfMtdI2VVC	2026-03-02 15:19:13
+U1772550630	Mariela teste	teste@tti.com.br	CEI	U1	Colaborador	Ativo		115555	mariela	$2y$10$W9avQ.Xc.EUpM.Lrdsc4tO0CwIl3jxY/ul14kmzskON.09BK1kzc6	2026-03-03 12:10:30
+U1772550730	Hugo Ricardo	gerente.cj@arratao.org.br	CJ	U1		Ativo		1155	hugo	$2y$10$LlFdQ0sdFAU8MC2mdDxFze9jAJIdomSkzmuEOkYDjj/VsXnSX5DRK	2026-03-03 12:12:10
+
+
+### Unidades ###
+id	name	address	cnpj	responsible_name	contact	created_at
+U1	PROJETO ARRASTAO	RUA DR JOVIANO PACHECO DE AQUIRRE,255	43082197000168	Andr├® Mendes	(11) 98888-7777	2026-03-02 09:18:07
+U2	Sede A	Rua das Flores, 500, Rio de Janeiro - RJ	12.345.678/0002-02	Beatriz Rocha	(21) 97777-6666	2026-03-02 09:18:07
+U3	Sede B	Av. Beira Mar, 200, Florian├│polis - SC	12.345.678/0003-03	Daniela Souza	(48) 95555-4444	2026-03-02 09:18:07
+
+
+### Setores ###
+id	name	unit_id
+S1772472173	Tecnologia 	U1
+S1772472187	Administração	U1
+S1772548361	CCA	U1
+S1772548365	CJ	U1
+S1772548372	EMPREENDEDORISMO	U1
+S1772548377	COMUNICAÇÃO	U1
+S1772548385	SOCIAL	U1
+S1772548401	RECURSOS HUMANOS	U1
+S1772548407	CEI	U1
+
+
+### Patrimônio ###
+id	name	category	patrimony_id	sector	unit_id	status	responsible_name	last_maintenance	created_at
+1	Monitor Dell P2419H	Hardware	TI-MON-081	Financeiro	U1	Ativo	Beatriz Rocha	2023-10-12	2026-03-02 09:18:07
+2	CPU HP ProDesk 600	Hardware	TI-CPU-042	Administrativo	U1	Manuten├º├úo	Carlos Camargo	2023-11-05	2026-03-02 09:18:07
+3	HP LaserJet Enterprise	Impressoras	TI-PRN-015	Recep├º├úo Central	U2	Ativo	Daniela Souza	2023-09-20	2026-03-02 09:18:07
+A1772456714	notebook a	teste	22565	ti	U1	Ativo	Carlos Camargo		2026-03-02 10:05:14
+A1772560011	SERVIDOR A1	COMPUTADOR	SERV	TI	U1	Ativo	Gimar Belarmino		2026-03-03 14:46:51
+
+
+### Chamados ###
+id	asset_id	title	description	status	priority	requester_id	sector	unit_id	created_at
+T1	1	Monitor piscando	O monitor desliga sozinho aleatoriamente		Alta	2	Financeiro	U1	2026-03-02 09:18:07
+T1772475588		teste 1	teste			U1772470772	Tecnologia e Inova├º├úo	U1	2026-03-02 15:19:48
+T1772534552		555	525			U1772475553	TI	U1	2026-03-03 07:42:32
+T1772547619		PC COM ERRO	ERRO	Aberto	Alta	2	Opera├º├Áes Patrimoniais	U2	2026-03-03 11:20:19
+T2	2	Lentid├úo extrema	PC demora 10 min para ligar		M├®dia	1	Administrativo	U1	2026-03-02 09:18:07
+
+
+### Empréstimos ###
+id	asset_id	asset_name	borrower_name	sector	unit_id	loan_date	expected_return_date	actual_return_date	returner_name	observations	status	created_at	return_date
+L1772470904	1	Monitor Dell P2419H	gilmar 	cca	U1	2026-03-02	2026-03-03			teste	Ativo	2026-03-02 14:01:44	
+L1772545361	1	Monitor Dell P2419H	marilha	adm	U1	2026-03-03	2026-03-10			teste	Ativo	2026-03-03 10:42:41	
+L1772547438	1	Monitor Dell P2419H	wagner	CJ	U1	2026-03-03	2026-03-10			TE	Devolvido	2026-03-03 11:17:18	2026-03-03 11:21:14
+L1772560032	A1772560011	SERVIDOR A1	Andr├® Mendes	Tecnologia e Inova├º├úo	U1	2026-03-03	2026-03-17			TESTE	Devolvido	2026-03-03 14:47:12	2026-03-03 14:47:22
+
+
+### Voluntariado ###
+id	user_id	name	email	phone	unit_id	sector_id	volunteering_sector	action_type	location	profession	hourly_rate	status	start_date	end_date	created_at	hours_jan	hours_feb	hours_mar	hours_apr	hours_may	hours_jun	hours_jul	hours_aug	hours_sep	hours_oct	hours_nov	hours_dec	total_hours	work_area
+V1772456248		marcos rubens 	rubens@ti.com.br	1155588555	U1	usuario	ti	acao	Remoto	tecnologi	20.00		2026-03-02	2026-03-02	2026-03-02 09:57:28	0	0	0	0	0	0	0	0	0	0	0	0	0	
+V1772473203		Andr├® Mendes	andre.mendes@empresa.com.br	(11) 98888-7777	U1	Tecnologia e Inova├º├úo	compras 			administrador	20.00		2026-03-02	2026-03-02	2026-03-02 14:40:03	30	40	20	10	11	11	0	20	0	0	0	0	142	Administração
+V1772473316		Marcos 	mais@teste.com.br	1125665555	U1	Tecnologia e Inova├º├úo	compras 		Remoto	administrador	18.00	Ativo	2026-03-02		2026-03-02 14:41:56	10	30	0	0	0	0	0	0	0	0	0	0	40	Administração
+V1772474561		Gimar Belarmino	gilmar@teste.com	1158885544	U1	TI	Tecnologia			analista	23.23		2026-03-02	2026-03-03	2026-03-02 15:02:41	10	10	0	0	0	0	0	0	0	0	0	0	20	Recursos Humanos
+
+
+### Orçamentos ###
+id	product_name	description	sector	requester_id	unit_id	status	approved_by	approval_date	purchased_by	purchased_date	rejected_by	rejection_date	rejection_reason	created_at	quantity	best_quote_id	approved_at	rejected_at
+B1772473559	teste	ter	Opera├º├Áes Patrimoniais	2	U1	Pendente								2026-03-02 14:45:59	3			
+B1772473706	teste	teste	Tecnologia e Inova├º├úo	1	U1								Valor incompatível	2026-03-02 14:48:26	3	Q17724737891		
+B1772473993	tersre	jjj	Tecnologia e Inova├º├úo	1	U1	Pendente								2026-03-02 14:53:13	2			
+B1772474066	teste	teste	TI	U1772455737	U1								Valor incompatível	2026-03-02 14:54:26	10	Q17724741021		
+B1772474163	armario	cozinha	Tecnologia e Inova├º├úo	U1772455478	U3								Erro no produto	2026-03-02 14:56:03	10	Q17724742021		
+B1772474274	teste	dre	Tecnologia e Inova├º├úo	U1772455478	U3	Aprovado	U1772470821							2026-03-02 14:57:54	10	Q17724742901		
+B1772474843	pc	compras 	Opera├º├Áes Patrimoniais	2	U2	Pendente								2026-03-02 15:07:23	5			
+B1772475151	tb	te	Tecnologia e Inova├º├úo	U1772470772	U1		1						Erro no produto	2026-03-02 15:12:31	5	Q17724752053		2026-03-02 15:13:46
+B1772475370	pc	test	Opera├º├Áes Patrimoniais	2	U2	Aprovado	U1772470821							2026-03-02 15:16:10	100	Q17724754101	2026-03-02 15:17:22	
+
+
+### Cotações ###
+id	budget_id	supplier_name	price	quantity	shipping_cost	shipping_method	total	link	attachment_url
+Q17724737891	B1772473706	Fornecedor 1	2122.00		5.00		2127.00	https://www.cartaomais.com.br/	B1772473706_quote1772473789.png
+Q17724737892	B1772473706	Fornecedor 2	2155.00		5.00		2160.00	https://www.cartaomais.com.br/	B1772473706_quote1772473789.png
+Q17724737893	B1772473706	Fornecedor 3	3622.00		5.00		3627.00	https://www.cartaomais.com.br/	
+Q17724741021	B1772474066	Fornecedor 1	253.00		10.00		263.00	https://www.cartaomais.com.br/	B1772474066_quote1772474102.png
+Q17724741022	B1772474066	Fornecedor 2	289.00		11.00		300.00	https://www.cartaomais.com.br/	B1772474066_quote1772474102.jpg
+Q17724741023	B1772474066	Fornecedor 3	325.00		33.00		358.00	https://www.cartaomais.com.br/	B1772474066_quote1772474102.png
+Q17724742021	B1772474163	Fornecedor 1	5000.00		35.00		5035.00	https://www.cartaomais.com.br/	B1772474163_quote1772474202.png
+Q17724742022	B1772474163	Fornecedor 2	6500.00		180.00		6680.00	https://www.cartaomais.com.br/	B1772474163_quote1772474202.png
+Q17724742023	B1772474163	Fornecedor 3	7200.00		25.00		7225.00	https://www.cartaomais.com.br/	B1772474163_quote1772474202.png
+Q17724742901	B1772474274	Fornecedor 1	5415.00		5.00		5420.00	https://www.cartaomais.com.br/	
+Q17724742902	B1772474274	Fornecedor 2	5941.00		12.00		5953.00	https://www.cartaomais.com.br/	
+Q17724742903	B1772474274	Fornecedor 3	5694894.00		45.00		5694939.00	https://www.cartaomais.com.br/	
+Q17724752051	B1772475151	Fornecedor 1	100.00		15.00		515.00	https://www.cartaomais.com.br/	
+Q17724752052	B1772475151	Fornecedor 2	1000.00		35.00		5035.00	https://www.cartaomais.com.br/	
+Q17724752053	B1772475151	Fornecedor 3	50.00		100.00		350.00	https://www.cartaomais.com.br/	
+Q17724754101	B1772475370	Fornecedor 1	10.00		50.00		1050.00	https://www.cartaomais.com.br/	B1772475370_quote1772475410.png
+Q17724754102	B1772475370	Fornecedor 2	11.00		50.00		1150.00	https://www.cartaomais.com.br/	B1772475370_quote1772475410.png
+Q17724754103	B1772475370	Fornecedor 3	32.00		50.00		3250.00	https://www.cartaomais.com.br/	B1772475370_quote1772475410.png
+
+

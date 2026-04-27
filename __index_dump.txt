@@ -1,0 +1,800 @@
+﻿<?php
+ob_start();
+session_start();
+header('Content-Type: text/html; charset=UTF-8');
+require_once 'config.php';
+require_once 'auth.php';
+$company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch();
+
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+$user = getCurrentUser();
+if (!$user) {
+    session_destroy();
+    header('Location: login.php');
+    exit;
+}
+$company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch();
+
+$user_menus = getUserMenus($user);
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= htmlspecialchars($company['company_name']) ?> - Sistema de GestÃ£o</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Playfair+Display:ital,wght@1,700;1,900&display=swap" rel="stylesheet">
+    <?php if (!empty($company['logo_url'])): ?>
+    <link rel="icon" type="image/png" href="<?= htmlspecialchars($company['logo_url']) ?>">
+    <link rel="shortcut icon" href="<?= htmlspecialchars($company['logo_url']) ?>">
+    <?php else: ?>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <?php endif; ?>
+    <!-- Cetusg Premium 2.0 Sidebar and Header styles are now centralized in assets/css/style.css -->
+</head>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <?php if (!empty($company['logo_url'])): ?>
+                        <img src="<?= htmlspecialchars($company['logo_url']) ?>" alt="Logo" style="max-height: 42px; max-width: 140px; object-fit: contain;">
+                    <?php else: ?>
+                        <a href="index.php" class="logo"><?= htmlspecialchars($company['company_name']) ?></a>
+                    <?php endif; ?>
+                </div>
+                <button class="btn-icon hamburger" onclick="toggleSidebar()" style="border:none; background:none; display:none;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="?page=dashboard" class="sidebar-item <?= !isset($_GET['page']) || $_GET['page'] == 'dashboard' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-gauge"></i>
+                    <span>Dashboard</span>
+                </a>
+                
+                <?php if (canAccess('patrimonio')): ?>
+                <a href="?page=patrimonio" class="sidebar-item <?= ($_GET['page'] ?? '') == 'patrimonio' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-box-archive"></i>
+                    <span>PatrimÃ´nio</span>
+                </a>
+                <?php endif; ?>
+                <?php if (canAccess('usuarios')): ?>
+                <a href="?page=usuarios" class="sidebar-item <?= ($_GET['page'] ?? '') == 'usuarios' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-users"></i>
+                    <span>UsuÃ¡rios</span>
+                </a>
+                <?php endif; ?>
+                <?php if (canAccess('chamados')): ?>
+                <a href="?page=chamados" class="sidebar-item <?= ($_GET['page'] ?? '') == 'chamados' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-headset"></i>
+                    <span>Chamados</span>
+                </a>
+                <?php endif; ?>
+                <?php if (canAccess('emprestimos')): ?>
+                <a href="?page=emprestimos" class="sidebar-item <?= ($_GET['page'] ?? '') == 'emprestimos' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-right-left"></i>
+                    <span>EmprÃ©stimos</span>
+                </a>
+                <?php endif; ?>
+                <?php if (canAccess('orcamentos')): ?>
+                <a href="?page=orcamentos" class="sidebar-item <?= ($_GET['page'] ?? '') == 'orcamentos' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>OrÃ§amentos</span>
+                </a>
+                <?php endif; ?>
+                <?php if (canAccess('voluntariado')): ?>
+                <a href="?page=voluntariado" class="sidebar-item <?= ($_GET['page'] ?? '') == 'voluntariado' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-heart"></i>
+                    <span>Voluntariado</span>
+                </a>
+                <?php endif; ?>
+                <?php if (canAccess('locacao_salas')): ?>
+                <a href="?page=locacao_salas" class="sidebar-item <?= ($_GET['page'] ?? '') == 'locacao_salas' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-building-circle-check"></i>
+                    <span>LocaÃ§Ã£o de Sala</span>
+                </a>
+                <?php endif; ?>
+                <?php if (canAccess('relatorios')): ?>
+                <a href="?page=relatorios" class="sidebar-item <?= ($_GET['page'] ?? '') == 'relatorios' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    <span>RelatÃ³rios</span>
+                </a>
+                <?php endif; ?>
+                <?php if (canAccess('configuracoes')): ?>
+                <a href="?page=configuracoes" class="sidebar-item <?= ($_GET['page'] ?? '') == 'configuracoes' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>ConfiguraÃ§Ãµes</span>
+                </a>
+                <?php endif; ?>
+                <?php if (canAccess('rh')): ?>
+                <a href="?page=rh" class="sidebar-item <?= ($_GET['page'] ?? '') == 'rh' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-id-badge"></i>
+                    <span>Recursos Humanos</span>
+                </a>
+                <?php endif; ?>
+                <?php if (canAccess('tecnologia')): ?>
+                <a href="?page=tecnologia" class="sidebar-item <?= ($_GET['page'] ?? '') == 'tecnologia' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-laptop-code"></i>
+                    <span>Tecnologia</span>
+                </a>
+                <?php endif; ?>
+                <?php if (canAccess('semanada')): ?>
+                <a href="?page=semanada" class="sidebar-item <?= ($_GET['page'] ?? '') == 'semanada' ? 'sidebar-active' : '' ?>">
+                    <i class="fa-solid fa-calendar-week"></i>
+                    <span>Semanada</span>
+                </a>
+                <?php endif; ?>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="logout.php" class="sidebar-item">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sair</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="btn-icon hamburger" onclick="toggleSidebar()" style="display:none">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="search-bar">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" placeholder="Buscar...">
+                    </div>
+                </div>
+                <div class="user-menu" style="gap: 1.5rem;">
+                    <?php if (canAccess('peixinho')): ?>
+                    <button class="peixinho-btn" onclick="openPeixinhoChat()" title="Falar com o Peixinho (IA)">
+                        <img src="assets/img/peixinho_dance.gif" alt="Peixinho" onerror="this.src='assets/img/peixinho.png'">
+                    </button>
+                    <?php endif; ?>
+                    <button class="btn-icon chat-indicator" onclick="toggleChatPanel()" id="chatMainBtn" style="position: relative;">
+                        <i class="fa-solid fa-comments"></i>
+                        <span class="chat-badge" id="globalChatBadge" style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: #fff; font-size: 0.7rem; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff;">0</span>
+                    </button>
+                    <button class="btn-icon">
+                        <i class="fa-solid fa-bell"></i>
+                    </button>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span class="user-name" style="font-weight: 600; font-size: 0.9rem; color: #0F172A; display: none; display: md-block;"><?= htmlspecialchars($user['name']) ?></span>
+                        <div class="user-avatar">
+                            <?= strtoupper(substr($user['name'],0,2)) ?>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <?php
+                $page = $_GET['page'] ?? 'dashboard';
+                $allowed = ['dashboard', 'patrimonio', 'usuarios', 'chamados', 'emprestimos', 'orcamentos', 'voluntariado', 'relatorios', 'configuracoes', 'locacao_salas', 'rh', 'tecnologia', 'semanada'];
+
+                if (!canAccess($page)) {
+                    echo "<h2>Acesso nÃ£o permitido.</h2>";
+                } elseif (in_array($page, $allowed) && file_exists("pages/{$page}.php")) {
+                    include "pages/{$page}.php";
+                } else {
+                    include "pages/dashboard.php";
+                }
+                ?>
+            </div>
+        </main>
+    </div>
+
+<?php
+// ======================== MODAL DE ANIVERSÃRIO ========================
+$birthdayPeople = [];
+try {
+    $bdStmt = $pdo->query("
+        SELECT u.id, u.name, u.avatar_url, rh.birth_date 
+        FROM users u 
+        JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id 
+        WHERE MONTH(rh.birth_date) = MONTH(CURDATE()) 
+        AND DAY(rh.birth_date) = DAY(CURDATE())
+        AND u.status = 'Ativo'
+    ");
+    $birthdayPeople = $bdStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch(Exception $e) {}
+
+// ======================== MODAL DE RECADOS GERAL ========================
+$unreadAnnouncement = null;
+if (isset($pdo)) {
+    try {
+        // Pega o recado mais recente
+        $annStmt = $pdo->query("SELECT * FROM announcements ORDER BY created_at DESC LIMIT 1");
+        $latestAnn = $annStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($latestAnn) {
+            $sessionKey = 'announcement_shown_' . $latestAnn['id'];
+            if (!isset($_SESSION[$sessionKey])) {
+                $unreadAnnouncement = $latestAnn;
+            }
+        }
+    } catch(Exception $e) {}
+}
+?>
+
+<?php if (!empty($birthdayPeople)): ?>
+<!-- Birthday Modal -->
+<div id="birthdayModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); z-index: 9999; align-items: center; justify-content: center; padding: 2rem;">
+    <div id="birthdayContent" style="background: linear-gradient(135deg, #ffffff 0%, #fef3f2 50%, #fef9c3 100%); border-radius: 2rem; max-width: 520px; width: 100%; padding: 3rem 2.5rem; text-align: center; position: relative; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.25); animation: bdModalIn 0.5s ease-out;">
+        
+        <!-- Confetti decorativos -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden;" id="confettiContainer"></div>
+
+        <!-- BotÃ£o Fechar -->
+        <button onclick="closeBirthdayModal()" style="position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.1); border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1.25rem; color: #64748b; z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.2)'" onmouseout="this.style.background='rgba(0,0,0,0.1)'">&times;</button>
+
+        <!-- ConteÃºdo do AniversÃ¡rio -->
+        <div id="bdSlideContainer" style="position: relative; z-index: 5;"></div>
+
+        <!-- NavegaÃ§Ã£o (se mÃºltiplos aniversariantes) -->
+        <?php if (count($birthdayPeople) > 1): ?>
+        <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; position: relative; z-index: 5;">
+            <button onclick="prevBdSlide()" class="btn-secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 2rem;">
+                <i class="fa-solid fa-chevron-left"></i> Anterior
+            </button>
+            <span id="bdSlideCounter" style="display: flex; align-items: center; font-size: 0.8rem; font-weight: 700; color: #64748b; padding: 0 1rem;"></span>
+            <button onclick="nextBdSlide()" class="btn-secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 2rem;">
+                PrÃ³ximo <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<style>
+@keyframes bdModalIn {
+    from { opacity: 0; transform: scale(0.8) translateY(30px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes bdFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(5deg); }
+}
+@keyframes confettiFall {
+    0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+.confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    animation: confettiFall linear forwards;
+}
+</style>
+<?php endif; ?>
+
+<?php if ($unreadAnnouncement): ?>
+<!-- Announcement Modal (Ocean Redesign) -->
+<div id="announcementModal" style="display: flex; position: fixed; inset: 0; z-index: 10000; align-items: center; justify-content: center; padding: 2rem; background: url('ocean_bg.png') no-repeat center center; background-size: cover; overflow: hidden; animation: bdModalIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);">
+    
+    <!-- Raios de Sol Animados (Overlay) -->
+    <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%); pointer-events: none;"></div>
+
+    <!-- Container Central de Vidro -->
+    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 2.5rem; max-width: 800px; width: 100%; position: relative; overflow: hidden; box-shadow: 0 50px 100px rgba(0,0,0,0.5); display: flex; flex-direction: column; animation: contentSlideUp 0.8s ease-out;">
+        
+        <button onclick="closeAnnouncementModal(<?= $unreadAnnouncement['id'] ?>)" 
+            style="position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(255,255,255,0.2); border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 1.5rem; color: #fff; z-index: 100; display: flex; align-items: center; justify-content: center; transition: all 0.3s;" 
+            onmouseover="this.style.background='rgba(255,255,255,0.4)'; this.style.transform='rotate(90deg)'" 
+            onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='rotate(0deg)'">
+            &times;
+        </button>
+
+        <?php if ($unreadAnnouncement['image_url']): ?>
+            <div style="width: 100%; background: rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                <img src="<?= $unreadAnnouncement['image_url'] ?>" style="max-width: 100%; max-height: 350px; object-fit: contain; border-radius: 1.5rem; box-shadow: 0 15px 35px rgba(0,0,0,0.3);">
+            </div>
+        <?php endif; ?>
+        
+        <div style="padding: 4rem 2rem; position: relative; text-align: center; color: #fff;">
+            
+            <!-- Peixinhos Nadando Inferiores (Cardume Exuberante) -->
+            <div class="fish-tank" style="position: absolute; bottom: 0; width: 100%; height: 100%; overflow: hidden; opacity: 0.6; pointer-events: none; z-index: 1;">
+                <i class="fa-solid fa-fish-fins fish-1" style="position: absolute; color: rgba(255,255,255,0.7); font-size: 1.2rem; top: 10%;"></i>
+                <i class="fa-solid fa-fish fish-2" style="position: absolute; color: rgba(255,255,255,0.5); font-size: 2rem; top: 40%;"></i>
+                <i class="fa-solid fa-fish-fins fish-3" style="position: absolute; color: rgba(255,255,255,0.6); font-size: 1.5rem; top: 70%;"></i>
+                <i class="fa-solid fa-fish fish-1" style="position: absolute; color: rgba(255,255,255,0.4); font-size: 0.8rem; top: 25%; animation-delay: 4s;"></i>
+                <i class="fa-solid fa-fish fish-2" style="position: absolute; color: rgba(255,255,255,0.3); font-size: 1.1rem; top: 60%; animation-delay: 2s;"></i>
+            </div>
+
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 70px; height: 70px; background: rgba(255,255,255,0.2); color: #fff; border-radius: 50%; font-size: 2rem; margin-bottom: 2rem; box-shadow: 0 0 20px rgba(255,255,255,0.2);">
+                <i class="fa-solid fa-water"></i>
+            </div>
+            
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 900; margin-bottom: 1.5rem; text-shadow: 0 4px 10px rgba(0,0,0,0.3);">Recado Importante</h2>
+            
+            <div style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 400; line-height: 1.8; color: rgba(255,255,255,0.95); max-width: 600px; margin: 0 auto; white-space: pre-wrap; max-height: 300px; overflow-y: auto; padding: 0 2rem; scrollbar-width: thin;">
+                <?= htmlspecialchars($unreadAnnouncement['message']) ?>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes contentSlideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.fish-1 { animation: swim 12s linear infinite; left: -50px; }
+.fish-2 { animation: swim 18s linear infinite reverse; right: -50px; }
+.fish-3 { animation: swim 15s linear infinite; left: -80px; animation-delay: 2s; }
+
+@keyframes swim {
+    0% { transform: translateX(0) scaleX(1); left: -50px; }
+    49% { transform: translateX(110vw) scaleX(1); left: -50px; }
+    50% { transform: translateX(110vw) scaleX(-1); left: -50px; }
+    99% { transform: translateX(0) scaleX(-1); left: -50px; }
+    100% { transform: translateX(0) scaleX(1); left: -50px; }
+}
+
+@keyframes bdModalIn { 
+    from { opacity: 0; transform: scale(1.1); } 
+    to { opacity: 1; transform: scale(1); } 
+}
+</style>
+
+<script>
+function closeAnnouncementModal(id) {
+    const modal = document.getElementById('announcementModal');
+    
+    // Inicia fechamento visual
+    modal.style.transition = 'opacity 0.3s ease, visibility 0.3s ease';
+    modal.style.opacity = '0';
+    modal.style.visibility = 'hidden';
+    
+    // Remove do layout logo apÃ³s o efeito visual
+    setTimeout(() => {
+        modal.style.display = 'none';
+        modal.remove(); // Remove o elemento para garantir que nÃ£o bloqueie nada
+    }, 350);
+    
+    // Notifica backend em background (nÃ£o aguarda resposta para fechar)
+    fetch('announcements_api.php?action=mark_as_read&id=' + id).catch(e => console.error(e));
+}
+</script>
+<?php endif; ?>
+
+
+<script>
+(function() {
+    // --- LÃ“GICA DO ANIVERSÃRIO ---
+    const bdKey = 'birthday_modal_shown_' + new Date().toISOString().slice(0, 10);
+    const birthdayPeople = <?= json_encode($birthdayPeople) ?>;
+    const currentUserId = '<?= $user['id'] ?>';
+    
+    if (birthdayPeople.length > 0 && !sessionStorage.getItem(bdKey)) {
+        let currentSlide = 0;
+
+        window.renderSlide = function(index) {
+            const person = birthdayPeople[index];
+            const isMe = person.id === currentUserId;
+            const avatarHtml = person.avatar_url 
+                ? `<img src="${person.avatar_url}" style="width: 100%; height: 100%; object-fit: cover;">` 
+                : `<div style="width: 100%; height: 100%; background: linear-gradient(135deg, #5B21B6, #EC4899); display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 2.5rem;">${person.name.substring(0, 2).toUpperCase()}</div>`;
+
+            let html = isMe ? `
+                <div style="font-size: 3.5rem; margin-bottom: 1rem; animation: bdFloat 2s ease-in-out infinite;">ðŸŽ‚</div>
+                <div style="width: 120px; height: 120px; border-radius: 50%; overflow: hidden; margin: 0 auto 1.5rem; border: 4px solid #EC4899; box-shadow: 0 8px 25px rgba(236, 72, 153, 0.3);">${avatarHtml}</div>
+                <h2 style="font-size: 1.75rem; font-weight: 900; background: linear-gradient(135deg, #EC4899, #8B5CF6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.75rem;">Feliz AniversÃ¡rio, ${person.name.split(' ')[0]}! ðŸŽ‰</h2>
+                <p style="color: #64748b; font-size: 1rem; line-height: 1.6; max-width: 380px; margin: 0 auto;">Que este novo ano de vida seja repleto de realizaÃ§Ãµes, saÃºde e muitas alegrias! ðŸ¥³âœ¨</p>
+            ` : `
+                <div style="font-size: 3.5rem; margin-bottom: 1rem; animation: bdFloat 2s ease-in-out infinite;">ðŸŽˆ</div>
+                <div style="width: 120px; height: 120px; border-radius: 50%; overflow: hidden; margin: 0 auto 1.5rem; border: 4px solid #F59E0B; box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);">${avatarHtml}</div>
+                <h2 style="font-size: 1.5rem; font-weight: 900; color: #0F172A; margin-bottom: 0.75rem;">ðŸŽ‚ Hoje Ã© aniversÃ¡rio do(a) amigo(a)!</h2>
+                <p style="font-size: 1.35rem; font-weight: 900; background: linear-gradient(135deg, #F59E0B, #EF4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem;">${person.name}</p>
+                <p style="color: #64748b; font-size: 0.95rem; line-height: 1.6;">NÃ£o esqueÃ§a de dar os parabÃ©ns! ðŸ¥³ðŸŽ‰</p>
+            `;
+
+            document.getElementById('bdSlideContainer').innerHTML = html;
+            const counter = document.getElementById('bdSlideCounter');
+            if (counter) counter.textContent = `${index + 1} / ${birthdayPeople.length}`;
+        };
+
+        window.nextBdSlide = () => { currentSlide = (currentSlide + 1) % birthdayPeople.length; renderSlide(currentSlide); };
+        window.prevBdSlide = () => { currentSlide = (currentSlide - 1 + birthdayPeople.length) % birthdayPeople.length; renderSlide(currentSlide); };
+        window.closeBirthdayModal = () => { document.getElementById('birthdayModal').style.display = 'none'; sessionStorage.setItem(bdKey, '1'); };
+
+        setTimeout(() => {
+            renderSlide(0);
+            document.getElementById('birthdayModal').style.display = 'flex';
+            // Criar confetes
+            const container = document.getElementById('confettiContainer');
+            const colors = ['#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6'];
+            for (let i = 0; i < 40; i++) {
+                const p = document.createElement('div');
+                p.className = 'confetti-piece';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.background = colors[Math.floor(Math.random() * colors.length)];
+                p.style.width = (Math.random() * 8 + 5) + 'px';
+                p.style.height = (Math.random() * 8 + 5) + 'px';
+                p.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                container.appendChild(p);
+            }
+        }, 1000);
+    }
+
+    // --- LÃ“GICA DO CHAT ---
+    const chatState = { 
+        isOpen: false, 
+        activeUserId: null, 
+        pollingInterval: null, 
+        lastTotalUnread: 0,
+        lastMsgCount: 0 
+    };
+
+    // ENGINE DE ÃUDIO ROBUSTA (Web Audio API)
+    let audioCtx = null;
+    
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('Chat: AudioContext Inicializado');
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playBeep(type) {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'sent') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.1);
+        } else {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+    }
+
+    function playAudio(type) {
+        if (!audioCtx || audioCtx.state !== 'running') {
+            console.log('Chat: AudioContext ainda nÃ£o estÃ¡ ativo (esperando clique)');
+            return;
+        }
+        playBeep(type);
+    }
+    
+    // Destravar AudioContext no primeiro clique
+    document.addEventListener('click', initAudio, { once: true });
+
+    window.toggleChatPanel = function() {
+        const panel = document.getElementById('chatPanel');
+        chatState.isOpen = !chatState.isOpen;
+        panel.style.display = chatState.isOpen ? 'flex' : 'none';
+        
+        // Se fechar o chat, remove o "minimizado" para que abra normal da prÃ³xima vez
+        if (!chatState.isOpen) {
+            panel.classList.remove('chat-minimized');
+        }
+
+        if (chatState.isOpen) { loadUserList(); startPolling(); } else { stopPolling(); }
+    };
+
+    window.toggleChatMinimize = function(e) {
+        if (e) e.stopPropagation();
+        const panel = document.getElementById('chatPanel');
+        panel.classList.toggle('chat-minimized');
+    };
+
+    window.filterChatUsers = function() {
+        const input = document.getElementById('chatUserSearch');
+        if(!input) return;
+        const filter = input.value.toLowerCase();
+        const items = document.querySelectorAll('.chat-user-item');
+        items.forEach(item => {
+            const nameEl = item.querySelector('div[style*="font-weight:700"]');
+            if(nameEl) {
+                const name = nameEl.innerText.toLowerCase();
+                item.style.display = name.includes(filter) ? 'flex' : 'none';
+            }
+        });
+    };
+
+    window.backToUserList = function() {
+        document.getElementById('chatSearchArea').style.display = 'block';
+        document.getElementById('chatUserList').style.display = 'block';
+        document.getElementById('chatActiveWindow').style.display = 'none';
+        chatState.activeUserId = null;
+        chatState.lastMsgCount = 0;
+        loadUserList();
+    };
+
+    async function loadUserList() {
+        try {
+            const resp = await fetch('chat_api.php?action=list_users');
+            const users = await resp.json();
+            const listContainer = document.getElementById('chatUserList');
+            let html = '';
+            let totalUnread = 0;
+
+            users.forEach(u => {
+                totalUnread += parseInt(u.unread_count);
+                const avatar = u.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : u.name.substring(0,2).toUpperCase();
+                const nameColor = u.is_online ? '#10b981' : '#ef4444';
+                
+                html += `
+                    <div class="chat-user-item" onclick="openChatWith('${u.id}', '${u.name}', '${u.avatar_url || ''}')">
+                        <div class="chat-user-avatar">${avatar}<div class="status-dot ${u.is_online ? 'status-online' : 'status-offline'}"></div></div>
+                        <div style="flex:1">
+                            <div style="font-weight:700; font-size:0.85rem; color:${nameColor}">${u.name}</div>
+                            <div style="font-size:0.7rem; color:#64748b;">${u.is_online ? 'Online' : 'Offline'}</div>
+                        </div>
+                        ${u.unread_count > 0 ? `<span class="badge-danger" style="padding:2px 6px; font-size:0.6rem; border-radius:10px;">${u.unread_count}</span>` : ''}
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = html || '<div style="text-align:center;padding:2rem;color:#64748b;font-size:0.8rem;">Nenhum usuÃ¡rio encontrado.</div>';
+            updateGlobalBadge(totalUnread);
+            if (typeof filterChatUsers === 'function') filterChatUsers();
+        } catch (e) {}
+    }
+
+    function updateGlobalBadge(count) {
+        const badge = document.getElementById('globalChatBadge');
+        const btn = document.getElementById('chatMainBtn');
+        
+        // Tocar som se a contagem aumentar (recebeu nova)
+        if (count > chatState.lastTotalUnread) {
+            playAudio('received');
+        }
+        chatState.lastTotalUnread = count;
+
+        if (count > 0) { badge.innerText = count; badge.style.display = 'flex'; btn.classList.add('chat-pulse'); }
+        else { badge.style.display = 'none'; btn.classList.remove('chat-pulse'); }
+    }
+
+    window.openChatWith = async function(userId, name, avatar) {
+        if (chatState.activeUserId !== userId) {
+            chatState.lastMsgCount = 0;
+        }
+        chatState.activeUserId = userId;
+        document.getElementById('chatSearchArea').style.display = 'none';
+        document.getElementById('chatUserList').style.display = 'none';
+        const win = document.getElementById('chatActiveWindow');
+        win.style.display = 'flex';
+        win.style.flexDirection = 'column'; 
+        
+        document.getElementById('activeUserName').innerText = name;
+        const avatarDiv = document.getElementById('activeUserAvatar');
+        avatarDiv.innerHTML = avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : name.substring(0,2).toUpperCase();
+        await fetch(`chat_api.php?action=mark_as_read&other_id=${userId}`);
+        loadMessages();
+        document.getElementById('chatInput').focus();
+    };
+
+    async function loadMessages() {
+        if (!chatState.activeUserId) return;
+        try {
+            const resp = await fetch(`chat_api.php?action=get_messages&other_id=${chatState.activeUserId}`);
+            const msgs = await resp.json();
+            
+            // LÃ³gica de Som Interno (Nova mensagem enquanto janela aberta)
+            if (msgs.length > chatState.lastMsgCount) {
+                const lastMsg = msgs[msgs.length - 1];
+                // SÃ³ toca se NÃƒO for minha mensagem E a janela estiver focada
+                if (lastMsg.sender_id === chatState.activeUserId && chatState.lastMsgCount > 0) {
+                    playAudio('received');
+                }
+            }
+            chatState.lastMsgCount = msgs.length;
+
+            const msgContainer = document.getElementById('chatMessages');
+            let html = '';
+            msgs.forEach(m => {
+                const isSent = m.sender_id === '<?= $user['id'] ?>';
+                const readStatus = (isSent && m.is_read == 1) ? `<div style="font-size:0.55rem; color:rgba(255,255,255,0.7); margin-top:2px;">âœ“ Lido em: ${m.read_formatted}</div>` : '';
+                
+                let contentHtml = m.content;
+                if (m.type === 'audio') {
+                    contentHtml = `<audio src="uploads/chat_files/${m.content}" controls style="max-width:200px; height:30px;"></audio>`;
+                } else if (m.type === 'image') {
+                    contentHtml = `<img src="uploads/chat_files/${m.content}" style="max-width:100%; border-radius:10px; cursor:pointer" onclick="window.open(this.src)">`;
+                } else if (m.type === 'file') {
+                    contentHtml = `<a href="uploads/chat_files/${m.content}" target="_blank" style="color:inherit; text-decoration:none; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-file-lines" style="font-size:1.5rem"></i>
+                        <span style="font-size:0.8rem; text-decoration:underline">Ver Arquivo</span>
+                    </a>`;
+                }
+
+                html += `
+                    <div class="msg ${isSent ? 'msg-sent' : 'msg-received'}">
+                        ${contentHtml}
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                            ${isSent ? readStatus : ''}
+                            <span class="msg-time">${m.time_formatted}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            const shouldScroll = msgContainer.scrollTop + msgContainer.clientHeight >= msgContainer.scrollHeight - 50;
+            msgContainer.innerHTML = html;
+            if (shouldScroll) msgContainer.scrollTop = msgContainer.scrollHeight;
+            
+            // Auto marcar como lido se a janela estiver aberta
+            if (msgs.some(m => m.sender_id === chatState.activeUserId && m.is_read == 0)) {
+                fetch(`chat_api.php?action=mark_as_read&other_id=${chatState.activeUserId}`);
+            }
+        } catch (e) {}
+    }
+
+    window.sendMessage = async function() {
+        const input = document.getElementById('chatInput');
+        const content = input.value.trim();
+        if (!content || !chatState.activeUserId) return;
+        const formData = new FormData();
+        formData.append('receiver_id', chatState.activeUserId);
+        formData.append('content', content);
+        formData.append('type', 'text');
+        input.value = '';
+        try { 
+            await fetch('chat_api.php?action=send', { method: 'POST', body: formData }); 
+            playAudio('sent');
+            loadMessages(); 
+        } catch (e) {}
+    };
+
+    // --- LIMPAR CHAT ---
+    window.clearChat = async function() {
+        if (!chatState.activeUserId) return;
+        if (!confirm('Deseja limpar as mensagens desta conversa apenas para vocÃª?')) return;
+        const formData = new FormData();
+        formData.append('other_id', chatState.activeUserId);
+        try {
+            await fetch('chat_api.php?action=clear_chat', { method: 'POST', body: formData });
+            loadMessages();
+        } catch(e) {}
+    };
+
+    // --- ENVIO DE ARQUIVOS ---
+    window.openFileSelector = function() {
+        document.getElementById('chatFileInput').click();
+    };
+
+    window.uploadChatFile = async function(input) {
+        if (!input.files || !input.files[0] || !chatState.activeUserId) return;
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('receiver_id', chatState.activeUserId);
+        
+        try {
+            await fetch('chat_api.php?action=upload_file', { method: 'POST', body: formData });
+            playAudio('sent');
+            loadMessages();
+            input.value = ''; // Limpar seletor
+        } catch (e) {
+            alert('Erro ao enviar arquivo.');
+        }
+    };
+
+    // --- LÃ“GICA DO PEIXINHO IA ---
+    window.openPeixinhoChat = function() {
+        if (!chatState.isOpen) toggleChatPanel();
+        openChatWith('U_PEIXINHO', 'Peixinho (IA)', 'assets/img/peixinho.png');
+    };
+
+    // --- SELETOR DE EMOJIS (IMPLEMENTAÃ‡ÃƒO COMPLETA) ---
+    const emojiData = {
+        "ðŸ˜€ Carinhas": ["ðŸ˜€","ðŸ˜ƒ","ðŸ˜„","ðŸ˜","ðŸ˜†","ðŸ˜…","ðŸ˜‚","ðŸ¤£","â˜ºï¸","ðŸ˜Š","ðŸ˜‡","ðŸ™‚","ðŸ™ƒ","ðŸ˜‰","ðŸ˜Œ","ðŸ˜","ðŸ¥°","ðŸ˜˜","ðŸ˜—","ðŸ˜™","ðŸ˜š","ðŸ˜‹","ðŸ˜›","ðŸ˜","ðŸ˜œ","ðŸ¤ª","ðŸ¤¨","ðŸ§","ðŸ¤“","ðŸ˜Ž","ðŸ¤©","ðŸ¥³","ðŸ˜","ðŸ˜’","ðŸ˜ž","ðŸ˜”","ðŸ˜Ÿ","ðŸ˜•","ðŸ™","â˜¹ï¸","ðŸ˜£","ðŸ˜–","ðŸ˜«","ðŸ˜©","ðŸ¥º","ðŸ˜¢","ðŸ˜­","ðŸ˜¤","ðŸ˜ ","ðŸ˜¡","ðŸ¤¬","ðŸ¤¯","ðŸ˜³","ðŸ¥µ","ðŸ¥¶","ðŸ˜±","ðŸ˜¨","ðŸ˜°","ðŸ˜¥","ðŸ˜“","ðŸ¤—","ðŸ¤”","ðŸ¤­","ðŸ¤«","ðŸ¤¥","ðŸ˜¶","ðŸ˜","ðŸ˜‘","ðŸ˜¬","ðŸ™„","ðŸ˜¯","ðŸ˜¦","ðŸ˜§","ðŸ˜®","ðŸ˜²","ðŸ¥±","ðŸ˜´","ðŸ¤¤","ðŸ˜ª","ðŸ˜µ","ðŸ¤","ðŸ¥´","ðŸ¤¢","ðŸ¤®","ðŸ¤§","ðŸ˜·","ðŸ¤’","ðŸ¤•","ðŸ¤‘","ðŸ¤ ","ðŸ˜ˆ","ðŸ‘¿","ðŸ‘¹","ðŸ‘º","ðŸ¤¡","ðŸ’©","ðŸ‘»","ðŸ’€","â˜ ï¸","ðŸ‘½","ðŸ‘¾","ðŸ¤–","ðŸŽƒ","ðŸ˜º","ðŸ˜¸","ðŸ˜¹","ðŸ˜»","ðŸ˜¼","ðŸ˜½","ðŸ™€","ðŸ˜¿","ðŸ˜‚"],
+        "ðŸ‘‹ Gestos": ["ðŸ‘‹","ðŸ¤š","ðŸ–ï¸","âœ‹","ðŸ––","ðŸ‘Œ","ðŸ¤","âœŒï¸","ðŸ¤ž","ðŸ¤Ÿ","ðŸ¤˜","ðŸ¤™","ðŸ‘ˆ","ðŸ‘‰","ðŸ‘†","ðŸ–•","ðŸ‘‡","â˜ï¸","ðŸ‘","ðŸ‘Ž","âœŠ","ðŸ‘Š","ðŸ¤›","ðŸ¤œ","ðŸ‘","ðŸ™Œ","ðŸ‘","ðŸ¤²","ðŸ¤","ðŸ™","âœï¸","ðŸ’…","ðŸ¤³","ðŸ’ª","ðŸ¦¾","ðŸ¦µ","ðŸ¦¿","ðŸ¦¶","ðŸ‘‚","ðŸ¦»","ðŸ‘ƒ","ðŸ§ ","ðŸ¦·","ðŸ¦´","ðŸ‘€","ðŸ‘ï¸","ðŸ‘…","ðŸ‘„","ðŸ’‹","ðŸ©¸"],
+        "â¤ï¸ CoraÃ§Ãµes": ["â¤ï¸","ðŸ§¡","ðŸ’›","ðŸ’š","ðŸ’™","ðŸ’œ","ðŸ–¤","ðŸ¤","ðŸ¤Ž","ðŸ’”","â£ï¸","ðŸ’•","ðŸ’ž","ðŸ’“","ðŸ’—","ðŸ’–","ðŸ’˜","ðŸ’","ðŸ’Ÿ"],
+        "ðŸ¶ Animais": ["ðŸ¶","ðŸ±","ðŸ­","ðŸ¹","ðŸ°","ðŸ¦Š","ðŸ»","ðŸ¼","ðŸ¨","ðŸ¯","ðŸ¦","ðŸ®","ðŸ·","ðŸ½","ðŸ¸","ðŸµ","ðŸ™ˆ","ðŸ™‰","ðŸ™Š","ðŸ’","ðŸ”","ðŸ§","ðŸ¦","ðŸ¤","ðŸ£","ðŸ¥","ðŸ¦†","ðŸ¦…","ðŸ¦‰","ðŸ¦‡","ðŸº","ðŸ—","ðŸ´","ðŸ¦„","ðŸ","ðŸ›","ðŸ¦‹","ðŸŒ","ðŸž","ðŸœ","ðŸ¦Ÿ","ðŸ¦—","ðŸ•·ï¸","ðŸ•¸ï¸","ðŸ¦‚","ðŸ¢","ðŸ","ðŸ¦Ž","ðŸ¦–","ðŸ¦•","ðŸ™","ðŸ¦‘","ðŸ¦","ðŸ¦ž","ðŸ¦€","ðŸ¡","ðŸ ","ðŸŸ","ðŸ¬","ðŸ³","ðŸ‹","ðŸ¦ˆ","ðŸŠ","ðŸ…","ðŸ†","ðŸ¦“","ðŸ¦","ðŸ¦§","ðŸ˜","ðŸ¦›","ðŸ¦","ðŸª","ðŸ«","ðŸ¦’","ðŸ¦˜","ðŸƒ","ðŸ‚","ðŸ„","ðŸŽ","ðŸ–","ðŸ","ðŸ‘","ðŸ","ðŸ¦Œ","ðŸ•","ðŸ©","ðŸ¦®","ðŸ•â€ðŸ¦º","ðŸˆ","ðŸ“","ðŸ¦ƒ","ðŸ¦š","ðŸ¦œ","ðŸ¦¢","ðŸ¦©","ðŸ‡","ðŸ¦","ðŸ¦¨","ðŸ¦¡","ðŸ¦¦","ðŸ¦¥","ðŸ","ðŸ€","ðŸ¿ï¸","ðŸ¦”"],
+        "ðŸŽ Comida": ["ðŸ","ðŸŽ","ðŸ","ðŸŠ","ðŸ‹","ðŸŒ","ðŸ‰","ðŸ‡","ðŸ“","ðŸˆ","ðŸ’","ðŸ‘","ðŸ¥­","ðŸ","ðŸ¥¥","ðŸ¥","ðŸ…","ðŸ†","ðŸ¥‘","ðŸ¥¦","ðŸ¥¬","ðŸ¥’","ðŸŒ¶ï¸","ðŸŒ½","ðŸ¥•","ðŸ§„","ðŸ§…","ðŸ¥”","ðŸ ","ðŸ¥","ðŸž","ðŸ¥–","ðŸ¥¨","ðŸ¥¯","ðŸ§€","ðŸ¥š","ðŸ³","ðŸ¥ž","ðŸ§‡","ðŸ¥“","ðŸ¥©","ðŸ—","ðŸ–","ðŸ¦´","ðŸŒ­","ðŸ”","ðŸŸ","ðŸ•","ðŸ¥ª","ðŸ¥™","ðŸ§†","ðŸŒ®","ðŸŒ¯","ðŸ¥—","ðŸ¥˜","ðŸ","ðŸœ","ðŸ²","ðŸ›","ðŸ£","ðŸ±","ðŸ¥Ÿ","ðŸ¦ª","ðŸ¤","ðŸ™","ðŸš","ðŸ˜","ðŸ¥","ðŸ¥ ","ðŸ¥®","ðŸ¢","ðŸ¡","ðŸ§","ðŸ¨","ðŸ¦","ðŸ¥§","ðŸ§","ðŸ°","ðŸŽ‚","ðŸ®","ðŸ­","ðŸ¬","ðŸ«","ðŸ¿","ðŸ©","ðŸª","ðŸŒ°","ðŸ¥œ","ðŸ¯","ðŸ¥›","â˜•","ðŸµ","ðŸ§ƒ","ðŸ¥¤","ðŸ¶","ðŸº","ðŸ»","ðŸ¥‚","ðŸ·","ðŸ¥ƒ","ðŸ¸","ðŸ¹","ðŸ§‰","ðŸ¾","ðŸ§Š"],
+        "âš½ Esporte": ["ðŸŽ¯","ðŸŽ®","ðŸŽ°","ðŸŽ²","ðŸ§©","ðŸ§¸","â™ ï¸","â™¥ï¸","â™¦ï¸","â™£ï¸","â™Ÿï¸","ðŸƒ","ðŸ€„","ðŸŽ´","ðŸŽ­","ðŸ–¼ï¸","ðŸŽ¨","ðŸ§µ","ðŸ§¶","âš½","ðŸ€","ðŸˆ","âš¾","ðŸ¥Ž","ðŸŽ¾","ðŸ","ðŸ‰","ðŸŽ±","ðŸ“","ðŸ¸","ðŸ¥…","ðŸ’","ðŸ‘Œ","ðŸ","â›³","ðŸ¹","ðŸŽ£","ðŸ¤¿","ðŸ¥Š","ðŸ¥‹","â›¸ï¸","ðŸŽ¿","ðŸ›·","ðŸ¥Œ","ðŸ‚","ðŸ‹ï¸","ðŸ¤¼","ðŸ¤¸","â›¹ï¸","ðŸ¤º","ðŸ¤¾","ðŸŒï¸","ðŸ‡","ðŸ§˜","ðŸ„","ðŸŠ","ðŸ¤½","ðŸš£","ðŸ§—","ðŸšµ","ðŸš´","ðŸ†","ðŸ¥‡","ðŸ¥ˆ","ðŸ¥‰","ðŸ…","ðŸŽ–ï¸","ðŸµï¸","ðŸŽ«","ðŸŽŸï¸"],
+        "ðŸš€ Viagem": ["ðŸš—","ðŸš•","ðŸš™","ðŸšŒ","ðŸšŽ","ðŸŽï¸","ðŸš“","ðŸš‘","ðŸš’","ðŸš","ðŸšš","ðŸš›","ðŸšœ","ðŸ›µ","ðŸï¸","ðŸš²","ðŸ›´","ðŸ›¹","ðŸš¨","ðŸš”","ðŸš","ðŸš˜","ðŸš–","ðŸš¡","ðŸš ","ðŸšŸ","ðŸšƒ","ðŸš‹","ðŸšž","ðŸš","ðŸš„","ðŸš…","ðŸš†","ðŸš‡","ðŸšˆ","ðŸš‰","âœˆï¸","ðŸ›«","ðŸ›¬","ðŸ›©ï¸","ðŸ›°ï¸","ðŸš€","ðŸ›¸","ðŸš","ðŸ›¶","â›µ","ðŸš¤","ðŸ›¥ï¸","ðŸ›³ï¸","â›´ï¸","ðŸš¢","âš“","â›½","ðŸš§","ðŸš¦","ðŸš¥","ðŸ—ºï¸","ðŸ—¿","ðŸ—¼","ðŸ°","ðŸ¯","ðŸŸï¸","ðŸŽ¡","ðŸŽ¢","ðŸŽ ","â›²","ðŸ–ï¸","ðŸï¸","ðŸœï¸","ðŸŒ‹","â›°ï¸","ðŸ”ï¸","ðŸ—»","ðŸ•ï¸","â›º","ðŸ ","ðŸ¡","ðŸ˜ï¸","ðŸšï¸","ðŸ—ï¸","ðŸ­","ðŸ¢","ðŸ¬","ðŸ¥","ðŸ¦","ðŸ¨","ðŸª","ðŸ«","ðŸ©","ðŸ’’","ðŸ›ï¸","â›ª","ðŸ•Œ","ðŸ•","ðŸ•‹","â›©ï¸","ðŸ›¤ï¸","ðŸ›£ï¸","ðŸ—¾","ðŸŽ‘","ðŸžï¸","ðŸŒ…","ðŸŒ„","ðŸŒ ","ðŸŽ‡","ðŸŽ†","ðŸŒ‡","ðŸŒ…","ðŸŒƒ","ðŸ™ï¸","ðŸŒ‰","ðŸŒŒ"],
+        "ðŸ’¡ Objetos": ["âŒš","ðŸ“±","ðŸ“²","ðŸ’»","âŒ¨ï¸","ðŸ–±ï¸","ðŸ–²ï¸","ðŸ•¹ï¸","ðŸ—œï¸","ðŸ’½","ðŸ’¾","ðŸ’¿","DVD","ðŸ“¼","ðŸ“·","ðŸ“¸","ðŸ“¹","ðŸŽ¥","ðŸ“½ï¸","ðŸŽžï¸","ðŸ“ž","â˜Žï¸","ðŸ“Ÿ","ðŸ“ ","ðŸ“º","ðŸ“»","ðŸŽ™ï¸","ðŸŽšï¸","ðŸŽ›ï¸","ðŸ§­","â±ï¸","â²ï¸","â°","ðŸ•°ï¸","âŒ›","â³","ðŸ“¡","ðŸ”‹","ðŸ”Œ","ðŸ’¡","ðŸ”¦","ðŸ•¯ï¸","ðŸª”","ðŸ•¯ï¸","ðŸ—‘ï¸","ðŸ›¢ï¸","ðŸ’¸","ðŸ’µ","ðŸ’´","ðŸ’¶","ðŸ’·","ðŸ’°","ðŸ’³","ðŸ’Ž","âš–ï¸","ðŸ§°","ðŸ”§","ðŸ”¨","âš’ï¸","ðŸ› ï¸","â›ï¸","ðŸ”©","âš™ï¸","ðŸ§±","â›“ï¸","ðŸ§²","ðŸ”«","ðŸ’£","ðŸ§¨","ðŸª“","ðŸ”ª","ðŸ—¡ï¸","âš”ï¸","ðŸ›¡ï¸","ðŸš¬","âš°ï¸","âš±ï¸","ðŸº","ðŸ”®","ðŸ“¿","ðŸ§¿","ðŸ’ˆ","âš—ï¸","ðŸ”­","ðŸ”¬","ðŸ•³ï¸","ðŸ©¸","ðŸ’Š","ðŸ’‰","ðŸ§¼","ðŸ§½","ðŸª’","ðŸ§´","ðŸ§ª","ðŸ§«","ðŸ§¬","ðŸŒ¡ï¸","ðŸ§¹","ðŸ§º","ðŸ§»","ðŸš½","ðŸš°","ðŸš¿","ðŸ›","ðŸ›€","ðŸ§¼","ðŸ§´","ðŸ§·","ðŸ§¹","ðŸ§º","ðŸ§»","ðŸ§¼","ðŸªœ","ðŸ§´","ðŸª’","ðŸ§½","ðŸ§´","ðŸ§´"],
+        "ðŸš© Bandeiras": ["ðŸ","ðŸš©","ðŸŽŒ","ðŸ´","ðŸ³ï¸","ðŸ³ï¸â€ðŸŒˆ","ðŸ´â€â˜ ï¸","ðŸ‡¦ðŸ‡¨","ðŸ‡¦ðŸ‡©","ðŸ‡¦ðŸ‡ª","ðŸ‡¦ðŸ‡«","ðŸ‡¦ðŸ‡¬","ðŸ‡¦ðŸ‡®","ðŸ‡¦ðŸ‡±","ðŸ‡¦ðŸ‡²","ðŸ‡¦ðŸ‡´","ðŸ‡¦ðŸ‡¶","ðŸ‡¦ðŸ‡·","ðŸ‡¦ðŸ‡¸","ðŸ‡¦ðŸ‡¹","ðŸ‡¦ðŸ‡º","ðŸ‡¦ðŸ‡¼","ðŸ‡¦ðŸ‡½","ðŸ‡¦ðŸ‡¿","ðŸ‡§ðŸ‡¦","ðŸ‡§ðŸ‡§","ðŸ‡§ðŸ‡©","ðŸ‡§ðŸ‡ª","ðŸ‡§ðŸ‡«","ðŸ‡§ðŸ‡¬","ðŸ‡§ðŸ‡­","ðŸ‡§ðŸ‡®","ðŸ‡§ðŸ‡¯","ðŸ‡§ðŸ‡²","ðŸ‡§ðŸ‡³","ðŸ‡§ðŸ‡´","ðŸ‡§ðŸ‡·","ðŸ‡§ðŸ‡¸","ðŸ‡§ðŸ‡¹","ðŸ‡§ðŸ‡»","ðŸ‡§ðŸ‡¼","ðŸ‡§ðŸ‡¾","ðŸ‡§ðŸ‡¿","ðŸ‡¨ðŸ‡¦","ðŸ‡¨ðŸ‡¨","ðŸ‡¨ðŸ‡©","ðŸ‡¨ðŸ‡«","ðŸ‡¨ðŸ‡¬","ðŸ‡¨ðŸ‡­","ðŸ‡¨ðŸ‡®","ðŸ‡¨ðŸ‡°","ðŸ‡¨ðŸ‡±","ðŸ‡¨ðŸ‡²","ðŸ‡¨ðŸ‡³","ðŸ‡¨ðŸ‡´","ðŸ‡¨ðŸ‡µ","ðŸ‡¨ðŸ‡·","ðŸ‡¨ðŸ‡º","ðŸ‡¨ðŸ‡»","ðŸ‡¨ðŸ‡¼","ðŸ‡¨ðŸ‡½","ðŸ‡¨ðŸ‡¾","ðŸ‡¨ðŸ‡¿","ðŸ‡©ðŸ‡ª","ðŸ‡©ðŸ‡¬","ðŸ‡©ðŸ‡¯","ðŸ‡©ðŸ‡°","ðŸ‡©ðŸ‡²","ðŸ‡©ðŸ‡´","ðŸ‡©ðŸ‡¿","ðŸ‡ªðŸ‡¦","ðŸ‡ªðŸ‡¨","ðŸ‡ªðŸ‡ª","ðŸ‡ªðŸ‡¬","ðŸ‡ªðŸ‡­","ðŸ‡ªðŸ‡·","ðŸ‡ªðŸ‡¸","ðŸ‡ªðŸ‡¹","ðŸ‡ªðŸ‡º","ðŸ‡«ðŸ‡®","ðŸ‡«ðŸ‡¯","ðŸ‡«ðŸ‡°","ðŸ‡«ðŸ‡²","ðŸ‡«ðŸ‡´","ðŸ‡«ðŸ‡·","ðŸ‡¬ðŸ‡¦","ðŸ‡¬ðŸ‡§","ðŸ‡¬ðŸ‡©","ðŸ‡¬ðŸ‡ª","ðŸ‡¬ðŸ‡«","ðŸ‡¬ðŸ‡¬","ðŸ‡¬ðŸ‡­","ðŸ‡¬ðŸ‡®","ðŸ‡¬ðŸ‡±","ðŸ‡¬ðŸ‡²","ðŸ‡¬ðŸ‡³","ðŸ‡¬ðŸ‡µ","ðŸ‡¬ðŸ‡¶","ðŸ‡¬ðŸ‡·","ðŸ‡¬ðŸ‡¸","ðŸ‡¬ðŸ‡¹","ðŸ‡¬ðŸ‡º","ðŸ‡¬ðŸ‡¼","ðŸ‡¬ðŸ‡¾","ðŸ‡­ðŸ‡°","ðŸ‡­ðŸ‡²","ðŸ‡­ðŸ‡³","ðŸ‡­ðŸ‡·","ðŸ‡­ðŸ‡¹","ðŸ‡­ðŸ‡º","ðŸ‡®ðŸ‡¨","ðŸ‡®ðŸ‡©","ðŸ‡®ðŸ‡ª","ðŸ‡®ðŸ‡±","ðŸ‡®ðŸ‡²","ðŸ‡®ðŸ‡³","ðŸ‡®ðŸ‡´","ðŸ‡®ðŸ‡¶","ðŸ‡®ðŸ‡·","ðŸ‡®ðŸ‡¸","ðŸ‡®ðŸ‡¹","ðŸ‡¯ðŸ‡ª","ðŸ‡¯ðŸ‡²","ðŸ‡¯ðŸ‡´","ðŸ‡¯ðŸ‡µ","ðŸ‡°ðŸ‡ª","ðŸ‡°ðŸ‡¬","ðŸ‡°ðŸ‡­","ðŸ‡°ðŸ‡®","ðŸ‡°ðŸ‡²","ðŸ‡°ðŸ‡³","ðŸ‡°ðŸ‡µ","ðŸ‡°ðŸ‡·","ðŸ‡°ðŸ‡¼","ðŸ‡°ðŸ‡¾","ðŸ‡°ðŸ‡¿","ðŸ‡±ðŸ‡¦","ðŸ‡±ðŸ‡§","ðŸ‡±ðŸ‡¨","ðŸ‡±ðŸ‡®","ðŸ‡±ðŸ‡°","ðŸ‡±ðŸ‡·","ðŸ‡±ðŸ‡¸","ðŸ‡±ðŸ‡¹","ðŸ‡±ðŸ‡º","ðŸ‡±ðŸ‡»","ðŸ‡±ðŸ‡¾","ðŸ‡²ðŸ‡¦","ðŸ‡²ðŸ‡¨","ðŸ‡²ðŸ‡©","ðŸ‡²ðŸ‡ª","ðŸ‡²ðŸ‡«","ðŸ‡²ðŸ‡¬","ðŸ‡²ðŸ‡­","ðŸ‡²ðŸ‡°","ðŸ‡²ðŸ‡±","ðŸ‡²ðŸ‡²","ðŸ‡²ðŸ‡³","ðŸ‡²ðŸ‡´","ðŸ‡²ðŸ‡µ","ðŸ‡²ðŸ‡¶","ðŸ‡²ðŸ‡·","ðŸ‡²ðŸ‡¸","ðŸ‡²ðŸ‡¹","ðŸ‡²ðŸ‡º","ðŸ‡²ðŸ‡»","ðŸ‡²ðŸ‡¼","ðŸ‡²ðŸ‡½","ðŸ‡²ðŸ‡¾","ðŸ‡²ðŸ‡¿","ðŸ‡³ðŸ‡¦","ðŸ‡³ðŸ‡¨","ðŸ‡³ðŸ‡ª","ðŸ‡³ðŸ‡«","ðŸ‡³ðŸ‡¬","ðŸ‡³ðŸ‡®","ðŸ‡³ðŸ‡±","ðŸ‡³ðŸ‡´","ðŸ‡³ðŸ‡µ","ðŸ‡³ðŸ‡·","ðŸ‡³ðŸ‡º","ðŸ‡³ðŸ‡¿","ðŸ‡´ðŸ‡²","ðŸ‡µðŸ‡¦","ðŸ‡µðŸ‡ª","ðŸ‡µðŸ‡«","ðŸ‡µðŸ‡¬","ðŸ‡µðŸ‡­","ðŸ‡µðŸ‡°","ðŸ‡µðŸ‡±","ðŸ‡µðŸ‡²","ðŸ‡µðŸ‡³","ðŸ‡µðŸ‡·","ðŸ‡µðŸ‡¸","ðŸ‡µðŸ‡¹","ðŸ‡µðŸ‡¼","ðŸ‡µðŸ‡¾","ðŸ‡¶ðŸ‡¦","ðŸ‡·ðŸ‡ª","ðŸ‡·ðŸ‡´","ðŸ‡·ðŸ‡¸","ðŸ‡·ðŸ‡º","ðŸ‡·ðŸ‡¼","ðŸ‡¸ðŸ‡¦","ðŸ‡¸ðŸ‡§","ðŸ‡¸ðŸ‡¨","ðŸ‡¸ðŸ‡©","ðŸ‡¸ðŸ‡ª","ðŸ‡¸ðŸ‡¬","ðŸ‡¸ðŸ‡­","ðŸ‡¸ðŸ‡®","ðŸ‡¸ðŸ‡¯","ðŸ‡¸ðŸ‡°","ðŸ‡¸ðŸ‡±","ðŸ‡¸ðŸ‡²","ðŸ‡¸ðŸ‡³","ðŸ‡¸ðŸ‡´","ðŸ‡¸ðŸ‡·","ðŸ‡¸ðŸ‡¸","ðŸ‡¸ðŸ‡¹","ðŸ‡¸ðŸ‡»","ðŸ‡¸ðŸ‡½","ðŸ‡¸ðŸ‡¾","ðŸ‡¸ðŸ‡¿","ðŸ‡¹ðŸ‡¦","ðŸ‡    // --- SIDEBAR LOGIC 2.0 ---
+    window.toggleSidebar = function() {
+        document.body.classList.toggle('sidebar-open');
+        const sidebar = document.getElementById('sidebar');
+        const hamburger = document.querySelector('.hamburger i');
+        if (document.body.classList.contains('sidebar-open')) {
+            if (hamburger) hamburger.classList.replace('fa-bars', 'fa-xmark');
+        } else {
+            if (hamburger) hamburger.classList.replace('fa-xmark', 'fa-bars');
+        }
+    };
+
+    // Auto-close sidebar on mobile after navigation
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 1024) {
+            document.body.classList.remove('sidebar-open');
+        }
+    });
+
+    // Fechar sidebar ao navegar (em mobile)
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 1024) {
+                document.body.classList.remove('sidebar-open');
+            }
+        });
+    });
+
+    function startPolling() {
+        if (chatState.pollingInterval) clearInterval(chatState.pollingInterval);
+        chatState.pollingInterval = setInterval(() => { if (chatState.activeUserId) loadMessages(); else if (chatState.isOpen) loadUserList(); }, 2000);
+    }
+
+    function stopPolling() {
+        if (chatState.pollingInterval) clearInterval(chatState.pollingInterval);
+        chatState.pollingInterval = setInterval(async () => {
+            if (chatState.isOpen) return;
+            try { const resp = await fetch('chat_api.php?action=total_unread'); const data = await resp.json(); updateGlobalBadge(data.count); } catch (e) {}
+        }, 5000);
+    }
+
+    fetch('chat_api.php?action=total_unread').then(r => r.json()).then(data => updateGlobalBadge(data.count)).catch(() => {});
+    stopPolling();
+})();
+</script>
+    btn.title = cat;
+            btn.onclick = () => {
+                document.querySelectorAll('.emoji-category-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderEmojiGrid(cat);
+            };
+            catContainer.appendChild(btn);
+        });
+        
+        renderEmojiGrid(Object.keys(emojiData)[0]);
+    }
+
+    function renderEmojiGrid(category) {
+        const grid = document.getElementById('emojiGrid');
+        grid.innerHTML = '';
+        emojiData[category].forEach(emoji => {
+            const span = document.createElement('span');
+            span.className = 'emoji-item';
+            span.innerHTML = emoji;
+            span.onclick = () => insertEmoji(emoji);
+            grid.appendChild(span);
+        });
+    }
+
+    function insertEmoji(emoji) {
+        const input = document.getElementById('chatInput');
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const text = input.value;
+        const before = text.substring(0, start);
+        const after = text.substring(end, text.length);
+        input.value = before + emoji + after;
+        input.focus();
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+    }
+
+    // Fechar seletor ao clicar fora
+    document.addEventListener('click', (e) => {
+        const picker = document.getElementById('emojiPicker');
+        const btn = document.getElementById('btnEmojiToggle');
+        if (picker.style.display === 'flex' && !picker.contains(e.target) && !btn.contains(e.target)) {
+            picker.style.display = 'none';
+        }
+    });
+
+    // --- RESPONSIVIDADE: TOGGLE SIDEBAR ---

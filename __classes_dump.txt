@@ -1,0 +1,216 @@
+﻿asset-option
+autocomplete-suggestions glass-panel
+avatar
+avatar-placeholder
+badge ${badgeMap[v.status] || 'badge-info'}
+badge badge-${h.status === 'Ativo' ? 'warning' : 'success'}
+badge badge-<?= $budget['status'] == 'Pendente' ? 'warning' : ($budget['status'] == 'Aprovado' ? 'success' : 'danger') ?>
+badge badge-<?= $l['status'] == 'Ativo' ? 'warning' : 'success' ?>
+badge badge-<?= $loan['status'] == 'Ativo' ? 'warning' : 'success' ?>
+badge badge-info
+badge badge-success
+badge badge-warning
+booking-body
+booking-card
+booking-header
+btn-icon
+btn-icon rh-btn-cert
+btn-icon rh-btn-contract
+btn-icon rh-btn-notes
+btn-icon rh-btn-vacation
+btn-primary
+btn-secondary
+comment-actions
+comment-avatar
+comment-body
+comment-date
+comment-form
+comment-item
+comment-meta
+comment-name
+comment-replies
+comments-header
+comments-list
+comments-panel
+comment-text
+date
+details
+empty-state
+fa-regular fa-clock
+fa-regular fa-comment-dots
+fa-regular fa-copy
+fa-regular fa-envelope
+fa-solid <?= $budget['status'] == 'Aprovado' ? 'fa-circle-check' : 'fa-circle-xmark' ?>
+fa-solid <?= $loan['status'] == 'Ativo' ? 'fa-hand-holding-hand' : 'fa-check-to-slot' ?>
+fa-solid fa-<?=$d[0]?>
+fa-solid fa-address-card
+fa-solid fa-arrow-up-right-from-square
+fa-solid fa-box
+fa-solid fa-box-archive
+fa-solid fa-boxes-stacked
+fa-solid fa-box-open
+fa-solid fa-briefcase
+fa-solid fa-building
+fa-solid fa-building-circle-check
+fa-solid fa-building-user
+fa-solid fa-bullhorn
+fa-solid fa-bus
+fa-solid fa-cake-candles
+fa-solid fa-calendar
+fa-solid fa-calendar-plus
+fa-solid fa-calendar-week
+fa-solid fa-calendar-xmark
+fa-solid fa-camera
+fa-solid fa-cart-shopping
+fa-solid fa-chart-area
+fa-solid fa-chart-bar
+fa-solid fa-chart-line
+fa-solid fa-chart-pie
+fa-solid fa-check
+fa-solid fa-check-circle
+fa-solid fa-check-double
+fa-solid fa-check-to-slot
+fa-solid fa-circle-check
+fa-solid fa-circle-exclamation
+fa-solid fa-circle-info
+fa-solid fa-circle-play
+fa-solid fa-circle-xmark
+fa-solid fa-clock
+fa-solid fa-clock-rotate-left
+fa-solid fa-cloud-arrow-up
+fa-solid fa-coins
+fa-solid fa-comments
+fa-solid fa-database
+fa-solid fa-desktop
+fa-solid fa-download
+fa-solid fa-envelope-open
+fa-solid fa-eye
+fa-solid fa-file-contract
+fa-solid fa-file-export
+fa-solid fa-file-import
+fa-solid fa-file-pdf
+fa-solid fa-file-signature
+fa-solid fa-filter
+fa-solid fa-floppy-disk
+fa-solid fa-gauge-high
+fa-solid fa-gear
+fa-solid fa-hand-holding-dollar
+fa-solid fa-headset
+fa-solid fa-heart
+fa-solid fa-id-badge
+fa-solid fa-image
+fa-solid fa-key
+fa-solid fa-laptop-code
+fa-solid fa-layer-group
+fa-solid fa-link
+fa-solid fa-list
+fa-solid fa-list-check
+fa-solid fa-list-ul
+fa-solid fa-lock
+fa-solid fa-magnifying-glass
+fa-solid fa-money-bill-trend-up
+fa-solid fa-money-bill-wave
+fa-solid fa-notes-medical
+fa-solid fa-note-sticky
+fa-solid fa-paper-plane
+fa-solid fa-pause
+fa-solid fa-pen
+fa-solid fa-pen-to-square
+fa-solid fa-plane-departure
+fa-solid fa-plus
+fa-solid fa-print
+fa-solid fa-ranking-star
+fa-solid fa-reply
+fa-solid fa-right-left
+fa-solid fa-server
+fa-solid fa-shield-check
+fa-solid fa-shield-halved
+fa-solid fa-sync
+fa-solid fa-table
+fa-solid fa-tags
+fa-solid fa-toggle-on
+fa-solid fa-trash
+fa-solid fa-trash-can
+fa-solid fa-triangle-exclamation
+fa-solid fa-user
+fa-solid fa-user-check
+fa-solid fa-user-pen
+fa-solid fa-user-plus
+fa-solid fa-users
+fa-solid fa-users-gear
+fa-solid fa-users-slash
+fa-solid fa-user-tag
+fa-solid fa-user-tie
+fa-solid fa-venus-mars
+fa-solid fa-wand-magic-sparkles
+fa-solid fa-wrench
+fa-solid fa-xmark
+form-group
+form-input
+form-label
+form-select
+form-textarea
+glass-panel
+glass-panel table-responsive
+info-content <?= $activeTab === $sec || count($sectorsList) === 1 ? 'active' : '' ?>
+log-table
+modal
+modal-content
+no-comments
+no-print
+pdf-loading
+pdf-viewer-container
+reply-form
+rh-employee-avatar
+rh-employee-card-flex
+rh-tab-btn
+rh-tab-btn active
+rh-tab-content
+rh-tab-content active
+rh-tabs
+room-card
+semanada-actions
+semanada-header
+semanada-layout
+semanada-main
+semanada-sidebar
+spinner
+stat-card
+stat-grid
+stat-icon blue
+stat-icon green
+stat-icon purple
+stat-icon red
+stat-icon yellow
+stat-label
+stat-value
+tab-btn
+tab-btn <?= $activeTab == 'cameras' ? 'active' : '' ?>
+tab-btn <?= $activeTab == 'emails' ? 'active' : '' ?>
+tab-btn <?= $activeTab == 'orcamentos' ? 'active' : '' ?>
+tab-btn <?= $activeTab == 'remotos' ? 'active' : '' ?>
+tab-btn <?= $activeTab == 'wishlist' ? 'active' : '' ?>
+tab-btn <?= $activeTab === $sec ? 'active' : '' ?>
+tab-btn active
+tab-content
+tab-content <?= $activeTab == 'orcamentos' ? 'active' : '' ?>
+tab-content <?= $activeTab == 'wishlist' ? 'active' : '' ?>
+tab-content active
+table-modal
+table-responsive
+tech-content <?= $activeTab == 'cameras' ? 'active' : '' ?>
+tech-content <?= $activeTab == 'emails' ? 'active' : '' ?>
+tech-content <?= $activeTab == 'remotos' ? 'active' : '' ?>
+upload-info
+user-actions-container
+user-card-content
+user-card-main
+user-grid-info
+vol-actions
+vol-btn vol-btn-del
+vol-btn vol-btn-dl
+vol-btn vol-btn-edit
+vol-btn vol-btn-hist
+vol-btn vol-btn-inativ
+vol-btn vol-btn-react
+wishlist-item-row

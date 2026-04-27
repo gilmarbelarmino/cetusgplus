@@ -1,0 +1,98 @@
+[
+    {
+        "Field": "id",
+        "Type": "varchar(50)",
+        "Null": "NO",
+        "Key": "PRI",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "asset_id",
+        "Type": "varchar(50)",
+        "Null": "YES",
+        "Key": "MUL",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "title",
+        "Type": "varchar(255)",
+        "Null": "NO",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "description",
+        "Type": "text",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "status",
+        "Type": "enum('Aberto','Em Progresso','Conclu\u251c\u00a1do','Cancelado')",
+        "Null": "YES",
+        "Key": "",
+        "Default": "Aberto",
+        "Extra": ""
+    },
+    {
+        "Field": "priority",
+        "Type": "enum('Baixa','M\u251c\u00aedia','Alta','Cr\u251c\u00a1tica')",
+        "Null": "YES",
+        "Key": "",
+        "Default": "M\u251c\u00aedia",
+        "Extra": ""
+    },
+    {
+        "Field": "requester_id",
+        "Type": "varchar(50)",
+        "Null": "YES",
+        "Key": "MUL",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "sector",
+        "Type": "varchar(255)",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "unit_id",
+        "Type": "varchar(50)",
+        "Null": "YES",
+        "Key": "MUL",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "created_at",
+        "Type": "timestamp",
+        "Null": "NO",
+        "Key": "",
+        "Default": "current_timestamp()",
+        "Extra": ""
+    },
+    {
+        "Field": "closed_by",
+        "Type": "varchar(255)",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "closed_at",
+        "Type": "datetime",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    }
+]

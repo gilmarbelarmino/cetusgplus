@@ -1,0 +1,100 @@
+﻿<?php
+// Permitir acesso global ao Dashboard (compatibilidade)
+$isAdmin = true;
+$isSectorManager = true;
+$isSupport = true;
+$isCollaborator = false;
+
+// PreparaÃ§Ã£o de Dados para KPIs e GrÃ¡ficos
+
+// 1. PatrimÃ´nio
+$totalAssets = $pdo->query("SELECT COUNT(*) FROM assets")->fetchColumn() ?: 0;
+// Total de valor estimado
+try { 
+    $totalAssetValue = $pdo->query("SELECT COALESCE(SUM(estimated_value), 0) FROM assets")->fetchColumn();
+} catch(Exception $e) { $totalAssetValue = 0; }
+$assetsByStatus = $pdo->query("SELECT status, COUNT(*) as count FROM assets GROUP BY status")->fetchAll(PDO::FETCH_KEY_PAIR);
+
+// 2. Chamados
+$totalTickets = $pdo->query("SELECT COUNT(*) FROM tickets")->fetchColumn() ?: 0;
+$openTickets = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status = 'Aberto'")->fetchColumn() ?: 0;
+$ticketsByStatus = $pdo->query("SELECT status, COUNT(*) as count FROM tickets GROUP BY status")->fetchAll(PDO::FETCH_KEY_PAIR);
+
+// 3. EmprÃ©stimos
+$totalLoans = $pdo->query("SELECT COUNT(*) FROM loans")->fetchColumn() ?: 0;
+$activeLoans = $pdo->query("SELECT COUNT(*) FROM loans WHERE status = 'Emprestado'")->fetchColumn() ?: 0;
+$loansBySector = $pdo->query("SELECT sector, COUNT(*) as count FROM loans GROUP BY sector LIMIT 5")->fetchAll();
+
+// 4. Voluntariado
+$totalVolunteers = $pdo->query("SELECT COUNT(*) FROM volunteers")->fetchColumn() ?: 0;
+$totalHours = $pdo->query("SELECT SUM(total_hours) as total FROM volunteers")->fetchColumn() ?: 0;
+try {
+    $financialData = $pdo->query("SELECT SUM(total_hours * hourly_rate) as total FROM volunteers")->fetchColumn();
+} catch(Exception $e) { $financialData = 0; }
+
+// 5. LocaÃ§Ã£o de Salas
+try {
+    $totalBookings = $pdo->query("SELECT COUNT(*) FROM room_bookings")->fetchColumn() ?: 0;
+    $bookingsByRoom = $pdo->query("SELECT r.name, COUNT(b.id) as count FROM room_bookings b JOIN rooms r ON b.room_id = r.id GROUP BY r.id LIMIT 5")->fetchAll();
+} catch(Exception $e) { $totalBookings = 0; $bookingsByRoom = []; }
+
+// 6. OrÃ§amentos
+try {
+    $totalBudgets = $pdo->query("SELECT COUNT(*) FROM budget_requests")->fetchColumn() ?: 0;
+    $pendingBudgets = $pdo->query("SELECT COUNT(*) FROM budget_requests WHERE status = 'Pendente'")->fetchColumn() ?: 0;
+    $budgetsByStatus = $pdo->query("SELECT status, COUNT(*) as count FROM budget_requests GROUP BY status")->fetchAll(PDO::FETCH_KEY_PAIR);
+} catch(Exception $e) { $totalBudgets = 0; $pendingBudgets = 0; $budgetsByStatus = []; }
+
+// Helpers para JSON
+function fillKeys($data, $keys, $default = 0) {
+    $result = [];
+    foreach($keys as $k) {
+        $result[] = $data[$k] ?? $default;
+    }
+    return $result;
+}
+?>
+
+<div class="glass-panel" style="margin-bottom: 2.5rem; border-left: 6px solid var(--brand-primary); background: linear-gradient(to right, #FFFFFF, #F8FAFC);">
+    <h1 style="font-size: 2.25rem; font-weight: 900; color: var(--text-main); display: flex; align-items: center; gap: 0.875rem; letter-spacing: -1px;">
+        <i class="fa-solid fa-gauge-high" style="color: var(--brand-primary);"></i>
+        Dashboard Gerencial
+    </h1>
+    <p style="color: var(--text-soft); font-size: 1rem; font-weight: 500; margin-top: 0.25rem;">VisÃ£o executiva em tempo real dos principais indicadores operacionais.</p>
+</div>
+
+<!-- KPIs Principais -->
+<div class="stat-grid">
+    <!-- Patrimonio -->
+    <div class="stat-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="stat-label">PatrimÃ´nio</div>
+            <i class="fa-solid fa-boxes-stacked" style="color: var(--brand-primary); opacity: 0.2; font-size: 1.5rem;"></i>
+        </div>
+        <div class="stat-value"><?= $totalAssets ?></div>
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 0.75rem; color: var(--text-soft); font-weight: 600;">Ativos Registrados</span>
+            <span style="font-size: 0.75rem; color: var(--success); font-weight: 700;">Val: R$ <?= number_format((float)$totalAssetValue, 2, ',', '.') ?></span>
+        </div>
+    </div>
+    
+    <!-- Chamados -->
+    <div class="stat-card" style="--brand-primary: var(--warning);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="stat-label">Chamados</div>
+            <i class="fa-solid fa-headset" style="color: var(--warning); opacity: 0.2; font-size: 1.5rem;"></i>
+        </div>
+        <div class="stat-value"><?= $openTickets ?> <span style="font-size: 1rem; color: var(--text-soft); font-weight: 500;">Abertos</span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 0.75rem; color: var(--text-soft); font-weight: 600;">Total: <?= $totalTickets ?></span>
+            <span style="font-size: 0.75rem; color: var(--warning); font-weight: 700;">AtenÃ§Ã£o Requerida</span>
+        </div>
+    </div>
+
+    <!-- EmprÃ©stimos -->
+    <div class="stat-card" style="--brand-primary: var(--success);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="stat-label">EmprÃ©stimos</div>
+            <i class="fa-solid fa-right-left" style="color: var(--success); opacity: 0.2; font-size: 1.5rem;"></i>
+        </div>
+        <div class="stat-value"><?= $activeLoans ?></div>
