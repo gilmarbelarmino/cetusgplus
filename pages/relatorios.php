@@ -368,7 +368,7 @@ foreach ($userLoanMonthly as $uid => $ud) {
 </div>
 
 <style>
-    .tab-btn { background: none; border: none; font-weight: 700; color: #64748b; cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.5rem; transition: all 0.3s; }
+    .tab-btn { background: none; border: none; font-weight: 700; color: var(--text-soft); cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.5rem; transition: all 0.3s; }
     .tab-btn.active { color: var(--crm-purple); background: rgba(91, 33, 182, 0.1); }
     .tab-content { display: none; }
     .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
@@ -620,15 +620,15 @@ function printCurrentTab() {
     <!-- Novas Métricas de Gestão e Estimativas -->
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
         <div class="stat-card" style="padding: 1.25rem;">
-            <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Média Diária (Este Ano)</div>
+            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Média Diária (Este Ano)</div>
             <div style="font-size: 1.5rem; font-weight: 900; color: #3B82F6;"><?= number_format($chAvgDay, 1, ',', '.') ?> <span style="font-size:0.8rem; font-weight:700;">chamados/dia</span></div>
         </div>
         <div class="stat-card" style="padding: 1.25rem;">
-            <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Média Mensal (Este Ano)</div>
+            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Média Mensal (Este Ano)</div>
             <div style="font-size: 1.5rem; font-weight: 900; color: #8B5CF6;"><?= number_format($chAvgMonth, 1, ',', '.') ?> <span style="font-size:0.8rem; font-weight:700;">chamados/mês</span></div>
         </div>
         <div class="stat-card" style="padding: 1.25rem;">
-            <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Estimativa Anual (<span style="color:var(--crm-purple)"><?= date('Y') ?></span>)</div>
+            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Estimativa Anual (<span style="color:var(--crm-purple)"><?= date('Y') ?></span>)</div>
             <div style="font-size: 1.5rem; font-weight: 900; color: #10B981;"><?= number_format($chEstYear, 0, '', '.') ?> <span style="font-size:0.8rem; font-weight:700;">tickets totais estim.</span></div>
         </div>
     </div>
@@ -663,10 +663,10 @@ function printCurrentTab() {
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr>
-                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; width: 60px;">Técnico</th>
-                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Nome</th>
-                        <th style="text-align: center; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Soluções</th>
-                        <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Taxa de Contribuição</th>
+                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0; width: 60px;">Técnico</th>
+                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Nome</th>
+                        <th style="text-align: center; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Soluções</th>
+                        <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Taxa de Contribuição</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -718,22 +718,22 @@ function printCurrentTab() {
 
         <!-- KPI cards SLA -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1.25rem;margin-bottom:2rem;">
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1.25rem;text-align:center;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);">
                 <div style="font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:.5rem;"><i class="fa-solid fa-stopwatch" style="color:#f59e0b;"></i> Média Geral</div>
                 <div style="font-size:2rem;font-weight:900;color:#f59e0b;"><?= $slaAvgTotal !== null ? $slaAvgTotal.'h' : '—' ?></div>
                 <div style="font-size:0.7rem;color:#94a3b8;">tempo médio para fechar</div>
             </div>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1.25rem;text-align:center;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);">
                 <div style="font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:.5rem;"><i class="fa-solid fa-bolt" style="color:#10b981;"></i> Mais Rápido</div>
                 <div style="font-size:2rem;font-weight:900;color:#10b981;"><?= $slaFastest !== null ? $slaFastest.'h' : '—' ?></div>
                 <div style="font-size:0.7rem;color:#94a3b8;">menor tempo registrado</div>
             </div>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1.25rem;text-align:center;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);">
                 <div style="font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:.5rem;"><i class="fa-solid fa-hourglass-half" style="color:#ef4444;"></i> Mais Lento</div>
                 <div style="font-size:2rem;font-weight:900;color:#ef4444;"><?= $slaSlowest !== null ? $slaSlowest.'h' : '—' ?></div>
                 <div style="font-size:0.7rem;color:#94a3b8;">maior tempo registrado</div>
             </div>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:1rem;padding:1.25rem;text-align:center;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);">
                 <div style="font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:.5rem;"><i class="fa-solid fa-building-columns" style="color:#8b5cf6;"></i> Setores com SLA</div>
                 <div style="font-size:2rem;font-weight:900;color:#8b5cf6;"><?= count($slaBySector) ?></div>
                 <div style="font-size:0.7rem;color:#94a3b8;">setores monitorados</div>
@@ -849,10 +849,10 @@ function printCurrentTab() {
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
-                            <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Setor</th>
-                            <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align: center;">Qtd.</th>
-                            <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Valor (R$)</th>
-                            <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">%</th>
+                            <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Setor</th>
+                            <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align: center;">Qtd.</th>
+                            <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Valor (R$)</th>
+                            <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">%</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -862,7 +862,7 @@ function printCurrentTab() {
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 0.75rem 1rem; font-weight: 700; color: #0F172A;"><?= htmlspecialchars($sv['sector'] ?: 'Sem Setor') ?></td>
                             <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 900; color: var(--crm-purple);"><?= $sv['count'] ?></td>
-                            <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 700; color: #334155;"><?= number_format($sv['total_value'], 2, ',', '.') ?></td>
+                            <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 700; color: var(--text-main);"><?= number_format($sv['total_value'], 2, ',', '.') ?></td>
                             <td style="padding: 0.75rem 1rem; text-align: right;">
                                 <span style="background: rgba(59, 130, 246, 0.1); color: #3B82F6; padding: 2px 6px; border-radius: 6px; font-size: 0.75rem; font-weight: 800;"><?= number_format($pct, 1) ?>%</span>
                             </td>
@@ -882,10 +882,10 @@ function printCurrentTab() {
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
-                            <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Categoria</th>
-                            <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align: center;">Qtd.</th>
-                            <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Valor (R$)</th>
-                            <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">%</th>
+                            <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Categoria</th>
+                            <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align: center;">Qtd.</th>
+                            <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Valor (R$)</th>
+                            <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">%</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -895,7 +895,7 @@ function printCurrentTab() {
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 0.75rem 1rem; font-weight: 700; color: #0F172A;"><?= htmlspecialchars($cv['category'] ?: 'Sem Categoria') ?></td>
                             <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 900; color: #EC4899;"><?= $cv['count'] ?></td>
-                            <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 700; color: #334155;"><?= number_format($cv['total_value'], 2, ',', '.') ?></td>
+                            <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 700; color: var(--text-main);"><?= number_format($cv['total_value'], 2, ',', '.') ?></td>
                             <td style="padding: 0.75rem 1rem; text-align: right;">
                                 <span style="background: rgba(236, 72, 153, 0.1); color: #EC4899; padding: 2px 6px; border-radius: 6px; font-size: 0.75rem; font-weight: 800;"><?= number_format($pct, 1) ?>%</span>
                             </td>
@@ -963,9 +963,9 @@ function printCurrentTab() {
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr>
-                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Setor</th>
-                        <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align: center;">Qtd.</th>
-                        <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">%</th>
+                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Setor</th>
+                        <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align: center;">Qtd.</th>
+                        <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">%</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -992,9 +992,9 @@ function printCurrentTab() {
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr>
-                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Categoria</th>
-                        <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align: center;">Qtd.</th>
-                        <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">%</th>
+                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Categoria</th>
+                        <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align: center;">Qtd.</th>
+                        <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">%</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1022,7 +1022,7 @@ function printCurrentTab() {
         </h3>
         
         <?php if (empty($occurrencesByUser)): ?>
-            <div style="text-align: center; padding: 2rem; color: #64748b; background: rgba(239, 68, 68, 0.05); border-radius: 0.75rem;">Nenhuma ocorrência de atraso computada no sistema. Todos estão em dia!</div>
+            <div style="text-align: center; padding: 2rem; color: var(--text-soft); background: rgba(239, 68, 68, 0.05); border-radius: 0.75rem;">Nenhuma ocorrência de atraso computada no sistema. Todos estão em dia!</div>
         <?php else: ?>
             <div style="display: flex; flex-direction: column; gap: 1rem;">
                 <?php foreach ($occurrencesByUser as $uid => $uData): ?>
@@ -1048,19 +1048,19 @@ function printCurrentTab() {
                                 <table style="width: 100%; border-collapse: collapse;">
                                     <thead>
                                         <tr>
-                                            <th style="text-align: left; padding: 0.5rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Equipamento</th>
-                                            <th style="text-align: center; padding: 0.5rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Datas (Retirada &rarr; Devolução)</th>
-                                            <th style="text-align: center; padding: 0.5rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Atraso Confirmado</th>
+                                            <th style="text-align: left; padding: 0.5rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Equipamento</th>
+                                            <th style="text-align: center; padding: 0.5rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Datas (Retirada &rarr; Devolução)</th>
+                                            <th style="text-align: center; padding: 0.5rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Atraso Confirmado</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach ($uData['loans'] as $it): ?>
                                             <tr style="border-bottom: 1px solid #e2e8f0;">
-                                                <td style="padding: 0.75rem 1rem; font-weight: 700; color: #334155;">
+                                                <td style="padding: 0.75rem 1rem; font-weight: 700; color: var(--text-main);">
                                                     <?= htmlspecialchars($it['asset_name']) ?>
                                                     <div style="font-size: 0.65rem; font-weight: 600; margin-top: 0.2rem; color: <?= $it['status'] == 'Ativo' ? '#F59E0B' : '#10B981' ?>;">Status: <?= htmlspecialchars($it['status']) ?></div>
                                                 </td>
-                                                <td style="padding: 0.75rem 1rem; text-align: center; color: #64748b; font-size: 0.75rem;">
+                                                <td style="padding: 0.75rem 1rem; text-align: center; color: var(--text-soft); font-size: 0.75rem;">
                                                     <div style="color:var(--crm-purple); font-weight:700; margin-bottom:0.15rem;">Retirado: <?= date('d/m/Y H:i', strtotime($it['loan_date'])) ?></div>
                                                     <div style="margin-bottom:0.15rem; font-weight:700;">Prazo: <?= date('d/m/Y H:i', strtotime($it['expected_return_date'])) ?></div>
                                                     <?php if ($it['return_date']): ?>
@@ -1109,12 +1109,12 @@ function printCurrentTab() {
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr>
-                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">#</th>
-                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Usuário</th>
-                        <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Qtd.</th>
-                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">%</th>
-                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">vs Ano Anterior</th>
-                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Volume</th>
+                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">#</th>
+                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Usuário</th>
+                        <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Qtd.</th>
+                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">%</th>
+                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">vs Ano Anterior</th>
+                        <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Volume</th>
                     </tr>
                 </thead>
                 <tbody id="userRankingBody"></tbody>
@@ -1156,7 +1156,7 @@ function printCurrentTab() {
         <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--crm-black); margin-bottom: 1.5rem;">Resumo de Atuação</h3>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
             <div>
-                <p style="font-weight: 700; margin-bottom: 1rem; color: #64748b; text-transform: uppercase; font-size: 0.75rem;">Status dos Voluntários</p>
+                <p style="font-weight: 700; margin-bottom: 1rem; color: var(--text-soft); text-transform: uppercase; font-size: 0.75rem;">Status dos Voluntários</p>
                 <?php foreach ($volByStatus as $v): 
                     $label = ($v['status'] == 'Ativo') ? 'Ativo' : 'Desativo';
                     $perc = $totalVolunteers > 0 ? ($v['count'] / $totalVolunteers) * 100 : 0;
@@ -1169,7 +1169,7 @@ function printCurrentTab() {
                 <?php endforeach; ?>
             </div>
             <div>
-                <p style="font-weight: 700; margin-bottom: 1rem; color: #64748b; text-transform: uppercase; font-size: 0.75rem;">Impacto por Sexo</p>
+                <p style="font-weight: 700; margin-bottom: 1rem; color: var(--text-soft); text-transform: uppercase; font-size: 0.75rem;">Impacto por Sexo</p>
                 <?php foreach ($volBySex as $v): 
                     $perc = $totalVolunteers > 0 ? ($v['count'] / $totalVolunteers) * 100 : 0;
                     $color = $v['sex'] == 'Masculino' ? '#3B82F6' : ($v['sex'] == 'Feminino' ? '#EC4899' : '#94A3B8');
@@ -1209,7 +1209,7 @@ function printCurrentTab() {
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
                 <?php foreach ($financialMonths as $i => $m): ?>
                 <div style="padding: 1rem; background: #f8fafc; border-radius: 1rem; border: 1px solid #e2e8f0; text-align: center;">
-                    <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;"><?= $m ?></div>
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase;"><?= $m ?></div>
                     <div style="font-size: 1.1rem; font-weight: 900; color: var(--crm-purple);">R$ <?= number_format($financialData[$i]??0, 2, ',', '.') ?></div>
                 </div>
                 <?php endforeach; ?>
@@ -1257,19 +1257,19 @@ function printCurrentTab() {
     <!-- Novas Métricas de Gestão -->
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
         <div class="stat-card" style="padding: 1.25rem;">
-            <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Férias (Próx. 30 dias)</div>
+            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Férias (Próx. 30 dias)</div>
             <div style="font-size: 1.5rem; font-weight: 900; color: #F59E0B;"><?= $rhVacationsNext30 ?></div>
         </div>
         <div class="stat-card" style="padding: 1.25rem;">
-            <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Atestados (Total)</div>
+            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Atestados (Total)</div>
             <div style="font-size: 1.5rem; font-weight: 900; color: #EF4444;"><?= $rhCertificatesTotal ?></div>
         </div>
         <div class="stat-card" style="padding: 1.25rem;">
-            <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Anotações Dossier</div>
+            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Anotações Dossier</div>
             <div style="font-size: 1.5rem; font-weight: 900; color: #3B82F6;"><?= $rhNotesTotal ?></div>
         </div>
         <div class="stat-card" style="padding: 1.25rem;">
-            <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Média Salarial</div>
+            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Média Salarial</div>
             <div style="font-size: 1.5rem; font-weight: 900; color: #10B981;">R$ <?= number_format(count($rhAvgSalarySector) > 0 ? (array_sum(array_column($rhAvgSalarySector, 'avg_salary')) / count($rhAvgSalarySector)) : 0, 2, ',', '.') ?></div>
         </div>
     </div>
@@ -1314,13 +1314,13 @@ function printCurrentTab() {
         <div class="glass-panel">
             <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.5rem;"><i class="fa-solid fa-cake-candles" style="color: #EC4899;"></i> Aniversariantes de <?= date('F') ?></h3>
             <?php if (empty($rhBirthdaysMonth)): ?>
-                <p style="color: #64748b; text-align: center; padding: 2rem;">Nenhum aniversário este mês.</p>
+                <p style="color: var(--text-soft); text-align: center; padding: 2rem;">Nenhum aniversário este mês.</p>
             <?php else: ?>
                 <table style="width: 100%; border-collapse: collapse;">
                     <?php foreach ($rhBirthdaysMonth as $bday): ?>
                     <tr style="border-bottom: 1px solid #f1f5f9;">
                         <td style="padding: 0.75rem 0; font-weight: 700; color: #0F172A;"><?= htmlspecialchars($bday['name']) ?></td>
-                        <td style="padding: 0.75rem 0; color: #64748b; font-size: 0.85rem;"><?= htmlspecialchars($bday['sector']) ?></td>
+                        <td style="padding: 0.75rem 0; color: var(--text-soft); font-size: 0.85rem;"><?= htmlspecialchars($bday['sector']) ?></td>
                         <td style="padding: 0.75rem 0; text-align: right; font-weight: 900; color: #EC4899;"><?= date('d/m', strtotime($bday['birth_date'])) ?></td>
                     </tr>
                     <?php endforeach; ?>
@@ -1352,17 +1352,17 @@ function printCurrentTab() {
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Setor</th>
-                    <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align:center;">Total</th>
-                    <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align:center;">Ativos</th>
-                    <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Custo Mensal ($)</th>
+                    <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Setor</th>
+                    <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align:center;">Total</th>
+                    <th style="padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0; text-align:center;">Ativos</th>
+                    <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Custo Mensal ($)</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($rhSectorStats as $st): ?>
                 <tr style="border-bottom: 1px solid #f1f5f9;">
                     <td style="padding: 0.75rem 1rem; font-weight: 700; color: #0F172A;"><?= htmlspecialchars($st['sector'] ?: 'Sem Setor') ?></td>
-                    <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700; color: #64748b;"><?= $st['total_users'] ?></td>
+                    <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700; color: var(--text-soft);"><?= $st['total_users'] ?></td>
                     <td style="padding: 0.75rem 1rem; text-align: center;">
                         <span style="background: rgba(16, 185, 129, 0.1); color: #10B981; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">
                             <?= $st['active_users'] ?> ativos

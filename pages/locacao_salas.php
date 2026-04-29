@@ -123,11 +123,11 @@ $bookings = $pdo->query("SELECT b.*, r.name as room_name, u.name as user_name, u
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <div>
-        <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--crm-black); display: flex; align-items: center; gap: 0.75rem;">
+        <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); display: flex; align-items: center; gap: 0.75rem;">
             <i class="fa-solid fa-building-circle-check" style="color: var(--crm-purple);"></i>
             Locação de Salas
         </h2>
-        <p style="color: #64748b; font-size: 0.875rem;">Gerencie o uso compartilhado dos espaços da instituição</p>
+        <p style="color: var(--text-soft); font-size: 0.875rem;">Gerencie o uso compartilhado dos espaços da instituição</p>
     </div>
     <div style="display: flex; gap: 1rem;">
         <button class="btn-primary" onclick="document.getElementById('bookingModal').style.display='flex'">
@@ -189,25 +189,25 @@ $bookings = $pdo->query("SELECT b.*, r.name as room_name, u.name as user_name, u
 </div>
 
 <style>
-    .tab-btn { background: none; border: none; font-weight: 700; color: #64748b; cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.5rem; transition: all 0.3s; }
+    .tab-btn { background: none; border: none; font-weight: 700; color: var(--text-soft); cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.5rem; transition: all 0.3s; }
     .tab-btn.active { color: var(--crm-purple); background: rgba(91, 33, 182, 0.1); }
     .tab-content { display: none; }
     .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     
-    .room-card { background: white; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; transition: all 0.2s; }
+    .room-card { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 1rem; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; transition: all 0.2s; }
     .room-card:hover { transform: translateY(-2px); border-color: var(--crm-purple); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
 
-    .booking-card { background: white; border: 1px solid #e2e8f0; border-radius: 1.25rem; overflow: hidden; margin-bottom: 1.5rem; transition: all 0.2s; border-left: 6px solid var(--crm-purple); }
+    .booking-card { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 1.25rem; overflow: hidden; margin-bottom: 1.5rem; transition: all 0.2s; border-left: 6px solid var(--crm-purple); }
     .booking-card:hover { box-shadow: 0 12px 20px -5px rgba(0,0,0,0.1); }
-    .booking-header { padding: 1.25rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+    .booking-header { padding: 1.25rem; background: var(--bg-main); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
     .booking-body { padding: 1.25rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
 </style>
 
 <!-- ABA RESERVAS -->
 <div id="content-reservas" class="tab-content active">
     <?php if (empty($bookings)): ?>
-        <div style="text-align: center; padding: 4rem; color: #64748b;" class="glass-panel">
+        <div style="text-align: center; padding: 4rem; color: var(--text-soft);" class="glass-panel">
             <i class="fa-solid fa-calendar-xmark" style="font-size: 3rem; opacity: 0.2; margin-bottom: 1rem;"></i>
             <p>Nenhuma reserva encontrada. Seja o primeiro a reservar!</p>
         </div>
@@ -216,7 +216,7 @@ $bookings = $pdo->query("SELECT b.*, r.name as room_name, u.name as user_name, u
             <div class="booking-card">
                 <div class="booking-header">
                     <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span style="font-weight: 800; font-size: 1.1rem; color: var(--crm-black);"><?= htmlspecialchars($b['room_name']) ?></span>
+                        <span style="font-weight: 800; font-size: 1.1rem; color: var(--text-main);"><?= htmlspecialchars($b['room_name']) ?></span>
                         <span class="badge badge-info"><?= date('d/m/Y', strtotime($b['booking_date'])) ?></span>
                         <?php if (isset($b['status']) && $b['status'] == 'Fila de Espera'): ?>
                             <span class="badge badge-warning" style="background: #FEF3C7; color: #D97706; border: 1px solid #FCD34D;">
@@ -242,7 +242,7 @@ $bookings = $pdo->query("SELECT b.*, r.name as room_name, u.name as user_name, u
                 <div class="booking-body">
                     <div>
                         <span style="font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Período</span>
-                        <div style="font-weight: 700; color: #334155; margin-top: 0.35rem;">
+                        <div style="font-weight: 700; color: var(--text-main); margin-top: 0.35rem;">
                             <i class="fa-regular fa-clock" style="color: var(--crm-purple);"></i>
                             <?= date('H:i', strtotime($b['start_time'])) ?> às <?= date('H:i', strtotime($b['end_time'])) ?>
                         </div>
@@ -257,18 +257,18 @@ $bookings = $pdo->query("SELECT b.*, r.name as room_name, u.name as user_name, u
                                     <?= strtoupper(substr($b['user_name'], 0, 1)) ?>
                                 </div>
                             <?php endif; ?>
-                            <span style="font-weight: 700; color: #334155;"><?= htmlspecialchars($b['user_name']) ?></span>
+                            <span style="font-weight: 700; color: var(--text-main);"><?= htmlspecialchars($b['user_name']) ?></span>
                         </div>
                     </div>
                     <div>
                         <span style="font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Observações</span>
-                        <div style="font-weight: 600; color: #64748b; font-size: 0.85rem; margin-top: 0.35rem;">
+                        <div style="font-weight: 600; color: var(--text-soft); font-size: 0.85rem; margin-top: 0.35rem;">
                             <?= htmlspecialchars($b['observations'] ?: 'Nenhuma observação') ?>
                         </div>
                     </div>
                 </div>
                 <?php if ($b['last_edited_by']): ?>
-                    <div style="padding: 0.75rem 1.25rem; background: #fffcf0; border-top: 1px solid #fef3c7; display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: #92400e;">
+                    <div style="padding: 0.75rem 1.25rem; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: #92400e;">
                         <span style="display: flex; align-items: center; gap: 0.5rem;">
                             <i class="fa-solid fa-user-pen"></i>
                             Alterado por <strong><?= htmlspecialchars($b['editor_name']) ?></strong> em <?= date('d/m/Y \à\s H:i', strtotime($b['last_edited_at'])) ?>
@@ -294,8 +294,8 @@ $bookings = $pdo->query("SELECT b.*, r.name as room_name, u.name as user_name, u
         <?php foreach ($rooms as $r): ?>
             <div class="room-card">
                 <div>
-                    <h4 style="font-weight: 800; color: #1e293b;"><?= htmlspecialchars($r['name']) ?></h4>
-                    <p style="font-size: 0.8rem; color: #64748b;"><?= htmlspecialchars($r['description']) ?></p>
+                    <h4 style="font-weight: 800; color: var(--text-main);"><?= htmlspecialchars($r['name']) ?></h4>
+                    <p style="font-size: 0.8rem; color: var(--text-soft);"><?= htmlspecialchars($r['description']) ?></p>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
                     <button class="btn-icon" onclick='openEditRoom(<?= json_encode($r) ?>)'>
@@ -318,37 +318,37 @@ $bookings = $pdo->query("SELECT b.*, r.name as room_name, u.name as user_name, u
 <div id="bookingModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
     <div class="glass-panel" style="max-width: 500px; width: 100%;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h3 id="bookingTitle" style="font-size: 1.25rem; font-weight: 900;">Nova Reserva</h3>
-            <button onclick="document.getElementById('bookingModal').style.display='none'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
+            <h3 id="bookingTitle" style="font-size: 1.25rem; font-weight: 900; color: var(--text-main);">Nova Reserva</h3>
+            <button onclick="document.getElementById('bookingModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: var(--text-soft); font-size: 1.5rem;">&times;</button>
         </div>
         <form method="POST">
             <input type="hidden" name="action" id="bookingAction" value="add_booking">
             <input type="hidden" name="booking_id" id="edit_booking_id">
             <div class="form-group">
-                <label class="form-label">Sala *</label>
-                <select name="room_id" id="bookingRoom" class="form-select" required>
+                <label class="form-label" style="color: var(--text-main);">Sala *</label>
+                <select name="room_id" id="bookingRoom" class="form-select" required style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
                     <?php foreach ($rooms as $r): ?>
-                        <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['name']) ?></option>
+                        <option value="<?= $r['id'] ?>" style="background: var(--bg-card); color: var(--text-main);"><?= htmlspecialchars($r['name']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label">Data *</label>
-                <input type="date" name="booking_date" id="bookingDate" class="form-input" min="<?= date('Y-m-d') ?>" required>
+                <label class="form-label" style="color: var(--text-main);">Data *</label>
+                <input type="date" name="booking_date" id="bookingDate" class="form-input" min="<?= date('Y-m-d') ?>" required style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div class="form-group">
-                    <label class="form-label">Horário Início *</label>
-                    <input type="time" name="start_time" id="bookingStart" class="form-input" required>
+                    <label class="form-label" style="color: var(--text-main);">Horário Início *</label>
+                    <input type="time" name="start_time" id="bookingStart" class="form-input" required style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Horário Fim *</label>
-                    <input type="time" name="end_time" id="bookingEnd" class="form-input" required>
+                    <label class="form-label" style="color: var(--text-main);">Horário Fim *</label>
+                    <input type="time" name="end_time" id="bookingEnd" class="form-input" required style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">Observações</label>
-                <textarea name="observations" id="bookingObs" class="form-textarea" rows="3"></textarea>
+                <label class="form-label" style="color: var(--text-main);">Observações</label>
+                <textarea name="observations" id="bookingObs" class="form-textarea" rows="3" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);"></textarea>
             </div>
             <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
                 <button type="button" onclick="document.getElementById('bookingModal').style.display='none'" class="btn-secondary">Cancelar</button>
@@ -361,19 +361,19 @@ $bookings = $pdo->query("SELECT b.*, r.name as room_name, u.name as user_name, u
 <div id="roomModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
     <div class="glass-panel" style="max-width: 500px; width: 100%;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h3 id="roomTitle" style="font-size: 1.25rem; font-weight: 900;">Gerenciar Sala</h3>
-            <button onclick="document.getElementById('roomModal').style.display='none'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
+            <h3 id="roomTitle" style="font-size: 1.25rem; font-weight: 900; color: var(--text-main);">Gerenciar Sala</h3>
+            <button onclick="document.getElementById('roomModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: var(--text-soft); font-size: 1.5rem;">&times;</button>
         </div>
         <form method="POST">
             <input type="hidden" name="action" id="roomAction" value="add_room">
             <input type="hidden" name="room_id" id="edit_room_id">
             <div class="form-group">
-                <label class="form-label">Nome da Sala *</label>
-                <input type="text" name="name" id="roomName" class="form-input" placeholder="Ex: Sala CJ 01" required>
+                <label class="form-label" style="color: var(--text-main);">Nome da Sala *</label>
+                <input type="text" name="name" id="roomName" class="form-input" placeholder="Ex: Sala CJ 01" required style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
             </div>
             <div class="form-group">
-                <label class="form-label">Descrição</label>
-                <textarea name="description" id="roomDesc" class="form-textarea" placeholder="Breve descrição do espaço" rows="3"></textarea>
+                <label class="form-label" style="color: var(--text-main);">Descrição</label>
+                <textarea name="description" id="roomDesc" class="form-textarea" placeholder="Breve descrição do espaço" rows="3" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);"></textarea>
             </div>
             <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
                 <button type="button" onclick="document.getElementById('roomModal').style.display='none'" class="btn-secondary">Cancelar</button>

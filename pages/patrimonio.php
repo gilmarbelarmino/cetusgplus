@@ -169,7 +169,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                         <?php if (!empty($asset['image_url'])): ?>
                             <img src="uploads/<?= htmlspecialchars($asset['image_url']) ?>" style="width: 40px; height: 40px; border-radius: 0.75rem; object-fit: cover;">
                         <?php else: ?>
-                            <div style="width: 40px; height: 40px; background: var(--crm-gray-light); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; color: #64748b;">
+                            <div style="width: 40px; height: 40px; background: var(--crm-gray-light); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; color: var(--text-soft);">
                                 <i class="fa-solid fa-desktop"></i>
                             </div>
                         <?php endif; ?>
@@ -184,7 +184,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                         <?= htmlspecialchars($asset['sector']) ?>
                     </div>
                 </td>
-                <td style="font-family: monospace; font-size: 0.75rem; color: #64748b;">
+                <td style="font-family: monospace; font-size: 0.75rem; color: var(--text-soft);">
                     <?= htmlspecialchars($asset['patrimony_id'] ?? 'N/A') ?>
                 </td>
                 <td style="font-weight: 600;">
@@ -236,7 +236,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem;">
             <div>
                 <h3 style="font-size: 1.25rem; font-weight: 900;">Histórico do Ativo: <?= htmlspecialchars($asset_data['name']) ?></h3>
-                <p style="color: #64748b; font-size: 0.875rem;">Patrimônio: <?= htmlspecialchars($asset_data['patrimony_id']) ?></p>
+                <p style="color: var(--text-soft); font-size: 0.875rem;">Patrimônio: <?= htmlspecialchars($asset_data['patrimony_id']) ?></p>
             </div>
             <button onclick="window.location.href='?page=patrimonio'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
         </div>
@@ -248,11 +248,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                     <i class="fa-solid fa-right-left"></i> Empréstimos
                 </h4>
                 <?php if (empty($loans)): ?>
-                    <p style="color: #64748b; font-size: 0.875rem; font-style: italic;">Nenhum empréstimo registrado.</p>
+                    <p style="color: var(--text-soft); font-size: 0.875rem; font-style: italic;">Nenhum empréstimo registrado.</p>
                 <?php else: ?>
                     <?php foreach ($loans as $l): ?>
                     <div style="padding: 1rem; border-left: 3px solid #5B21B6; background: #f8fafc; border-radius: 0 1rem 1rem 0; margin-bottom: 1rem;">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 0.25rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-soft); margin-bottom: 0.25rem;">
                             <span><i class="fa-solid fa-calendar"></i> <?= date('d/m/Y', strtotime($l['loan_date'])) ?></span>
                             <span class="badge badge-<?= $l['status'] == 'Ativo' ? 'warning' : 'success' ?>"><?= $l['status'] ?></span>
                         </div>
@@ -274,11 +274,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                     <i class="fa-solid fa-headset"></i> Atendimentos / Manutenção
                 </h4>
                 <?php if (empty($tickets)): ?>
-                    <p style="color: #64748b; font-size: 0.875rem; font-style: italic;">Nenhum chamado registrado.</p>
+                    <p style="color: var(--text-soft); font-size: 0.875rem; font-style: italic;">Nenhum chamado registrado.</p>
                 <?php else: ?>
                     <?php foreach ($tickets as $t): ?>
                     <div style="padding: 1rem; border-left: 3px solid #ef4444; background: #fef2f2; border-radius: 0 1rem 1rem 0; margin-bottom: 1rem;">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 0.25rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-soft); margin-bottom: 0.25rem;">
                             <span><i class="fa-solid fa-calendar"></i> <?= date('d/m/Y', strtotime($t['created_at'])) ?></span>
                             <span class="badge badge-<?= 
                                 $t['status'] == 'Concluído' ? 'success' : 
@@ -286,7 +286,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                             ?>"><?= $t['status'] ?></span>
                         </div>
                         <div style="font-weight: 700; margin-bottom: 0.25rem;"><?= htmlspecialchars($t['title']) ?></div>
-                        <div style="font-size: 0.75rem; color: #64748b;">Solicitado por: <?= htmlspecialchars($t['req_name'] ?? 'N/A') ?></div>
+                        <div style="font-size: 0.75rem; color: var(--text-soft);">Solicitado por: <?= htmlspecialchars($t['req_name'] ?? 'N/A') ?></div>
                         <?php if ($t['closed_at']): ?>
                             <div style="font-size: 0.75rem; color: #059669; margin-top: 0.5rem; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 0.25rem;">
                                 <i class="fa-solid fa-lock"></i> Finalizado em: <?= date('d/m/Y H:i', strtotime($t['closed_at'])) ?>
@@ -419,7 +419,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                     <label class="form-label">Foto do Produto</label>
                     <input type="file" name="product_image" class="form-input" accept="image/*">
                     <?php if (!empty($editAsset['image_url'])): ?>
-                        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #64748b;">
+                        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-soft);">
                             <img src="uploads/<?= htmlspecialchars($editAsset['image_url']) ?>" style="height: 40px; border-radius: 4px; vertical-align: middle;"> Imagem atual
                         </div>
                     <?php endif; ?>
@@ -486,7 +486,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             <button onclick="document.getElementById('categoryModal').style.display='none'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
         </div>
         
-        <div style="margin-bottom: 2rem; padding: 1rem; background: var(--crm-gray-light); border-radius: 1rem;">
+        <div style="margin-bottom: 2rem; padding: 1rem; background: var(--bg-main); color: var(--text-main);">
             <label class="form-label">Cadastrar Nova Categoria</label>
             <div style="display: flex; gap: 0.5rem;">
                 <input type="text" id="new_category" class="form-input" placeholder="Digite o nome...">
@@ -498,7 +498,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             <label class="form-label">Categorias Existentes</label>
             <div style="display: grid; gap: 0.5rem;">
                 <?php if (empty($categories)): ?>
-                    <p style="text-align: center; color: #64748b; font-style: italic; padding: 1rem;">Nenhuma categoria cadastrada.</p>
+                    <p style="text-align: center; color: var(--text-soft); font-style: italic; padding: 1rem;">Nenhuma categoria cadastrada.</p>
                 <?php else: ?>
                     <?php foreach ($categories as $c): 
                         // Contar ativos nesta categoria
@@ -506,7 +506,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                         $countStmt->execute([$c['category']]);
                         $count = $countStmt->fetchColumn();
                     ?>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #fff; border: 1px solid var(--crm-border); border-radius: 0.75rem; transition: all 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main);">
                             <span style="font-weight: 700; color: var(--crm-text);"><?= htmlspecialchars($c['category']) ?> <small style="color: #94a3b8; font-weight: 500;">(<?= $count ?> ativos)</small></span>
                             <div style="display: flex; gap: 0.5rem;">
                                 <button type="button" onclick="useCategory('<?= addslashes($c['category']) ?>')" class="btn-icon" title="Usar esta" style="color: #10B981;"><i class="fa-solid fa-check"></i></button>

@@ -295,7 +295,7 @@ $users = $pdo->query("SELECT u.id, u.name, u.sector, u.unit_id, u.avatar_url, un
                     </span>
                     <?php if ($is_late): ?>
                         <div style="margin-top: 0.35rem;">
-                            <span style="font-size: 0.65rem; font-weight: 800; color: #EF4444; background: rgba(239, 68, 68, 0.1); padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block;">
+                            <span style="font-size: 0.65rem; font-weight: 800; color: #EF4444; background: rgba(239, 68, 68, 0.1); border-radius: 4px; display: inline-block;">
                                 <i class="fa-solid fa-circle-exclamation"></i> Atrasado: <?= $late_string ?>
                             </span>
                         </div>
@@ -336,55 +336,46 @@ $users = $pdo->query("SELECT u.id, u.name, u.sector, u.unit_id, u.avatar_url, un
             <input type="hidden" name="action" value="add_loan">
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
                 <div class="form-group">
-                    <label class="form-label">Equipamento *</label>
+                    <label class="form-label" style="font-weight: 800; color: var(--text-main);">Equipamento *</label>
                     <div style="position: relative;" id="asset_selector_container">
-                        <input type="text" id="asset_search" class="form-input" placeholder="Buscar por nome ou ID do patrimônio..." autocomplete="off" oninput="filterAssets(this.value)" onfocus="document.getElementById('asset_results').style.display='block'">
+                        <input type="text" id="asset_search" class="form-input" placeholder="Buscar por nome ou ID do patrimônio..." autocomplete="off" oninput="filterAssets(this.value)" onfocus="document.getElementById('asset_results').style.display='block'" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
                         <input type="hidden" name="asset_id" id="selected_asset_id" required>
                         
-                        <div id="asset_results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--crm-border); border-radius: 0.75rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1100; max-height: 200px; overflow-y: auto; margin-top: 5px;">
+                        <div id="asset_results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: var(--shadow-lg); z-index: 1100; max-height: 200px; overflow-y: auto; margin-top: 5px;">
                             <?php foreach ($assets as $a): ?>
                                 <div class="asset-option" 
-                                     style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" 
+                                     style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s;" 
                                      data-id="<?= $a['id'] ?>" 
                                      data-name="<?= htmlspecialchars($a['name']) ?>" 
                                      data-patrimony="<?= htmlspecialchars($a['patrimony_id']) ?>"
                                      onclick="selectAsset(this)">
-                                    <div style="font-weight: 700; font-size: 0.875rem; color: var(--crm-text);"><?= htmlspecialchars($a['name']) ?></div>
-                                    <div style="font-size: 0.75rem; color: var(--crm-text-soft);">ID: <?= htmlspecialchars($a['patrimony_id']) ?></div>
+                                    <div style="font-weight: 700; font-size: 0.875rem; color: var(--text-main);"><?= htmlspecialchars($a['name']) ?></div>
+                                    <div style="font-size: 0.75rem; color: var(--text-soft);">ID: <?= htmlspecialchars($a['patrimony_id']) ?></div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
                     </div>
-                    <style>
-                        .asset-option:hover { background: var(--crm-purple-soft); }
-                        .asset-option.selected { background: var(--crm-purple); color: white; }
-                        .asset-option.selected .asset-name { color: white; }
-                    </style>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Usuário *</label>
-                    <div style="display: flex; gap: 1rem; align-items: center;">
-                        <div id="borrower_avatar_preview" style="width: 50px; height: 50px; border-radius: 50%; background: #f1f5f9; border: 2px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">
-                            <i class="fa-solid fa-user" style="color: #94a3b8;"></i>
+                    <label class="form-label" style="font-weight: 800; color: var(--text-main);">Usuário *</label>
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <div id="user_avatar_preview" style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-main); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--text-muted); flex-shrink: 0; border: 2px solid var(--border-color);">
+                            <i class="fa-solid fa-user"></i>
                         </div>
-                        <select name="borrower_id" id="borrower_select" class="form-select" required onchange="updateLoanInfo(this)" style="flex: 1;">
-                            <option value="">Selecione o usuário</option>
+                        <select name="borrower_id" id="borrower_select" class="form-select" required onchange="updateLoanInfo(this)" style="flex: 1; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
+                            <option value="" style="background: var(--bg-card); color: var(--text-main);">Selecione o usuário</option>
                             <?php foreach ($users as $u): ?>
                                 <option value="<?= $u['id'] ?>" 
                                     data-sector="<?= htmlspecialchars($u['sector']) ?>" 
                                     data-unit="<?= $u['unit_id'] ?>"
                                     data-unit-name="<?= htmlspecialchars($u['unit_name']) ?>"
-                                    data-avatar="<?= htmlspecialchars($u['avatar_url'] ?? '') ?>">
+                                    data-avatar="<?= htmlspecialchars($u['avatar_url'] ?? '') ?>"
+                                    style="background: var(--bg-card); color: var(--text-main);">
                                     <?= htmlspecialchars($u['name']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Unidade</label>
-                    <input type="text" id="unit_display" class="form-input" readonly>
-                    <input type="hidden" name="unit_id" id="unit_id">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Setor</label>
@@ -399,8 +390,8 @@ $users = $pdo->query("SELECT u.id, u.name, u.sector, u.unit_id, u.avatar_url, un
                     <input type="datetime-local" name="expected_return_date" class="form-input" value="<?= date('Y-m-d\T23:59') ?>" required>
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
-                    <label class="form-label">Observações</label>
-                    <textarea name="observations" class="form-textarea"></textarea>
+                    <label class="form-label" style="color: var(--text-main); font-weight: 700;">Observações</label>
+                    <textarea name="notes" class="form-textarea" rows="3" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);"></textarea>
                 </div>
             </div>
             <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
@@ -421,8 +412,12 @@ $users = $pdo->query("SELECT u.id, u.name, u.sector, u.unit_id, u.avatar_url, un
             <input type="hidden" name="action" value="edit_loan">
             <input type="hidden" name="loan_id" id="edit_loan_id">
             <div class="form-group">
-                <label class="form-label">Equipamento</label>
-                <input type="text" id="edit_asset_name" class="form-input" readonly>
+                <label class="form-label" style="color: var(--text-main); font-weight: 700;">Unidade</label>
+                <input type="text" id="unit_name" class="form-input" readonly style="background: var(--bg-main); color: var(--text-main); opacity: 0.8; border: 1px solid var(--border-color);">
+            </div>
+            <div class="form-group">
+                <label class="form-label" style="color: var(--text-main); font-weight: 700;">Setor</label>
+                <input type="text" id="sector_name" class="form-input" readonly style="background: var(--bg-main); color: var(--text-main); opacity: 0.8; border: 1px solid var(--border-color);">
             </div>
             <div class="form-group">
                 <label class="form-label">Responsável *</label>

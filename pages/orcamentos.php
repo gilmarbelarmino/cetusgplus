@@ -205,7 +205,7 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
     .orc-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; }
     
     .tab-nav { display: flex; gap: 1rem; margin-bottom: 2rem; padding: 0.5rem; background: rgba(255,255,255,0.5); backdrop-filter: blur(10px); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.2); width: fit-content; }
-    .tab-btn { background: none; border: none; font-weight: 700; color: #64748b; cursor: pointer; padding: 0.75rem 1.5rem; border-radius: 0.75rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 0.5rem; }
+    .tab-btn { background: none; border: none; font-weight: 700; color: var(--text-soft); cursor: pointer; padding: 0.75rem 1.5rem; border-radius: 0.75rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 0.5rem; }
     .tab-btn i { font-size: 1.1rem; }
     .tab-btn:hover { background: rgba(91, 33, 182, 0.05); color: var(--crm-purple); }
     .tab-btn.active { color: white; background: var(--crm-purple); box-shadow: 0 4px 12px rgba(91, 33, 182, 0.3); }
@@ -293,13 +293,13 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
                 <!-- ID & Date -->
                 <div>
                     <div style="font-family: monospace; font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.25rem;">#<?= htmlspecialchars($b['id']) ?></div>
-                    <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;"><?= date('d/m/y', strtotime($b['created_at'])) ?></div>
+                    <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-soft);"><?= date('d/m/y', strtotime($b['created_at'])) ?></div>
                 </div>
 
                 <!-- Product -->
                 <div>
-                    <div style="font-size: 1.05rem; font-weight: 800; color: #1e293b;"><?= htmlspecialchars($b['product_name']) ?></div>
-                    <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">Qtd: <strong><?= $b['quantity'] ?></strong> | <?= htmlspecialchars($b['unit_name']) ?></div>
+                    <div style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);"><?= htmlspecialchars($b['product_name']) ?></div>
+                    <div style="font-size: 0.8rem; color: var(--text-soft); margin-top: 2px;">Qtd: <strong><?= $b['quantity'] ?></strong> | <?= htmlspecialchars($b['unit_name']) ?></div>
                 </div>
 
                 <!-- Requester -->
@@ -403,9 +403,9 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
                     </span>
                 </div>
 
-                <div style="padding: 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px dashed #e2e8f0;">
-                    <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.25rem;">Setor Solicitante:</div>
-                    <div style="font-weight: 700; color: #1e293b;"><?= htmlspecialchars($w['sector_name']) ?></div>
+                <div style="padding: 0.75rem; background: var(--bg-main); border-radius: 8px; border: 1px dashed var(--border-color);">
+                    <div style="font-size: 0.75rem; color: var(--text-soft); margin-bottom: 0.25rem;">Setor Solicitante:</div>
+                    <div style="font-weight: 700; color: var(--text-main);"><?= htmlspecialchars($w['sector_name']) ?></div>
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -466,8 +466,8 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
 <div id="budgetModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
     <div class="glass-panel" style="max-width: 700px; width: 100%; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem;">
-            <h3 style="font-size: 1.4rem; font-weight: 900; color: #1e293b;"><i class="fa-solid fa-plus-circle" style="color: var(--crm-purple);"></i> Novo Orçamento</h3>
-            <button onclick="document.getElementById('budgetModal').style.display='none'" style="background: #f1f5f9; border: none; cursor: pointer; font-size: 1.25rem; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b;">&times;</button>
+            <h3 style="font-size: 1.4rem; font-weight: 900; color: var(--text-main);"><i class="fa-solid fa-plus-circle" style="color: var(--crm-purple);"></i> Novo Orçamento</h3>
+            <button onclick="document.getElementById('budgetModal').style.display='none'" style="background: #f1f5f9; border: none; cursor: pointer; font-size: 1.25rem; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-soft);">&times;</button>
         </div>
         <form method="POST">
             <input type="hidden" name="action" value="add_budget">
@@ -533,10 +533,10 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
     <div class="glass-panel" style="max-width: 1200px; width: 100%; margin: 2rem auto; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.2);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem;">
             <div>
-                <h3 style="font-size: 1.4rem; font-weight: 900; color: #1e293b;"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--crm-purple);"></i> Adicionar 3 Cotações</h3>
-                <p style="color: #64748b; font-size: 0.9rem; font-weight: 500;">Item: <strong style="color: var(--crm-purple);"><?= htmlspecialchars($budget['product_name']) ?></strong> | Quantidade: <strong><?= $budget['quantity'] ?></strong></p>
+                <h3 style="font-size: 1.4rem; font-weight: 900; color: var(--text-main);"><i class="fa-solid fa-file-invoice-dollar" style="color: var(--crm-purple);"></i> Adicionar 3 Cotações</h3>
+                <p style="color: var(--text-soft); font-size: 0.9rem; font-weight: 500;">Item: <strong style="color: var(--crm-purple);"><?= htmlspecialchars($budget['product_name']) ?></strong> | Quantidade: <strong><?= $budget['quantity'] ?></strong></p>
             </div>
-            <button onclick="window.location.href='?page=orcamentos'" style="background: #f1f5f9; border: none; cursor: pointer; font-size: 1.25rem; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b;">&times;</button>
+            <button onclick="window.location.href='?page=orcamentos'" style="background: #f1f5f9; border: none; cursor: pointer; font-size: 1.25rem; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-soft);">&times;</button>
         </div>
         
         <form method="POST" enctype="multipart/form-data">
@@ -553,7 +553,7 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
                 <div style="background: #fdfdfd; padding: 1.75rem; border-radius: 1.25rem; border: 2px solid #e2e8f0; transition: all 0.3s;" onmouseover="this.style.borderColor='var(--crm-purple)'" onmouseout="this.style.borderColor='#e2e8f0'">
                     <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
                         <span style="width: 30px; height: 30px; background: var(--crm-purple); color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 900; font-size: 0.85rem;"><?= $i ?></span>
-                        <h4 style="font-weight: 900; color: #1e293b;">Fornecedor <?= $i ?></h4>
+                        <h4 style="font-weight: 900; color: var(--text-main);">Fornecedor <?= $i ?></h4>
                     </div>
                     
                     <div class="form-group">
@@ -566,7 +566,7 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
                         <input type="number" name="delivery_price_<?= $i ?>" id="delivery_<?= $i ?>" class="form-input" step="0.01" required onchange="calcTotal(<?= $i ?>)" style="border-radius: 0.75rem;">
                     </div>
                     
-                    <div style="background: #f8fafc; padding: 1.25rem; border-radius: 1rem; border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
+                    <div style="background: var(--bg-main); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
                         <label class="form-label" style="margin-bottom: 0.25rem; font-size: 0.75rem; color: #94a3b8;">Total do Fornecedor</label>
                         <input type="text" id="total_<?= $i ?>" class="form-input" readonly style="border: none; background: transparent; padding: 0; font-weight: 900; color: var(--crm-purple); font-size: 1.6rem;" value="R$ 0,00">
                     </div>
@@ -610,13 +610,13 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <div>
                 <h3 style="font-size: 1.25rem; font-weight: 900;">Cotações - <?= htmlspecialchars($budget['product_name']) ?></h3>
-                <p style="color: #64748b; font-size: 0.875rem;">Solicitante: <?= htmlspecialchars($budget['requester_name']) ?> | Qtd: <?= $budget['quantity'] ?></p>
+                <p style="color: var(--text-soft); font-size: 0.875rem;">Solicitante: <?= htmlspecialchars($budget['requester_name']) ?> | Qtd: <?= $budget['quantity'] ?></p>
             </div>
             <div style="text-align: right; display: flex; align-items: center; gap: 1rem;">
                 <span class="badge badge-<?= $budget['status'] == 'Pendente' ? 'warning' : ($budget['status'] == 'Aprovado' ? 'success' : 'danger') ?>">
                     <?= strtoupper($budget['status']) ?>
                 </span>
-                <button onclick="window.location.href='?page=orcamentos'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem; color: #64748b;">&times;</button>
+                <button onclick="window.location.href='?page=orcamentos'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem; color: var(--text-soft);">&times;</button>
             </div>
         </div>
 
@@ -629,18 +629,18 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
             </h4>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
                 <div>
-                    <label style="font-size: 0.75rem; color: #64748b; display: block;">Responsável:</label>
+                    <label style="font-size: 0.75rem; color: var(--text-soft); display: block;">Responsável:</label>
                     <span style="font-weight: 900;"><?= htmlspecialchars($budget['approver_name']) ?></span>
                 </div>
                 <div>
-                    <label style="font-size: 0.75rem; color: #64748b; display: block;">Data e Horário:</label>
+                    <label style="font-size: 0.75rem; color: var(--text-soft); display: block;">Data e Horário:</label>
                     <span style="font-weight: 700;">
                         <?= $budget['status'] == 'Aprovado' ? date('d/m/Y H:i', strtotime($budget['approved_at'])) : date('d/m/Y H:i', strtotime($budget['rejected_at'])) ?>
                     </span>
                 </div>
                 <?php if ($budget['status'] == 'Rejeitado'): ?>
                 <div>
-                    <label style="font-size: 0.75rem; color: #64748b; display: block;">Motivo:</label>
+                    <label style="font-size: 0.75rem; color: var(--text-soft); display: block;">Motivo:</label>
                     <span style="font-weight: 900; color: #EF4444;"><?= htmlspecialchars($budget['rejection_reason']) ?></span>
                 </div>
                 <?php endif; ?>
@@ -658,9 +658,9 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
             <div style="display: flex; align-items: center; gap: 1.5rem;">
                 <img src="<?= $budget['wishlist_approver_avatar'] ?: 'assets/images/default-avatar.png' ?>" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <div>
-                    <p style="margin: 0; font-size: 0.875rem; color: #64748b;">Desejo aprovado por:</p>
+                    <p style="margin: 0; font-size: 0.875rem; color: var(--text-soft);">Desejo aprovado por:</p>
                     <p style="margin: 0; font-weight: 900; color: var(--crm-black);"><?= htmlspecialchars($budget['wishlist_approver_name']) ?></p>
-                    <p style="margin: 0; font-size: 0.75rem; color: #64748b;"><?= date('d/m/Y H:i', strtotime($budget['wishlist_approved_at'])) ?></p>
+                    <p style="margin: 0; font-size: 0.75rem; color: var(--text-soft);"><?= date('d/m/Y H:i', strtotime($budget['wishlist_approved_at'])) ?></p>
                 </div>
             </div>
         </div>
@@ -680,11 +680,11 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
                 <?php endif; ?>
                 
                 <div style="margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; color: #64748b;">Valor Produto:</span>
+                    <span style="font-size: 0.75rem; color: var(--text-soft);">Valor Produto:</span>
                     <span style="font-weight: 700; float: right;">R$ <?= number_format($q['price'], 2, ',', '.') ?></span>
                 </div>
                 <div style="margin-bottom: 0.5rem;">
-                    <span style="font-size: 0.75rem; color: #64748b;">Frete:</span>
+                    <span style="font-size: 0.75rem; color: var(--text-soft);">Frete:</span>
                     <span style="font-weight: 700; float: right;">R$ <?= number_format($q['shipping_cost'], 2, ',', '.') ?></span>
                 </div>
                 <div style="border-top: 2px solid var(--crm-purple); padding-top: 0.5rem; margin-top: 0.5rem;">
@@ -816,7 +816,7 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
                     <input type="text" name="items[0][name]" class="form-input" placeholder="Ex: Tonner impressora" required>
                     <input type="text" name="items[0][type]" class="form-input" placeholder="Ex: Preto CF 450">
                     <input type="number" name="items[0][qty]" class="form-input" value="1" min="1" required>
-                    <button type="button" class="btn-icon" style="background: #e2e8f0; color: #64748b; cursor: not-allowed;" disabled><i class="fa-solid fa-trash"></i></button>
+                    <button type="button" class="btn-icon" style="background: #e2e8f0; color: var(--text-soft); cursor: not-allowed;" disabled><i class="fa-solid fa-trash"></i></button>
                 </div>
             </div>
 
@@ -838,7 +838,7 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <div>
                 <h3 id="detTitle" style="font-size: 1.5rem; font-weight: 900;">#000000</h3>
-                <p id="detSector" style="color: #64748b;"></p>
+                <p id="detSector" style="color: var(--text-soft);"></p>
             </div>
             <button onclick="document.getElementById('wishlistDetailsModal').style.display='none'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
         </div>
@@ -848,7 +848,7 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
                 <img id="detApproverPhoto" src="" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <div>
                     <h4 id="detStatusText" style="font-weight: 900; font-size: 1.1rem; margin: 0;"></h4>
-                    <p style="margin: 0; color: #64748b; font-size: 0.9rem;">Processado por <strong id="detApproverName"></strong> em <span id="detApproveTime"></span></p>
+                    <p style="margin: 0; color: var(--text-soft); font-size: 0.9rem;">Processado por <strong id="detApproverName"></strong> em <span id="detApproveTime"></span></p>
                     <p id="detRejectionReason" style="margin-top: 0.5rem; color: #ef4444; font-weight: 700; display: none;"></p>
                 </div>
              </div>
@@ -1078,11 +1078,11 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
                     <h4 style="font-weight: 900; color: #10B981; text-align: center; margin-bottom: 1rem;">ORÇAMENTO APROVADO</h4>
                     <div style="background: white; padding: 1rem; border-radius: 0.5rem;">
                         <div style="margin-bottom: 0.75rem;">
-                            <span style="font-size: 0.75rem; color: #64748b; display: block;">Aprovado por:</span>
+                            <span style="font-size: 0.75rem; color: var(--text-soft); display: block;">Aprovado por:</span>
                             <span style="font-weight: 900; color: var(--crm-black);">${budget.approver_name || 'N/A'}</span>
                         </div>
                         <div>
-                            <span style="font-size: 0.75rem; color: #64748b; display: block;">Data e Hora:</span>
+                            <span style="font-size: 0.75rem; color: var(--text-soft); display: block;">Data e Hora:</span>
                             <span style="font-weight: 900; color: var(--crm-black);">${budget.approved_at ? new Date(budget.approved_at).toLocaleString('pt-BR') : 'N/A'}</span>
                         </div>
                     </div>
@@ -1097,15 +1097,15 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
                     <h4 style="font-weight: 900; color: #EF4444; text-align: center; margin-bottom: 1rem;">ORÇAMENTO REJEITADO</h4>
                     <div style="background: white; padding: 1rem; border-radius: 0.5rem;">
                         <div style="margin-bottom: 0.75rem;">
-                            <span style="font-size: 0.75rem; color: #64748b; display: block;">Rejeitado por:</span>
+                            <span style="font-size: 0.75rem; color: var(--text-soft); display: block;">Rejeitado por:</span>
                             <span style="font-weight: 900; color: var(--crm-black);">${budget.approver_name || 'N/A'}</span>
                         </div>
                         <div style="margin-bottom: 0.75rem;">
-                            <span style="font-size: 0.75rem; color: #64748b; display: block;">Data e Hora:</span>
+                            <span style="font-size: 0.75rem; color: var(--text-soft); display: block;">Data e Hora:</span>
                             <span style="font-weight: 900; color: var(--crm-black);">${budget.rejected_at ? new Date(budget.rejected_at).toLocaleString('pt-BR') : 'N/A'}</span>
                         </div>
                         <div>
-                            <span style="font-size: 0.75rem; color: #64748b; display: block;">Motivo:</span>
+                            <span style="font-size: 0.75rem; color: var(--text-soft); display: block;">Motivo:</span>
                             <span style="font-weight: 900; color: #EF4444;">${budget.rejection_reason || 'N/A'}</span>
                         </div>
                     </div>

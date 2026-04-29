@@ -421,7 +421,7 @@ $all_announcements = $pdo->query("
             userNotes.forEach(n => {
                 const dt = new Date(n.created_at).toLocaleString('pt-BR');
                 html += `
-                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:0.75rem; padding:1.25rem; margin-bottom:1rem; position:relative;">
+                <div style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius:0.75rem; padding:1.25rem; margin-bottom:1rem; position:relative;">
                     <form method="POST" style="position:absolute; top:1rem; right:1rem;" onsubmit="return confirm('Excluir esta anotação?');">
                         <input type="hidden" name="action" value="delete_note">
                         <input type="hidden" name="note_id" value="${n.id}">
@@ -485,7 +485,7 @@ $all_announcements = $pdo->query("
 .rh-btn-notes:hover { background: #475569; color: #fff; }
 
 .table-modal { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-.table-modal th { background: #f8fafc; padding: 0.75rem; text-align: left; font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+.table-modal th { background: #f8fafc; padding: 0.75rem; text-align: left; font-size: 0.75rem; color: var(--text-soft); font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
 .table-modal td { padding: 1rem 0.75rem; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; }
 
 .user-grid-info { 
@@ -532,7 +532,7 @@ $all_announcements = $pdo->query("
     background: none;
     font-weight: 700;
     font-size: 0.875rem;
-    color: #64748b;
+    color: var(--text-soft);
     cursor: pointer;
     position: relative;
     transition: all 0.2s;
@@ -651,7 +651,7 @@ $all_announcements = $pdo->query("
                             <span style="font-size: 0.65rem; background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; text-transform: uppercase;">Não Faz Mais Parte da Equipe</span>
                         <?php endif; ?>
                     </h4>
-                    <p style="font-size: 0.75rem; color: #64748b; font-weight: 600;">
+                    <p style="font-size: 0.75rem; color: var(--text-soft); font-weight: 600;">
                         <i class="fa-regular fa-envelope"></i> <?= htmlspecialchars($usr['email']) ?>
                     </p>
                 </div>
@@ -759,14 +759,14 @@ $all_announcements = $pdo->query("
                         </div>
                     <?php endif; ?>
                     <div style="flex: 1;">
-                        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 700; display: flex; justify-content: space-between;">
+                        <div style="font-size: 0.75rem; color: var(--text-soft); margin-bottom: 0.5rem; font-weight: 700; display: flex; justify-content: space-between;">
                             <span>
                                 <i class="fa-solid fa-clock"></i> <?= date('d/m/Y H:i', strtotime($ann['created_at'])) ?> 
                                 &bull; <i class="fa-solid fa-user"></i> <?= htmlspecialchars($ann['created_by']) ?>
                             </span>
                             <span style="color: var(--crm-purple);"><i class="fa-solid fa-eye"></i> <?= $ann['views'] ?> visualizações</span>
                         </div>
-                        <div style="color: #1e293b; line-height: 1.6; white-space: pre-wrap; font-size: 0.95rem;"><?= htmlspecialchars($ann['message']) ?></div>
+                        <div style="color: var(--text-main); line-height: 1.6; white-space: pre-wrap; font-size: 0.95rem;"><?= htmlspecialchars($ann['message']) ?></div>
                     </div>
                 </div>
                 <div style="position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem;">
@@ -789,7 +789,7 @@ $all_announcements = $pdo->query("
     <div class="glass-panel" style="max-width: 600px; width: 100%;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--crm-black);">Editar Recado</h3>
-            <button onclick="document.getElementById('editAnnModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.5rem;">&times;</button>
+            <button onclick="document.getElementById('editAnnModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: var(--text-soft); font-size: 1.5rem;">&times;</button>
         </div>
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="action" value="edit_announcement">
@@ -821,7 +821,7 @@ $all_announcements = $pdo->query("
     <div class="glass-panel" style="max-width: 600px; width: 100%;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h3 id="c_modal_title" style="font-size: 1.25rem; font-weight: 900; color: var(--crm-black);">Dados Contratuais</h3>
-            <button onclick="document.getElementById('contractModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.5rem;">&times;</button>
+            <button onclick="document.getElementById('contractModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: var(--text-soft); font-size: 1.5rem;">&times;</button>
         </div>
         
         <form method="POST">
@@ -950,7 +950,7 @@ $all_announcements = $pdo->query("
     <div class="glass-panel" style="max-width: 800px; width: 100%; max-height:85vh; overflow-y:auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h3 id="v_modal_title" style="font-size: 1.25rem; font-weight: 900; color: var(--crm-black);">Gestão de Férias</h3>
-            <button onclick="document.getElementById('vacationModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.5rem;">&times;</button>
+            <button onclick="document.getElementById('vacationModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: var(--text-soft); font-size: 1.5rem;">&times;</button>
         </div>
         
         <!-- Formulário para Criar/Agendar Novas Férias -->

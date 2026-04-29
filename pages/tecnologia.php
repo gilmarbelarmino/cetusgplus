@@ -186,7 +186,7 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
 </div>
 
 <style>
-    .tab-btn { background: none; border: none; font-weight: 700; color: #64748b; cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.5rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem; }
+    .tab-btn { background: none; border: none; font-weight: 700; color: var(--text-soft); cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.5rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem; }
     .tab-btn i { font-size: 1rem; }
     .tab-btn.active { color: var(--crm-purple); background: rgba(91, 33, 182, 0.1); }
     .tech-content { display: none; }
@@ -201,7 +201,7 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
     .notes-pages { width: 280px; background: #fff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow-y: auto; height: 100%; }
     .notes-editor { flex: 1; display: flex; flex-direction: column; background: #fff; overflow: hidden; min-width: 0; min-height: 0; height: 100%; }
     
-    .notes-header { padding: 1rem; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 0.875rem; color: #64748b; display: flex; justify-content: space-between; align-items: center; }
+    .notes-header { padding: 1rem; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 0.875rem; color: var(--text-soft); display: flex; justify-content: space-between; align-items: center; }
     .notes-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
     
     .note-section-item { padding: 0.75rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 600; color: #475569; position: relative; }
@@ -212,11 +212,11 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
     .note-page-item { padding: 1rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; margin-bottom: 0.5rem; border: 1px solid transparent; }
     .note-page-item:hover { background: #f8fafc; border-color: #e2e8f0; }
     .note-page-item.active { background: #fff; border-color: #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-    .note-page-title { font-weight: 700; color: #1e293b; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .note-page-preview { font-size: 0.75rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .note-page-title { font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .note-page-preview { font-size: 0.75rem; color: var(--text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
     .editor-container { flex: 1; display: flex; flex-direction: column; padding: 2rem 3rem; overflow-y: auto; min-height: 0; height: 100%; }
-    .editor-title { border: none; font-size: 2.2rem; font-weight: 900; color: #1e293b; margin-bottom: 1.5rem; width: 100%; outline: none; background: transparent; flex-shrink: 0; }
+    .editor-title { border: none; font-size: 2.2rem; font-weight: 900; color: var(--text-main); margin-bottom: 1.5rem; width: 100%; outline: none; background: transparent; flex-shrink: 0; }
     .editor-title::placeholder { color: #cbd5e1; font-weight: 800; }
     .editor-content { border: none; flex: 1; display: flex; flex-direction: column; font-size: 1.05rem; line-height: 1.7; color: #334155; width: 100%; outline: none; min-height: 0; }
     
@@ -253,8 +253,8 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
     <div style="background: #fff; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
         <div style="display: flex; justify-content: space-between; margin-bottom: 2rem; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <div>
-                <h3 style="font-weight: 800; color: #1e293b; margin-bottom: 0.25rem;">Monitoramento Arrastão</h3>
-                <p style="font-size: 0.875rem; color: #64748b;">Gestão de câmeras e endereçamento IP da rede.</p>
+                <h3 style="font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Monitoramento Arrastão</h3>
+                <p style="font-size: 0.875rem; color: var(--text-soft);">Gestão de câmeras e endereçamento IP da rede.</p>
             </div>
             <div style="display: flex; gap: 1rem; flex: 1; max-width: 600px; justify-content: flex-end;">
                 <div style="flex: 1; max-width: 300px; position: relative;">
@@ -281,10 +281,10 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
                 <tbody>
                     <?php foreach ($cameras as $cam): ?>
                     <tr style="background: #fff; transition: all 0.2s;">
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: #1e293b;"><?= htmlspecialchars($cam['name']) ?></td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: var(--text-main);"><?= htmlspecialchars($cam['name']) ?></td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;"><span style="background: #e0f2fe; color: #0369a1; padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-weight: 700; font-family: monospace; font-size: 0.85rem;"><?= htmlspecialchars($cam['ip_address']) ?></span></td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; color: #64748b; font-size: 0.875rem;"><?= htmlspecialchars($cam['doc'] ?? '-') ?></td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;"><span style="font-weight: 800; color: #1e293b;"><?= $cam['quantity'] ?></span> <small style="color: #94a3b8;">un.</small></td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; color: var(--text-soft); font-size: 0.875rem;"><?= htmlspecialchars($cam['doc'] ?? '-') ?></td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;"><span style="font-weight: 800; color: var(--text-main);"><?= $cam['quantity'] ?></span> <small style="color: #94a3b8;">un.</small></td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; text-align:right;">
                             <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
                                 <button class="btn-icon" style="background: #f1f5f9; width: 32px; height: 32px;" onclick='openCameraModal(<?= json_encode($cam) ?>)' title="Editar"><i class="fa-solid fa-pen-to-square" style="font-size: 0.85rem;"></i></button>
@@ -311,8 +311,8 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
     <div style="background: #fff; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
         <div style="display: flex; justify-content: space-between; margin-bottom: 2rem; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <div>
-                <h3 style="font-weight: 800; color: #1e293b; margin-bottom: 0.25rem;">Acessos Remotos</h3>
-                <p style="font-size: 0.875rem; color: #64748b;">Credenciais e senhas de acesso às estações de trabalho.</p>
+                <h3 style="font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Acessos Remotos</h3>
+                <p style="font-size: 0.875rem; color: var(--text-soft);">Credenciais e senhas de acesso às estações de trabalho.</p>
             </div>
             <div style="display: flex; gap: 1rem; flex: 1; max-width: 600px; justify-content: flex-end;">
                 <div style="flex: 1; max-width: 300px; position: relative;">
@@ -349,15 +349,15 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
                                         <?= strtoupper(substr($rem['user_name'], 0, 1)) ?>
                                     </div>
                                 <?php endif; ?>
-                                <div style="font-weight: 700; color: #1e293b;"><?= htmlspecialchars($rem['user_name']) ?></div>
+                                <div style="font-weight: 700; color: var(--text-main);"><?= htmlspecialchars($rem['user_name']) ?></div>
                             </div>
                         </td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: #64748b;"><?= htmlspecialchars($rem['user_email']) ?></td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: var(--text-soft);"><?= htmlspecialchars($rem['user_email']) ?></td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
                             <div style="display:flex; align-items:center; gap:0.5rem;">
                                 <code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569; font-weight: 600;"><?= htmlspecialchars($rem['pc_password'] ?? '') ?></code>
                                 <?php if(!empty($rem['pc_password'])): ?>
-                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes($rem['pc_password'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
+                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes($rem['pc_password'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -365,7 +365,7 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
                             <div style="display:flex; align-items:center; gap:0.5rem;">
                                 <code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569; font-weight: 600;"><?= htmlspecialchars($rem['email_password'] ?? '') ?></code>
                                 <?php if(!empty($rem['email_password'])): ?>
-                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes($rem['email_password'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
+                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes($rem['email_password'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -373,7 +373,7 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
                             <div style="display:flex; align-items:center; gap:0.5rem; font-weight: 800; color: var(--crm-purple);">
                                 <span><?= htmlspecialchars($rem['pc_name'] ?? '') ?></span>
                                 <?php if(!empty($rem['pc_name'])): ?>
-                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes($rem['pc_name'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
+                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes($rem['pc_name'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -403,8 +403,8 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
     <div style="background: #fff; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
         <div style="display: flex; justify-content: space-between; margin-bottom: 2rem; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <div>
-                <h3 style="font-weight: 800; color: #1e293b; margin-bottom: 0.25rem;">Contas de E-mail</h3>
-                <p style="font-size: 0.875rem; color: #64748b;">Gestão de contas corporativas e provedores.</p>
+                <h3 style="font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Contas de E-mail</h3>
+                <p style="font-size: 0.875rem; color: var(--text-soft);">Gestão de contas corporativas e provedores.</p>
             </div>
             <div style="display: flex; gap: 1rem; flex: 1; max-width: 600px; justify-content: flex-end;">
                 <div style="flex: 1; max-width: 300px; position: relative;">
@@ -470,7 +470,7 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
     <div class="notes-layout">
         <!-- Seções (Abas Laterais) -->
         <div class="notes-sections">
-            <div class="notes-header" style="background: #f1f5f9; color: #1e293b; border-bottom: 2px solid #e2e8f0;">
+            <div class="notes-header" style="background: #f1f5f9; color: var(--text-main); border-bottom: 2px solid #e2e8f0;">
                 <span style="font-weight: 900; letter-spacing: 0.05em; font-size: 0.75rem;">SEÇÕES</span>
                 <button class="btn-icon" style="padding:0; min-width:auto; width:24px; height:24px; background: white; border: 1px solid #e2e8f0; border-radius: 6px;" onclick="openNoteSectionModal()" title="Nova Seção"><i class="fa-solid fa-plus" style="font-size: 0.7rem;"></i></button>
             </div>
@@ -495,8 +495,8 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
 
         <!-- Páginas (Lista de Notas) -->
         <div class="notes-pages">
-            <div class="notes-header" style="background: white; color: #1e293b; border-bottom: 1px solid #f1f5f9;">
-                <span style="font-weight: 900; letter-spacing: 0.05em; font-size: 0.75rem; color: #64748b;">PÁGINAS</span>
+            <div class="notes-header" style="background: white; color: var(--text-main); border-bottom: 1px solid #f1f5f9;">
+                <span style="font-weight: 900; letter-spacing: 0.05em; font-size: 0.75rem; color: var(--text-soft);">PÁGINAS</span>
                 <?php if ($active_section_id): ?>
                     <button class="btn-icon" style="padding:0; min-width:auto; width:24px; height:24px; border: 1px solid #e2e8f0; border-radius: 6px;" onclick="createNewNote()" title="Nova Página"><i class="fa-solid fa-plus" style="font-size: 0.7rem;"></i></button>
                 <?php endif; ?>
@@ -532,7 +532,7 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
                     <div class="notes-header" style="background: white; border-bottom: 1px solid #f1f5f9; padding: 0.75rem 1.5rem;">
                         <div style="display: flex; align-items: center; gap: 0.75rem;">
                             <div style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></div>
-                            <span style="font-weight: 800; font-size: 0.75rem; color: #1e293b;"><?= $active_note ? 'MODO EDIÇÃO' : 'RASCUNHO' ?></span>
+                            <span style="font-weight: 800; font-size: 0.75rem; color: var(--text-main);"><?= $active_note ? 'MODO EDIÇÃO' : 'RASCUNHO' ?></span>
                         </div>
                         <div style="display: flex; gap: 0.75rem; align-items: center;">
                             <div style="position: relative;">
@@ -616,7 +616,7 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
                     <div style="width: 120px; height: 120px; background: #fff; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; margin-bottom: 2rem;">
                         <i class="fa-solid fa-pen-nib" style="font-size: 3rem; color: var(--crm-purple); opacity: 0.4;"></i>
                     </div>
-                    <h3 style="font-weight: 900; color: #1e293b; font-size: 1.5rem; margin-bottom: 0.5rem;">Suas Notas</h3>
+                    <h3 style="font-weight: 900; color: var(--text-main); font-size: 1.5rem; margin-bottom: 0.5rem;">Suas Notas</h3>
                     <p style="max-width: 300px; line-height: 1.6;">Selecione uma seção à esquerda ou crie uma nova para começar a organizar suas ideias.</p>
                 </div>
             <?php endif; ?>
@@ -634,7 +634,7 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
     <div class="glass-panel" style="max-width: 400px; width: 100%; text-align: center;">
         <i class="fa-solid fa-shield-halved" style="font-size: 3rem; color: var(--crm-purple); margin-bottom: 1.5rem;"></i>
         <h3 style="font-size: 1.25rem; font-weight: 900; margin-bottom: 1rem;">Área Restrita</h3>
-        <p style="color: #64748b; margin-bottom: 1.5rem;">Insira a senha de acesso para esta aba:</p>
+        <p style="color: var(--text-soft); margin-bottom: 1.5rem;">Insira a senha de acesso para esta aba:</p>
         <div style="margin-bottom: 1.5rem;">
             <input type="password" id="unlockPass" class="form-input" style="text-align:center; font-size: 1.5rem; letter-spacing: 0.5rem;" placeholder="****">
         </div>

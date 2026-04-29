@@ -96,9 +96,59 @@
     --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.7);
 }
 
-/* Base Reset */
-* {
-    margin: 0;
+/* --- FORM ELEMENTS DARK MODE FIX --- */
+[data-theme="dark"] input, 
+[data-theme="dark"] select, 
+[data-theme="dark"] textarea,
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select {
+    background-color: #1E293B !important;
+    color: #FFFFFF !important;
+    border-color: #334155 !important;
+}
+
+[data-theme="dark"] option {
+    background-color: #1E293B !important;
+    color: #FFFFFF !important;
+}
+
+/* Fix for dynamic search results/dropdowns */
+[data-theme="dark"] .search-results,
+[data-theme="dark"] .dropdown-menu,
+[data-theme="dark"] .autocomplete-items,
+[data-theme="dark"] [id*="results"],
+[data-theme="dark"] [class*="results"] {
+    background-color: #1E293B !important;
+    color: #FFFFFF !important;
+    border: 1px solid #334155 !important;
+}
+
+[data-theme="dark"] .search-item:hover,
+[data-theme="dark"] .autocomplete-items div:hover {
+    background-color: #334155 !important;
+}
+
+[data-theme="dark"] ::placeholder {
+    color: #94A3B8 !important;
+    opacity: 1;
+}
+
+/* --- GLOBAL DARK MODE VISIBILITY FIX --- */
+[data-theme="dark"] *[style*="background: white"],
+[data-theme="dark"] *[style*="background:white"],
+[data-theme="dark"] *[style*="background: #fff"],
+[data-theme="dark"] *[style*="background:#fff"],
+[data-theme="dark"] *[style*="background: #ffffff"],
+[data-theme="dark"] *[style*="background:#ffffff"],
+[data-theme="dark"] *[style*="background: rgb(255, 255, 255)"],
+[data-theme="dark"] *[style*="background:#f8fafc"] {
+    background-color: var(--bg-card) !important;
+    color: var(--text-main) !important;
+}
+
+[data-theme="dark"] .chat-messages {
+    background: var(--bg-main) !important;
+}
     padding: 0;
     box-sizing: border-box;
 }

@@ -198,10 +198,10 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
         <tbody>
             <?php foreach ($tickets as $ticket): ?>
             <tr>
-                <td style="font-family: monospace; font-size: 0.75rem; color: #64748b;"><?= htmlspecialchars($ticket['id']) ?></td>
+                <td style="font-family: monospace; font-size: 0.75rem; color: var(--text-soft);"><?= htmlspecialchars($ticket['id']) ?></td>
                 <td style="font-weight: 700;">
                     <?php if ($ticket['asset_id']): ?>
-                        <i class="fa-solid fa-laptop-code" title="Equipamento Vinculado" style="color: #64748b; font-size: 0.75rem; margin-right: 0.5rem;"></i>
+                        <i class="fa-solid fa-laptop-code" title="Equipamento Vinculado" style="color: var(--text-soft); font-size: 0.75rem; margin-right: 0.5rem;"></i>
                     <?php endif; ?>
                     <span title="<?= htmlspecialchars($ticket['description']) ?>" style="cursor: help; border-bottom: 1px dotted #cbd5e1;">
                         <?= htmlspecialchars($ticket['title']) ?>
@@ -210,14 +210,14 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
                 <td>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <?php if ($ticket['requester_avatar']): ?>
-                            <img src="<?= htmlspecialchars($ticket['requester_avatar']) ?>" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;">
+                            <img src="<?= htmlspecialchars($ticket['requester_avatar']) ?>" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
                         <?php else: ?>
-                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #94a3b8; border: 1px solid #e2e8f0;">👤</div>
+                            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-main); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-main); border: 1px solid var(--border-color);">👤</div>
                         <?php endif; ?>
-                        <span style="font-weight: 600; color: #1e293b;"><?= htmlspecialchars($ticket['requester_name']) ?></span>
+                        <span style="font-weight: 600; color: var(--text-main);"><?= htmlspecialchars($ticket['requester_name']) ?></span>
                     </div>
                 </td>
-                <td style="font-size: 0.75rem; color: #64748b;"><?= htmlspecialchars($ticket['unit_name']) ?></td>
+                <td style="font-size: 0.75rem; color: var(--text-soft);"><?= htmlspecialchars($ticket['unit_name']) ?></td>
                 <td>
                     <span class="badge badge-<?= 
                         $ticket['priority'] == 'Crítica' ? 'danger' : 
@@ -279,7 +279,7 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
                                     <?php endif; ?>
                                     <div style="display: flex; flex-direction: column;">
                                         <span style="font-size: 0.70rem; font-weight: 700; color: #334155; line-height: 1.2; text-wrap: nowrap;"><?= htmlspecialchars(explode(' ', $ticket['closed_by'])[0]) ?></span>
-                                        <span style="font-size: 0.65rem; color: #64748b; line-height: 1.2;"><?= $ticket['closed_at'] ? date('d/m/y H:i', strtotime($ticket['closed_at'])) : '' ?></span>
+                                        <span style="font-size: 0.65rem; color: var(--text-soft); line-height: 1.2;"><?= $ticket['closed_at'] ? date('d/m/y H:i', strtotime($ticket['closed_at'])) : '' ?></span>
                                     </div>
                                 </div>
                                 <?php if ($slaStr): ?>
@@ -291,7 +291,7 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
                             </div>
                         <?php endif; ?>
                     <?php else: ?>
-                        <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; padding: 0.5rem 0;">    
+                        <div style="font-size: 0.75rem; color: var(--text-soft); font-weight: 600; padding: 0.5rem 0;">    
                             <div>Criado em</div>
                             <div style="color: #334155;"><?= date('d/m/Y H:i', strtotime($ticket['created_at'])) ?></div>
                         </div>
@@ -348,8 +348,8 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
             <input type="hidden" name="action" value="add_ticket">
             <div class="form-group" style="position: relative;">
                 <label class="form-label">Solicitante *</label>
-                <i class="fa-solid fa-user" style="position: absolute; left: 1rem; top: 2.35rem; font-size: 0.8rem; color: #64748b; z-index: 10;"></i>
-                <input type="text" id="requester_autocomplete" placeholder="Digite o nome do solicitante..." class="form-input" style="padding-left: 2.5rem; background: #fff; border-color: #cbd5e1;" autocomplete="off" required>
+                <i class="fa-solid fa-user" style="position: absolute; left: 1rem; top: 2.35rem; font-size: 0.8rem; color: var(--text-soft); z-index: 10;"></i>
+                <input type="text" id="requester_autocomplete" placeholder="Digite o nome do solicitante..." class="form-input" style="padding-left: 2.5rem; background: var(--bg-main); border-color: var(--border-color); color: var(--text-main);" autocomplete="off" required>
                 <input type="hidden" name="requester_id" id="requester_id" required>
                 <div id="requester_suggestions" class="autocomplete-suggestions glass-panel" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 9999; margin-top: 0.25rem; padding: 0; max-height: 250px; overflow-y: auto; border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);"></div>
             </div>
@@ -368,8 +368,8 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
             </div>
             <div class="form-group" style="position: relative;">
                 <label class="form-label">Produto Vinculado</label>
-                <i class="fa-solid fa-laptop-code" style="position: absolute; left: 1rem; top: 2.35rem; font-size: 0.8rem; color: #64748b; z-index: 10;"></i>
-                <input type="text" id="asset_autocomplete" placeholder="Digite o nome ou número de patrimônio..." class="form-input" style="padding-left: 2.5rem; background: #fff; border-color: #cbd5e1;" autocomplete="off">
+                <i class="fa-solid fa-laptop-code" style="position: absolute; left: 1rem; top: 2.35rem; font-size: 0.8rem; color: var(--text-soft); z-index: 10;"></i>
+                <input type="text" id="asset_autocomplete" placeholder="Digite o nome ou número de patrimônio..." class="form-input" style="padding-left: 2.5rem; background: var(--bg-main); border-color: var(--border-color); color: var(--text-main);" autocomplete="off">
                 <input type="hidden" name="asset_id" id="asset_id">
                 <div id="asset_suggestions" class="autocomplete-suggestions glass-panel" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 9999; margin-top: 0.25rem; padding: 0; max-height: 250px; overflow-y: auto; border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);"></div>
             </div>
@@ -411,8 +411,8 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
             
             <div class="form-group" style="position: relative;">
                 <label class="form-label">Produto Vinculado</label>
-                <i class="fa-solid fa-laptop-code" style="position: absolute; left: 1rem; top: 2.35rem; font-size: 0.8rem; color: #64748b; z-index: 10;"></i>
-                <input type="text" id="edit_asset_autocomplete" placeholder="Digite o nome ou número de patrimônio..." class="form-input" style="padding-left: 2.5rem; background: #fff; border-color: #cbd5e1;" autocomplete="off">
+                <i class="fa-solid fa-laptop-code" style="position: absolute; left: 1rem; top: 2.35rem; font-size: 0.8rem; color: var(--text-soft); z-index: 10;"></i>
+                <input type="text" id="edit_asset_autocomplete" placeholder="Digite o nome ou número de patrimônio..." class="form-input" style="padding-left: 2.5rem; background: var(--bg-main); border-color: var(--border-color); color: var(--text-main);" autocomplete="off">
                 <input type="hidden" name="asset_id" id="edit_asset_id">
                 <div id="edit_asset_suggestions" class="autocomplete-suggestions glass-panel" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 9999; margin-top: 0.25rem; padding: 0; max-height: 250px; overflow-y: auto; border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);"></div>
             </div>
@@ -454,7 +454,7 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
                 <i class="fa-solid fa-headset" style="font-size: 1.5rem; color: var(--crm-purple);"></i>
             </div>
             <h3 style="font-size: 1.25rem; font-weight: 900; margin-bottom: 0.5rem;">Finalização de Chamado</h3>
-            <p id="closeTicketTitle" style="color: #64748b; font-size: 0.875rem; font-weight: 600;"></p>
+            <p id="closeTicketTitle" style="color: var(--text-soft); font-size: 0.875rem; font-weight: 600;"></p>
         </div>
 
         <form method="POST" id="closeTicketForm">
@@ -464,7 +464,7 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
 
             <div class="form-group" style="position: relative; margin-bottom: 1.5rem; text-align: left;">
                 <label class="form-label" style="display: flex; gap: 0.5rem; align-items: center;"><i class="fa-solid fa-user-gear" style="color: var(--crm-purple);"></i> Técnico Responsável</label>
-                <input type="text" id="tech_autocomplete" name="technician_name" placeholder="Buscar quem executou/resolveu..." class="form-input" style="background: #fff; border-color: #cbd5e1;" autocomplete="off">
+                <input type="text" id="tech_autocomplete" name="technician_name" placeholder="Buscar quem executou/resolveu..." class="form-input" style="background: var(--bg-main); border-color: var(--border-color); color: var(--text-main);" autocomplete="off">
                 <div id="tech_suggestions" class="autocomplete-suggestions glass-panel" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 9999; margin-top: 0.25rem; padding: 0; max-height: 200px; overflow-y: auto; border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);"></div>
             </div>
 
@@ -573,7 +573,7 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
             const filtered = usersData.filter(u => u.name.toLowerCase().includes(val)).slice(0, 10);
             suggTech.innerHTML = '';
             if (filtered.length === 0) {
-                suggTech.innerHTML = '<div style="padding: 0.75rem 1rem; color: #64748b; font-size: 0.85rem; text-align: center;">Nenhum usuário encontrado</div>';
+                suggTech.innerHTML = '<div style="padding: 0.75rem 1rem; color: var(--text-soft); font-size: 0.85rem; text-align: center;">Nenhum usuário encontrado</div>';
                 suggTech.style.display = 'block';
                 return;
             }
@@ -621,7 +621,7 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
         function renderSuggestions(filteredData) {
             suggestionsElement.innerHTML = '';
             if (filteredData.length === 0) {
-                suggestionsElement.innerHTML = '<div style="padding: 0.75rem 1rem; color: #64748b; font-size: 0.85rem; text-align: center;">Nenhum resultado encontrado</div>';
+                suggestionsElement.innerHTML = '<div style="padding: 0.75rem 1rem; color: var(--text-soft); font-size: 0.85rem; text-align: center;">Nenhum resultado encontrado</div>';
                 suggestionsElement.style.display = 'block';
                 return;
             }
@@ -632,9 +632,9 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
                 
                 let displayName = item[displayField];
                 
-                let html = `<div style="font-weight: 700; color: #0F172A;">${displayName}</div>`;
+                let html = `<div style="font-weight: 700; color: var(--text-main);">${displayName}</div>`;
                 if (subtitleField && item[subtitleField]) {
-                    html += `<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">${subtitleField === 'patrimony_id' ? 'Patrimônio: ' : ''}${item[subtitleField]}</div>`;
+                    html += `<div style="font-size: 0.75rem; color: var(--text-soft); margin-top: 0.15rem;">${subtitleField === 'patrimony_id' ? 'Patrimônio: ' : ''}${item[subtitleField]}</div>`;
                 }
                 div.innerHTML = html;
 
