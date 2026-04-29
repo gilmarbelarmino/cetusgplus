@@ -10,9 +10,9 @@ if ($isLocal) {
 } else {
     // CONFIGURAÇÕES DA HOSTINGER (Ativadas automaticamente na nuvem)
     define('DB_HOST', 'localhost');
-    define('DB_NAME', 'u123_cetusg');     // Nome do banco na Hostinger
-    define('DB_USER', 'cetusgbelo');      // Usuário na Hostinger
-    define('DB_PASS', 'Profgilbelo@83');  // Senha na Hostinger
+    define('DB_NAME', 'u339905928_u123_cetusg');     // Nome COMPLETO do banco
+    define('DB_USER', 'u339905928_cetusgbelo');      // Usuário COMPLETO
+    define('DB_PASS', 'Profgilbelo@83');             // Senha permanece a mesma
 }
 
 // Forçar o caminho do cookie de sessão para ser compartilhado entre a raiz e a pasta public
