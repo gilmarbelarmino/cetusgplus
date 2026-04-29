@@ -1,3 +1,4 @@
+<?php
 // Detecção Inteligente de Ambiente (Local vs Produção)
 $isLocal = in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', '192.168.1.100']); // Adicione seu IP local se necessário
 
@@ -8,7 +9,7 @@ if ($isLocal) {
     define('DB_PASS', '');
 } else {
     // CONFIGURAÇÕES DA HOSTINGER (Ativadas automaticamente na nuvem)
-    define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+    define('DB_HOST', 'localhost');
     define('DB_NAME', 'u123_cetusg');     // Nome do banco na Hostinger
     define('DB_USER', 'cetusgbelo');      // Usuário na Hostinger
     define('DB_PASS', 'Profgilbelo@83');  // Senha na Hostinger
@@ -54,18 +55,10 @@ try {
 
 // Funções Auxiliares Globais
 if (!function_exists('getUserMenus')) {
-    /**
-     * Retorna os menus permitidos para um usuário.
-     * Suporta chamadas: 
-     *  - getUserMenus($userArray)
-     *  - getUserMenus($pdo, $userId) 
-     */
     function getUserMenus($user, $user_id = null) {
         global $pdo;
-        
         $target_pdo = $pdo;
         $target_user_id = null;
-
         if ($user instanceof PDO && $user_id !== null) {
             $target_pdo = $user;
             $target_user_id = $user_id;
@@ -74,9 +67,7 @@ if (!function_exists('getUserMenus')) {
         } elseif (is_string($user)) {
             $target_user_id = $user;
         }
-
         if (!$target_user_id) return [];
-
         try {
             $stmt = $target_pdo->prepare("SELECT menu FROM user_menus WHERE user_id = ?");
             $stmt->execute([$target_user_id]);
@@ -89,13 +80,12 @@ if (!function_exists('triggerSocketUpdate')) {
     function triggerSocketUpdate($event, $data = []) {
         $url = 'http://localhost:3001/notify';
         $payload = json_encode(['event' => $event, 'data' => $data]);
-        
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 2); // Não travar o PHP se o socket cair
+        curl_setopt($ch, CURLOPT_TIMEOUT, 2); 
         curl_exec($ch);
         curl_close($ch);
     }
