@@ -1,7 +1,4 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 // Detecção Inteligente de Ambiente (Local vs Produção)
 $isLocal = in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', '192.168.1.100']); // Adicione seu IP local se necessário
 
