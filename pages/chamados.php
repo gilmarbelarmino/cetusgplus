@@ -339,10 +339,10 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
 </div>
 
 <div id="ticketModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
-    <div class="glass-panel" style="max-width: 600px; width: 100%;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 900;">Novo Chamado</h3>
-            <button onclick="document.getElementById('ticketModal').style.display='none'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
+    <div class="glass-panel" style="max-width: 650px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; position: sticky; top: 0; background: inherit; z-index: 11; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+            <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--text-main);">Novo Chamado</h3>
+            <button onclick="document.getElementById('ticketModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: var(--text-soft); font-size: 1.5rem;">&times;</button>
         </div>
         <form method="POST">
             <input type="hidden" name="action" value="add_ticket">
@@ -400,10 +400,10 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
 
 <!-- Modal de Edição de Chamado -->
 <div id="editTicketModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
-    <div class="glass-panel" style="max-width: 600px; width: 100%;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 900;">Editar Chamado</h3>
-            <button onclick="document.getElementById('editTicketModal').style.display='none'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
+    <div class="glass-panel" style="max-width: 650px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; position: sticky; top: 0; background: inherit; z-index: 11; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+            <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--text-main);">Editar Chamado</h3>
+            <button onclick="document.getElementById('editTicketModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: var(--text-soft); font-size: 1.5rem;">&times;</button>
         </div>
         <form method="POST">
             <input type="hidden" name="action" value="edit_ticket">
@@ -448,12 +448,12 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
 <!-- Modal de Resolução de Chamado -->
 
 <div id="closeTicketModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 2000; align-items: center; justify-content: center; padding: 2rem;">
-    <div class="glass-panel" style="max-width: 450px; width: 100%; border-top: 4px solid var(--crm-purple);">
+    <div class="glass-panel" style="max-width: 450px; width: 100%; border-top: 4px solid var(--crm-purple); max-height: 90vh; overflow-y: auto;">
         <div style="text-align: center; margin-bottom: 2rem;">
             <div style="width: 60px; height: 60px; background: rgba(91, 33, 182, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
                 <i class="fa-solid fa-headset" style="font-size: 1.5rem; color: var(--crm-purple);"></i>
             </div>
-            <h3 style="font-size: 1.25rem; font-weight: 900; margin-bottom: 0.5rem;">Finalização de Chamado</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 900; margin-bottom: 0.5rem; color: var(--text-main);">Finalização de Chamado</h3>
             <p id="closeTicketTitle" style="color: var(--text-soft); font-size: 0.875rem; font-weight: 600;"></p>
         </div>
 
@@ -494,13 +494,13 @@ $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")
 
 <!-- ─── Modal de Pendência de Chamado ─── -->
 <div id="pendenciarModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:2000;align-items:center;justify-content:center;padding:2rem;">
-    <div class="glass-panel" style="max-width:450px;width:100%;border-top:4px solid #F59E0B;">
+    <div class="glass-panel" style="max-width:450px;width:100%;border-top:4px solid #F59E0B; max-height: 90vh; overflow-y: auto;">
         <div style="text-align:center;margin-bottom:1.5rem;">
             <div style="width:56px;height:56px;background:rgba(245,158,11,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
                 <i class="fa-solid fa-clock" style="font-size:1.4rem;color:#F59E0B;"></i>
             </div>
-            <h3 style="font-size:1.15rem;font-weight:900;color:#1e293b;margin-bottom:0.25rem;">Pendenciar Chamado</h3>
-            <p id="pendenciarTicketTitle" style="color:#64748b;font-size:0.85rem;font-weight:600;"></p>
+            <h3 style="font-size:1.15rem;font-weight:900;color:var(--text-main);margin-bottom:0.25rem;">Pendenciar Chamado</h3>
+            <p id="pendenciarTicketTitle" style="color:var(--text-soft);font-size:0.85rem;font-weight:600;"></p>
             <p style="color:#92400e;font-size:0.78rem;background:#FEF3C7;padding:0.5rem 1rem;border-radius:0.5rem;margin-top:0.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> O <strong>SLA será pausado</strong> até que o chamado seja reativado.</p>
         </div>
         <form method="POST">
