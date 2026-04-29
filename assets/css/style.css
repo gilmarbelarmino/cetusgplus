@@ -81,19 +81,35 @@
     --bg-topbar: #0F172A;
     
     --text-main: #FFFFFF; 
-    --text-soft: #F1F5F9; 
+    --text-soft: #F8FAFC; 
     --text-muted: #CBD5E1; 
     
     --border-color: #1E293B;
     --border-soft: #0F172A;
     
-    --brand-primary: #F59E0B; 
-    --brand-primary-soft: rgba(245, 158, 11, 0.15);
+    --brand-primary: #FBBF24; 
+    --brand-primary-soft: rgba(251, 191, 36, 0.15);
     --brand-secondary: #D97706;
 
     --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.5);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.6);
     --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] h1, 
+[data-theme="dark"] h2, 
+[data-theme="dark"] h3, 
+[data-theme="dark"] h4, 
+[data-theme="dark"] h5, 
+[data-theme="dark"] h6,
+[data-theme="dark"] b,
+[data-theme="dark"] strong {
+    color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .sidebar-item:hover,
+[data-theme="dark"] .sidebar-active {
+    color: #FBBF24 !important;
 }
 
 /* --- FORM ELEMENTS DARK MODE FIX --- */
@@ -154,7 +170,7 @@
 }
 
 body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: Arial, sans-serif;
     background-color: var(--bg-main);
     color: var(--text-main);
     overflow-x: hidden;
@@ -162,8 +178,8 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4, .logo {
-    font-family: 'Outfit', sans-serif;
+h1, h2, h3, h4, h5, h6, .logo {
+    font-family: Arial, sans-serif;
 }
 
 /* Layout Containers */
