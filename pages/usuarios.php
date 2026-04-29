@@ -168,9 +168,9 @@ try { $history_tickets = $pdo->query("SELECT t.*, u.name as unit_name FROM ticke
             let html = '<div style="display: grid; gap: 0.75rem;">';
             userLoans.forEach(l => {
                 const statusColor = l.status === 'Ativo' ? '#FBBF24' : '#10B981';
-                html += `<div style="padding:1rem; border-radius:0.75rem; border-left: 4px solid ${statusColor}; background:rgba(0,0,0,0.02);">
-                    <div style="font-weight:900; color:#1e293b;">${l.asset_full_name || 'Item'}</div>
-                    <div style="font-size:0.75rem; color:#64748b;">Data: ${l.loan_date} | Status: ${l.status}</div>
+                html += `<div style="padding:1rem; border-radius:0.75rem; border-left: 4px solid ${statusColor}; background:var(--bg-main); border: 1px solid var(--border-color); margin-bottom: 0.5rem;">
+                    <div style="font-weight:900; color:var(--text-main);">${l.asset_full_name || 'Item'}</div>
+                    <div style="font-size:0.75rem; color:var(--text-soft);">Data: ${l.loan_date} | Status: ${l.status}</div>
                 </div>`;
             });
             html += '</div>';
@@ -191,9 +191,9 @@ try { $history_tickets = $pdo->query("SELECT t.*, u.name as unit_name FROM ticke
             let html = '<div style="display: grid; gap: 0.75rem;">';
             userTickets.forEach(t => {
                 const sc = t.status === 'Concluído' ? '#10B981' : '#3B82F6';
-                html += `<div style="padding:1rem; border-radius:0.75rem; border-left: 4px solid ${sc}; background:rgba(0,0,0,0.02);">
-                    <div style="font-weight:900; color:#1e293b;">${t.title}</div>
-                    <div style="font-size:0.75rem; color:#64748b;">Prioridade: ${t.priority} | Status: ${t.status}</div>
+                html += `<div style="padding:1rem; border-radius:0.75rem; border-left: 4px solid ${sc}; background:var(--bg-main); border: 1px solid var(--border-color); margin-bottom: 0.5rem;">
+                    <div style="font-weight:900; color:var(--text-main);">${t.title}</div>
+                    <div style="font-size:0.75rem; color:var(--text-soft);">Prioridade: ${t.priority} | Status: ${t.status}</div>
                 </div>`;
             });
             html += '</div>';
@@ -523,7 +523,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             
             <div class="user-card-content">
                 <div>
-                    <h4 style="font-weight: 900; color: var(--crm-black); font-size: 1.125rem;">
+                    <h4 style="font-weight: 900; color: var(--text-main); font-size: 1.125rem;">
                         <?= htmlspecialchars($usr['name'] ?? '') ?>
                     </h4>
                     <p style="font-size: 0.75rem; color: #64748b; font-weight: 600;">
@@ -598,7 +598,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <div id="formModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
     <div class="glass-panel" style="max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--crm-black);">Cadastrar Novo Usuário</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--text-main);">Cadastrar Novo Usuário</h3>
             <button onclick="document.getElementById('formModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.5rem;">&times;</button>
         </div>
         
@@ -736,7 +736,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <div id="editModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
     <div class="glass-panel" style="max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--crm-black);">Editar Usuário</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--text-main);">Editar Usuário</h3>
             <button onclick="document.getElementById('editModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.5rem;">&times;</button>
         </div>
         
@@ -863,7 +863,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <div style="width: 64px; height: 64px; background: rgba(239,68,68,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
                 <i class="fa-solid fa-trash" style="color: #ef4444; font-size: 1.5rem;"></i>
             </div>
-            <h3 style="font-size: 1.125rem; font-weight: 900; color: var(--crm-black); margin-bottom: 0.5rem;">Excluir Usuário</h3>
+            <h3 style="font-size: 1.125rem; font-weight: 900; color: var(--text-main); margin-bottom: 0.5rem;">Excluir Usuário</h3>
             <p style="color: #64748b; font-size: 0.875rem;">Tem certeza que deseja excluir <strong id="delete_user_name"></strong>? Esta ação não pode ser desfeita.</p>
         </div>
         <form method="POST">
@@ -883,7 +883,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <div id="passwordModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
     <div class="glass-panel" style="max-width: 500px; width: 100%;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--crm-black);">Resetar Login e Senha</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--text-main);">Resetar Login e Senha</h3>
             <button onclick="document.getElementById('passwordModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.5rem;">&times;</button>
         </div>
         
@@ -913,8 +913,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <div id="userLoanHistoryModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 2000; align-items: center; justify-content: center; padding: 2rem;">
     <div class="glass-panel" style="max-width: 700px; width: 100%; max-height: 88vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h3 style="font-size: 1.15rem; font-weight: 900; color: var(--crm-black); display: flex; align-items: center; gap: 0.75rem;">
-                <i class="fa-solid fa-clock-rotate-left" style="color: var(--crm-purple);"></i>
+            <h3 style="font-size: 1.15rem; font-weight: 900; color: var(--text-main); display: flex; align-items: center; gap: 0.75rem;">
+                <i class="fa-solid fa-clock-rotate-left" style="color: var(--brand-primary);"></i>
                 <span id="userLoanHistoryTitle">Histórico de Empréstimos</span>
             </h3>
             <button onclick="document.getElementById('userLoanHistoryModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.5rem;">&times;</button>
@@ -927,7 +927,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 <div id="userTicketHistoryModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 2000; align-items: center; justify-content: center; padding: 2rem;">
     <div class="glass-panel" style="max-width: 700px; width: 100%; max-height: 88vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h3 style="font-size: 1.15rem; font-weight: 900; color: var(--crm-black); display: flex; align-items: center; gap: 0.75rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 900; color: var(--text-main); display: flex; align-items: center; gap: 0.75rem;">
                 <i class="fa-solid fa-headset" style="color: #3B82F6;"></i>
                 <span id="userTicketHistoryTitle">Histórico de Chamados</span>
             </h3>
