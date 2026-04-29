@@ -73,26 +73,27 @@
     --md-sys-color-on-surface: var(--text-main);
 }
 
-/* --- DARK MODE TOKENS --- */
+/* --- DARK MODE TOKENS (PREMIUM GOLD & WHITE) --- */
 [data-theme="dark"] {
-    --bg-main: #0F172A;
-    --bg-card: #1E293B;
-    --bg-sidebar: #0F172A;
-    --bg-topbar: #1E293B;
+    --bg-main: #020617; 
+    --bg-card: #0F172A;
+    --bg-sidebar: #020617;
+    --bg-topbar: #0F172A;
     
-    --text-main: #F1F5F9;
-    --text-soft: #94A3B8;
-    --text-muted: #64748B;
+    --text-main: #FFFFFF; 
+    --text-soft: #F1F5F9; 
+    --text-muted: #CBD5E1; 
     
-    --border-color: #334155;
-    --border-soft: #1E293B;
+    --border-color: #1E293B;
+    --border-soft: #0F172A;
     
-    --brand-primary-soft: rgba(99, 102, 241, 0.2);
-    --brand-primary: #818CF8;
+    --brand-primary: #F59E0B; 
+    --brand-primary-soft: rgba(245, 158, 11, 0.15);
+    --brand-secondary: #D97706;
 
-    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
+    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.7);
 }
 
 /* Base Reset */
@@ -1671,7 +1672,7 @@ tr:hover td {
     background: var(--bg-card);
 }
 
-/* Quando uma conversa est· ativa, a lista encolhe ou some no modo compacto */
+/* Quando uma conversa est√° ativa, a lista encolhe ou some no modo compacto */
 .chat-panel.convo-active .chat-user-list {
     display: none; /* No modo compacto lateral, focamos na conversa */
 }
@@ -1687,7 +1688,7 @@ tr:hover td {
     display: flex;
 }
 
-/* Bot„o de Voltar para a lista no modo lateral */
+/* Bot√£o de Voltar para a lista no modo lateral */
 .btn-back-chat {
     display: flex;
     align-items: center;
@@ -1871,7 +1872,7 @@ tr:hover td {
 @media (max-width: 768px) {
     .chat-panel {
         height: 100vh !important;
-        height: 100dvh !important; /* Suporte para altura din‚mica mobile */
+        height: 100dvh !important; /* Suporte para altura din√¢mica mobile */
         top: 0 !important;
         right: 0 !important;
         width: 100% !important;
