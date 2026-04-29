@@ -1,6 +1,7 @@
 <?php
 // Detecção Inteligente de Ambiente (Local vs Produção)
-$isLocal = in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', '192.168.1.100']); // Adicione seu IP local se necessário
+$httpHost = $_SERVER['HTTP_HOST'] ?? '';
+$isLocal = (strpos($httpHost, 'localhost') !== false || strpos($httpHost, '127.0.0.1') !== false || strpos($httpHost, '192.168.') !== false);
 
 if ($isLocal) {
     define('DB_HOST', 'localhost');
