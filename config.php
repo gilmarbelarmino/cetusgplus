@@ -7,11 +7,11 @@ if ($isLocal) {
     define('DB_USER', 'root');
     define('DB_PASS', '');
 } else {
-    // CONFIGURAÇÕES DA HOSTINGER (Substitua pelos dados que você criar no hPanel)
+    // CONFIGURAÇÕES DA HOSTINGER (Ativadas automaticamente na nuvem)
     define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-    define('DB_NAME', getenv('DB_NAME') ?: 'u123_cetusg_plus'); // Nome do banco na Hostinger
-    define('DB_USER', getenv('DB_USER') ?: 'u123_usuario');     // Usuário na Hostinger
-    define('DB_PASS', getenv('DB_PASS') ?: 'sua_senha_nuvem');  // Senha na Hostinger
+    define('DB_NAME', 'u123_cetusg');     // Nome do banco na Hostinger
+    define('DB_USER', 'cetusgbelo');      // Usuário na Hostinger
+    define('DB_PASS', 'Profgilbelo@83');  // Senha na Hostinger
 }
 
 // Forçar o caminho do cookie de sessão para ser compartilhado entre a raiz e a pasta public
