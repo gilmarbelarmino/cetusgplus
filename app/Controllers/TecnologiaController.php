@@ -20,8 +20,8 @@ class TecnologiaController extends Controller {
 
         // Busca de dados
         $cameras = $pdo->query("SELECT * FROM tech_cameras ORDER BY name")->fetchAll();
-        $remotes = $pdo->query("SELECT tr.*, u.name as user_name, u.avatar_url, u.email as user_email FROM tech_remote_access tr LEFT JOIN users u ON tr.user_id = u.id ORDER BY u.name")->fetchAll();
-        $emails = $pdo->query("SELECT te.*, u.name as user_name FROM tech_emails te LEFT JOIN users u ON te.remote_user_id = u.id ORDER BY te.email")->fetchAll();
+        $remotes = $pdo->query("SELECT tr.*, u.name as user_name, u.avatar_url, u.email as user_email FROM tech_remote_access tr LEFT JOIN users u ON tr.user_id COLLATE utf8mb4_unicode_ci = u.id COLLATE utf8mb4_unicode_ci ORDER BY u.name")->fetchAll();
+        $emails = $pdo->query("SELECT te.*, u.name as user_name FROM tech_emails te LEFT JOIN users u ON te.remote_user_id COLLATE utf8mb4_unicode_ci = u.id COLLATE utf8mb4_unicode_ci ORDER BY te.email")->fetchAll();
         $all_users = $pdo->query("SELECT id, name, avatar_url FROM users ORDER BY name")->fetchAll();
         
         // Dados de Anotações

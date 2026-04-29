@@ -2,125 +2,151 @@
 require_once 'config.php';
 
 /**
- * Peixinho AI - Assistente Inteligente Cetusg
- * Desenvolvido para ser gentil, prestativo e ter acesso total aos dados do sistema.
+ * Peixinho AI - Assistente de Inteligência Total Cetusg Plus
+ * Agora com análise histórica, orçamentos, RH e eventos.
  */
 class PeixinhoBrain {
     private $pdo;
     private $allowed_menus;
-    private $greetings = [
-        "Olá! Tudo bem? Eu sou o **Peixinho**, seu assistente. 🐠 Como posso facilitar seu trabalho agora?",
-        "Oiê! Que bom te ver por aqui. 🌊 Em que posso te ajudar hoje?",
-        "Olá, colega! 🐠 Estou mergulhando nos dados para encontrar o que você precisa. O que buscamos?",
-        "Oi! Sou o Peixinho. 🐠 Pronto para mais um dia de produtividade? O que você quer saber?"
-    ];
-    private $closings = [
-        "Estou à disposição se precisar de mais alguma coisa! 🐠",
-        "Espero ter ajudado! Se tiver outra dúvida, é só chamar. 🌊",
-        "Qualquer outra informação que precisar, estou por aqui! 🐠",
-        "Sempre um prazer ajudar! O que mais vamos descobrir? 🐠"
-    ];
-
+    
     public function __construct($pdo, $allowed_menus = []) {
         $this->pdo = $pdo;
         $this->allowed_menus = $allowed_menus;
-    }
-
-    private function can($menu) {
-        return in_array($menu, $this->allowed_menus);
     }
 
     public function process($message) {
         $msg = mb_strtolower($message, 'UTF-8');
         $responses = [];
 
-        // --- SISTEMA DE AJUDA / COMO USAR ---
-        if ($this->match($msg, ['como usar', 'ajuda', 'socorro', 'o que você faz', 'o que voce faz', 'funcionalidades'])) {
-            return $this->getHelpOverview();
+        // 1. SAUDAÇÕES
+        if ($this->match($msg, ['olá', 'ola', 'oi', 'bom dia', 'boa tarde', 'boa noite', 'ei'])) {
+            $responses[] = $this->getGreeting();
         }
 
-        // --- RESUMO GERAL (RELATÓRIOS) ---
-        if ($this->match($msg, ['resumo', 'status', 'geral', 'dashboard', 'relatório', 'relatorio', 'como estamos'])) {
-            if ($this->can('relatorios')) {
-                $responses[] = $this->getSystemReports();
-            } else {
-                $responses[] = "No momento, não tenho autorização para acessar os relatórios gerais para você. 🐠";
-            }
+        // 2. CHAMADOS E HISTÓRICO (PRODUTIVIDADE)
+        if ($this->match($msg, ['chamado', 'ticket', 'suporte', 'solucionado', 'concluído', 'concluido', 'resolvido', 'hoje', 'ontem'])) {
+            $responses[] = $this->getTicketsIntelligence($msg);
         }
 
-        // --- VOLUNTARIADO (ACESSO TOTAL) ---
-        if ($this->match($msg, ['voluntar', 'voluntário', 'voluntariado', 'horas', 'quem são os voluntários', 'quem sao os voluntarios'])) {
-            if ($this->can('voluntariado')) {
-                $responses[] = $this->getDetailedVoluntariado($msg);
-            } else {
-                $responses[] = "Sinto muito, mas não tenho permissão para acessar os dados do Voluntariado. 🐠";
-            }
+        // 3. ORÇAMENTOS E COMPRAS
+        if ($this->match($msg, ['orçamento', 'orcamento', 'compra', 'cotação', 'cotacao', 'pedido'])) {
+            $responses[] = $this->getBudgetIntelligence($msg);
         }
 
-        // --- LOCAÇÃO DE SALAS (ACESSO TOTAL) ---
-        if ($this->match($msg, ['locação', 'locacao', 'sala', 'reserv', 'agendamento', 'disponível', 'livre', 'quais salas'])) {
-            if ($this->can('locacao_salas')) {
-                $responses[] = $this->getDetailedLocacao($msg);
-            } else {
-                $responses[] = "Ops! Não tenho permissão para verificar as salas agora. 🐠";
-            }
+        // 4. RH, FÉRIAS E ANIVERSÁRIOS
+        if ($this->match($msg, ['férias', 'ferias', 'quem é', 'colaborador', 'aniversário', 'rh', 'setor'])) {
+            $responses[] = $this->getRHIntelligence($msg);
         }
 
-        // --- SEMANADA / MURAL (ACESSO TOTAL) ---
-        if ($this->match($msg, ['semanada', 'mural', 'comentário', 'mensagem', 'reunião', 'eventos', 'novidade', 'comunicação', 'comunicado'])) {
-            if ($this->can('semanada')) {
-                $responses[] = $this->getSemanadaFeed();
-            } else {
-                $responses[] = "Não tenho acesso ao mural da Semanada para te passar as novidades. 🐠";
-            }
+        // 5. PATRIMÔNIO E EMPRÉSTIMOS
+        if ($this->match($msg, ['patrimônio', 'patrimonio', 'estoque', 'valor', 'equipamento', 'emprest', 'devol', 'pendente'])) {
+            $responses[] = $this->getPatrimonioIntelligence($msg);
         }
 
-        // --- USUÁRIOS E RH ---
-        if ($this->match($msg, ['usuário', 'usuario', 'colaborador', 'quem é', 'quem e', 'aniversário', 'aniversariantes'])) {
-            if ($this->can('rh') || $this->can('usuarios')) {
-                if ($this->match($msg, ['aniversário', 'aniversariantes'])) {
-                    $responses[] = $this->getBirthdays();
-                } else {
-                    $responses[] = $this->getUserInfo($msg);
-                }
-            } else {
-                $responses[] = "Não tenho autorização para buscar informações de colaboradores. 🐠";
-            }
+        // 6. EVENTOS E SEMANADA
+        if ($this->match($msg, ['evento', 'reunião', 'reuniao', 'agenda', 'semanada', 'mural'])) {
+            $responses[] = $this->getSocialIntelligence($msg);
         }
 
-        // --- PATRIMÔNIO E CHAMADOS ---
-        if ($this->match($msg, ['patrimônio', 'patrimonio', 'estoque', 'equipamento', 'asset'])) {
-            if ($this->can('patrimonio')) {
-                $responses[] = $this->getPatrimonioStats();
-            } else {
-                $responses[] = "Os dados de patrimônio estão restritos para mim no seu perfil. 🐠";
-            }
-        }
-        if ($this->match($msg, ['chamado', 'ticket', 'suporte', 'estragado', 'problema'])) {
-            if ($this->can('chamados')) {
-                $responses[] = $this->getTicketsSummary();
-            } else {
-                $responses[] = "Não tenho permissão para ver o status dos chamados técnicos. 🐠";
-            }
-        }
-
-        // --- RESPOSTA FINAL ---
         if (empty($responses)) {
-            // Cumprimentos genéricos se não houver contexto
-            if ($this->match($msg, ['olá', 'ola', 'oi', 'bom dia', 'boa tarde', 'boa noite', 'ei'])) {
-                return $this->greetings[array_rand($this->greetings)];
-            }
-            return "Puxa, ainda não sei responder sobre isso... 🐠 Mas estou aprendendo rápido! Você pode me perguntar sobre **Voluntários, Salas, Relatórios, Semanada ou Patrimônio** (conforme seus acessos). O que acha?";
+            return "Puxa, que pergunta interessante! 🐠 Estou mergulhando fundo em todos os menus do sistema (Chamados, Orçamentos, RH, Patrimônio e Social) para encontrar o que você precisa. Poderia me dar um pouco mais de detalhe sobre o que busca? 🌊";
         }
 
-        $intro = (count($responses) > 1) ? "Claro! Reuni algumas informações para você: 🐠\n\n" : "";
-        return $intro . implode("\n\n", $responses) . "\n\n" . $this->closings[array_rand($this->closings)];
+        return implode("\n\n", array_unique($responses)) . "\n\nEstou aqui para o que você precisar! 🐠✨";
+    }
+
+    private function getGreeting() {
+        return "Olá! Que alegria poder te ajudar hoje. 🐠 Tenho acesso a todo o histórico de chamados, orçamentos, patrimônio e RH do sistema. O que você gostaria que eu analisasse para você agora? 🌊";
+    }
+
+    private function getTicketsIntelligence($msg) {
+        $hoje = date('Y-m-d');
+        
+        // Estatísticas de HOJE
+        if ($this->match($msg, ['hoje', 'solucionado', 'concluído', 'concluido', 'resolvido'])) {
+            $solucionadosHoje = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE status = 'Concluído' AND (DATE(resolved_at) = ? OR DATE(closed_at) = ?)", [$hoje, $hoje]);
+            $novosHoje = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE DATE(created_at) = ?", [$hoje]);
+            
+            return "🛠️ **Análise de Chamados de Hoje:**\n" .
+                   "- Foram **solucionados $solucionadosHoje chamados** até agora! 🐠✨\n" .
+                   "- Recebemos **$novosHoje novos chamados** hoje.\n" .
+                   "O time de suporte está em pleno movimento! 🌊";
+        }
+
+        // Estatísticas GERAIS
+        $abertos = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE status = 'Aberto'");
+        $atrasados = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE status != 'Concluído' AND sla_deadline < NOW()");
+        
+        $res = "🛠️ **Status Geral de Chamados:**\n";
+        $res .= "Atualmente temos **$abertos chamados aguardando** início.";
+        if ($atrasados > 0) $res .= "\n⚠️ Atenção: **$atrasados chamados** estão com o SLA atrasado. 🐠";
+        return $res;
+    }
+
+    private function getBudgetIntelligence($msg) {
+        $pedidos = $this->queryValue("SELECT COUNT(*) FROM budget_requests WHERE status = 'Pendente'");
+        $cotacoes = $this->queryValue("SELECT COUNT(*) FROM budget_quotes");
+        
+        return "💰 **Menu Orçamentos:**\n" .
+               "Encontrei **$pedidos pedidos de orçamento pendentes** de aprovação. 🐠\n" .
+               "Já temos um histórico de **$cotacoes cotações** registradas no sistema. Se precisar de detalhes sobre algum fornecedor ou valor, é só me chamar! 🌊";
+    }
+
+    private function getRHIntelligence($msg) {
+        if ($this->match($msg, ['férias', 'ferias'])) {
+            $stmt = $this->pdo->query("SELECT u.name, v.end_date FROM rh_vacations v JOIN users u ON v.user_id = u.id WHERE CURDATE() BETWEEN v.start_date AND v.end_date");
+            $emFerias = $stmt->fetchAll();
+            if (empty($emFerias)) return "🌴 **RH:** Não temos nenhum colaborador em férias hoje. Time completo! 🐠";
+            $res = "🌴 **Colaboradores em Férias:**\n";
+            foreach ($emFerias as $f) { $res .= "• " . $p = explode(' ', $f['name'])[0] . " (até " . date('d/m', strtotime($f['end_date'])) . ")\n"; }
+            return $res . "🐠";
+        }
+        
+        if ($this->match($msg, ['aniversário', 'niver'])) {
+            $stmt = $this->pdo->query("SELECT u.name, DATE_FORMAT(rh.birth_date, '%d/%m') as dia FROM users u JOIN rh_employee_details rh ON u.id = rh.user_id WHERE MONTH(rh.birth_date) = MONTH(CURDATE()) ORDER BY DAY(rh.birth_date) ASC");
+            $list = $stmt->fetchAll();
+            $res = "🎂 **Aniversariantes do Mês:**\n";
+            foreach ($list as $b) { $res .= "• " . $b['name'] . " (" . $b['dia'] . ")\n"; }
+            return $res . "🐠";
+        }
+
+        $name = trim(str_replace(['quem é', 'quem e', 'colaborador'], '', $msg));
+        if (strlen($name) > 2) {
+            $stmt = $this->pdo->prepare("SELECT name, sector, role FROM users WHERE name LIKE ? LIMIT 1");
+            $stmt->execute(['%' . $name . '%']);
+            $u = $stmt->fetch();
+            if ($u) return "👤 **" . $u['name'] . "** atua no setor de **" . $u['sector'] . "** como **" . $u['role'] . "**. 🐠";
+        }
+        return "Posso te ajudar com informações de RH, Férias e Aniversários! 🌊";
+    }
+
+    private function getPatrimonioIntelligence($msg) {
+        if ($this->match($msg, ['devol', 'emprest', 'pendente', 'pegou'])) {
+            $stmt = $this->pdo->query("SELECT borrower_name, asset_name, expected_return_date FROM loans WHERE status = 'Ativo'");
+            $pendentes = $stmt->fetchAll();
+            if (empty($pendentes)) return "Não temos nenhum empréstimo pendente no momento! 🐠";
+            $res = "🔍 **Itens com Colaboradores:**\n";
+            foreach ($pendentes as $p) {
+                $atraso = ($p['expected_return_date'] < date('Y-m-d H:i:s')) ? " ⚠️ **(ATRASADO)**" : "";
+                $res .= "• **" . $p['borrower_name'] . "**: " . $p['asset_name'] . " (Devolução: " . date('d/m', strtotime($p['expected_return_date'])) . ")$atraso\n";
+            }
+            return $res . "🐠";
+        }
+        $total = $this->queryValue("SELECT COUNT(*) FROM assets");
+        $valor = $this->queryValue("SELECT SUM(estimated_value) FROM assets");
+        return "📦 **Patrimônio:** Temos **$total itens** cadastrados (Valor total: R$ " . number_format($valor, 2, ',', '.') . "). 🐠";
+    }
+
+    private function getSocialIntelligence($msg) {
+        $eventos = $this->queryValue("SELECT COUNT(*) FROM semanada_events WHERE event_date >= CURDATE()");
+        $voluntarios = $this->queryValue("SELECT COUNT(*) FROM volunteers WHERE status = 'Ativo'");
+        return "📢 **Social & Semanada:**\n" .
+               "- Temos **$eventos próximos eventos** agendados no mural. 🐠\n" .
+               "- Nossa rede conta com **$voluntarios voluntários** ativos transformando vidas! ❤️";
     }
 
     private function match($text, $keywords) {
-        foreach ($keywords as $k) {
-            if (strpos($text, $k) !== false) return true;
-        }
+        foreach ($keywords as $k) { if (mb_stripos($text, $k) !== false) return true; }
         return false;
     }
 
@@ -131,159 +157,4 @@ class PeixinhoBrain {
             return $stmt->fetchColumn() ?: 0;
         } catch(Exception $e) { return 0; }
     }
-
-    private function getHelpOverview() {
-        return "Eu sou o **Peixinho**, sua IA de suporte aqui no Cetusg! 🐠\n\nEu posso te ajudar a:\n" .
-               "- 📊 **Analisar Relatórios**: Pergunte sobre o valor do patrimônio ou resumo de chamados.\n" .
-               "- ❤️ **Gerir Voluntários**: Saiba quem são, quantas horas doaram e onde atuam.\n" .
-               "- 📅 **Reservar Salas**: Verifique quais salas estão livres ou quem reservou hoje.\n" .
-               "- 📢 **Acompanhar a Semanada**: Veja as últimas novidades e o que o time está comentando.\n" .
-               "- 👥 **Achar Colegas**: Busque por nome para saber o cargo ou setor de alguém.\n\n" .
-               "Sou programado para ser gentil e trazer a informação mais fresquinha possível para você! 🐠";
-    }
-
-    private function getSystemReports() {
-        $totalAssets = $this->queryValue("SELECT COUNT(*) FROM assets");
-        $totalValue = $this->queryValue("SELECT SUM(estimated_value) FROM assets");
-        $openTickets = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE status != 'Concluído'");
-        $activeUsers = $this->queryValue("SELECT COUNT(*) FROM users WHERE status = 'Ativo'");
-        
-        $formattedValue = 'R$ ' . number_format($totalValue, 2, ',', '.');
-        
-        return "📊 **Relatório Instantâneo do Sistema:**\n" .
-               "- Nosso patrimônio conta com **$totalAssets itens**, avaliados em **$formattedValue**.\n" .
-               "- Temos **$activeUsers colaboradores** ativos fazendo a mágica acontecer.\n" .
-               "- No momento, a equipe de suporte está cuidando de **$openTickets chamados** abertos. 🐠";
-    }
-
-    private function getDetailedVoluntariado($msg) {
-        $count = $this->queryValue("SELECT COUNT(*) FROM volunteers WHERE status = 'Ativo'");
-        $totalHours = $this->queryValue("SELECT SUM(total_hours) FROM volunteers");
-        
-        // Tentar ver se pediu por setor específico
-        $stmt = $this->pdo->query("SELECT volunteering_sector, COUNT(*) as cnt FROM volunteers GROUP BY volunteering_sector ORDER BY cnt DESC LIMIT 3");
-        $sectors = $stmt->fetchAll();
-        $sectorText = "";
-        foreach ($sectors as $s) { $sectorText .= "\n  • " . ($s['volunteering_sector'] ?: 'Geral') . " (" . $s['cnt'] . " pessoas)"; }
-
-        $res = "❤️ **Sobre nossos Voluntários:**\n" .
-               "Atualmente possuímos **$count voluntários ativos**. Juntos, eles já dedicaram incríveis **" . number_format($totalHours, 1, ',', '.') . " horas**! 🐠\n" .
-               "As áreas com mais atuação são: $sectorText";
-               
-        if ($this->match($msg, ['quem', 'lista'])) {
-            $stmt = $this->pdo->query("SELECT name FROM volunteers WHERE status = 'Ativo' LIMIT 5");
-            $names = array_column($stmt->fetchAll(), 'name');
-            $res .= "\n\nAlguns dos nossos heróis ativos: " . implode(', ', $names) . "...";
-        }
-        
-        return $res;
-    }
-
-    private function getDetailedLocacao($msg) {
-        $hoje = date('Y-m-d');
-        $totalSalas = $this->queryValue("SELECT COUNT(*) FROM rooms");
-        
-        $stmt = $this->pdo->prepare("
-            SELECT r.name, b.start_time, b.end_time, u.name as user 
-            FROM room_bookings b 
-            JOIN rooms r ON b.room_id = r.id 
-            JOIN users u ON b.user_id = u.id 
-            WHERE b.booking_date = ? AND b.status = 'Aprovado'
-            ORDER BY b.start_time ASC
-        ");
-        $stmt->execute([$hoje]);
-        $bookings = $stmt->fetchAll();
-
-        if (empty($bookings)) {
-            return "📅 **Locação de Salas:**\nDas **$totalSalas salas** cadastradas, todas parecem estar livres hoje! Que tal agendar uma reunião? 🐠";
-        }
-
-        $res = "📅 **Reservas para Hoje ($hoje):**\n";
-        foreach ($bookings as $b) {
-            $res .= "• **" . $b['name'] . "**: " . substr($b['start_time'], 0, 5) . " às " . substr($b['end_time'], 0, 5) . " (Reservado por " . explode(' ', $b['user'])[0] . ")\n";
-        }
-        
-        if ($this->match($msg, ['disponível', 'livre', 'quais'])) {
-            $stmt = $this->pdo->query("SELECT name FROM rooms WHERE id NOT IN (SELECT room_id FROM room_bookings WHERE booking_date = CURDATE())");
-            $free = array_column($stmt->fetchAll(), 'name');
-            if (!empty($free)) $res .= "\nSalas totalmente livres hoje: " . implode(', ', $free) . ". 🐠";
-        }
-
-        return $res;
-    }
-
-    private function getSemanadaFeed() {
-        try {
-            $stmt = $this->pdo->query("SELECT comment_text, user_id, created_at FROM semanada_comments ORDER BY created_at DESC LIMIT 3");
-            $comments = $stmt->fetchAll();
-            
-            $annCount = $this->queryValue("SELECT COUNT(*) FROM announcements WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
-            
-            $res = "📢 **Novidades da Semanada (Mural):**\n";
-            $res .= "Nos últimos 7 dias, tivemos **$annCount novos comunicados** importantes.\n\n";
-            
-            if (!empty($comments)) {
-                $res .= "O que andam comentando:\n";
-                foreach ($comments as $c) {
-                    $userName = $this->queryValue("SELECT name FROM users WHERE id = ?", [$c['user_id']]);
-                    $res .= "• \"" . (strlen($c['comment_text']) > 50 ? substr($c['comment_text'], 0, 47) . '...' : $c['comment_text']) . "\" - *" . explode(' ', $userName)[0] . "*\n";
-                }
-            }
-            return $res . "🐠";
-        } catch(Exception $e) { return "O mural da Semanada está um pouco calmo agora! 🐠"; }
-    }
-
-    private function getUserInfo($msg) {
-        $search = str_replace(['quem é', 'quem e', 'sobre o usuário', 'sobre o usuario', 'usuário', 'usuario', 'colaborador'], '', $msg);
-        $search = trim($search);
-        if (strlen($search) < 2) return "Para falar sobre um colega, por favor me diga o nome dele! 🐠";
-        
-        $stmt = $this->pdo->prepare("SELECT name, sector, role, last_activity, phone, email FROM users WHERE name LIKE ? OR login_name LIKE ? LIMIT 1");
-        $stmt->execute(['%' . $search . '%', '%' . $search . '%']);
-        $user = $stmt->fetch();
-        
-        if ($user) {
-            $status = (strtotime($user['last_activity']) > strtotime('-10 minutes')) ? 'On-line agora! 🟢' : 'Off-line no momento 🔴';
-            return "👤 **Perfil Encontrado:**\n" .
-                   "**Nome:** " . $user['name'] . "\n" .
-                   "**Setor:** " . ($user['sector'] ?: 'Não definido') . "\n" .
-                   "**Cargo:** " . ($user['role'] ?: 'Colaborador') . "\n" .
-                   "**Contato:** " . ($user['phone'] ?: $user['email']) . "\n" .
-                   "**Status:** $status 🐠";
-        }
-        return "Humm, não encontrei nenhum colega com o nome '$search'. Tente usar apenas o primeiro nome! 🐠";
-    }
-
-    private function getBirthdays() {
-        try {
-            $stmt = $this->pdo->query("
-                SELECT u.name, DATE_FORMAT(rh.birth_date, '%d/%m') as dia 
-                FROM users u 
-                JOIN rh_employee_details rh ON u.id = rh.user_id 
-                WHERE MONTH(rh.birth_date) = MONTH(CURDATE())
-                ORDER BY DAY(rh.birth_date) ASC
-            ");
-            $list = $stmt->fetchAll();
-            if (empty($list)) return "Ninguém faz aniversário este mês? Estranho... Mas assim temos mais bolo para o próximo! 🎂 🐠";
-            
-            $res = "🎂 **Aniversariantes do Mês:**\n";
-            foreach ($list as $b) {
-                $res .= "- " . $b['name'] . " (" . $b['dia'] . ")\n";
-            }
-            return $res . "Parabéns a todos! 🎉 🐠";
-        } catch(Exception $e) { return "Animação total para o mês que vem! 🐠"; }
-    }
-
-    private function getPatrimonioStats() {
-        $total = $this->queryValue("SELECT COUNT(*) FROM assets");
-        $manutencao = $this->queryValue("SELECT COUNT(*) FROM assets WHERE status = 'Manutenção'");
-        return "📦 **Patrimônio:** Temos **$total bens** registrados. Desses, **$manutencao estão em manutenção** técnica. Posso te ajudar a localizar algum item pelo ID de patrimônio? 🐠";
-    }
-
-    private function getTicketsSummary() {
-        $abertos = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE status = 'Aberto'");
-        $urgentes = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE priority IN ('Alta', 'Crítica') AND status != 'Concluído'");
-        return "🛠️ **Suporte:** No momento existem **$abertos chamados aguardando início**. Atenção: **$urgentes são considerados urgentes**! Precisamos de foco neles. 🐠";
-    }
 }
-?>

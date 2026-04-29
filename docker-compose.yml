@@ -3,30 +3,40 @@ version: '3.8'
 services:
   app:
     build: .
+    container_name: cetusg_plus_app
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
       - .:/var/www/html
     environment:
       - DB_HOST=db
       - DB_NAME=cetusg_plus
-      - DB_USER=cetusg_user
-      - DB_PASS=cetusg_pass
+      - DB_USER=cetus_user
+      - DB_PASS=cetus_pass
     depends_on:
       - db
+    networks:
+      - cetus_network
 
   db:
     image: mysql:8.0
+    container_name: cetusg_plus_db
     restart: always
     environment:
       MYSQL_DATABASE: cetusg_plus
-      MYSQL_USER: cetusg_user
-      MYSQL_PASSWORD: cetusg_pass
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: cetus_user
+      MYSQL_PASSWORD: cetus_pass
+      MYSQL_ROOT_PASSWORD: root_pass
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
+    networks:
+      - cetus_network
+
+networks:
+  cetus_network:
+    driver: bridge
 
 volumes:
   db_data:

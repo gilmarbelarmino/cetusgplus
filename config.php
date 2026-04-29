@@ -1,11 +1,45 @@
-<?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'cetusg_plus');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+// Detecção Inteligente de Ambiente (Local vs Produção)
+$isLocal = in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', '192.168.1.100']); // Adicione seu IP local se necessário
+
+if ($isLocal) {
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'cetusg_plus');
+    define('DB_USER', 'root');
+    define('DB_PASS', '');
+} else {
+    // CONFIGURAÇÕES DA HOSTINGER (Substitua pelos dados que você criar no hPanel)
+    define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+    define('DB_NAME', getenv('DB_NAME') ?: 'u123_cetusg_plus'); // Nome do banco na Hostinger
+    define('DB_USER', getenv('DB_USER') ?: 'u123_usuario');     // Usuário na Hostinger
+    define('DB_PASS', getenv('DB_PASS') ?: 'sua_senha_nuvem');  // Senha na Hostinger
+}
+
+// Forçar o caminho do cookie de sessão para ser compartilhado entre a raiz e a pasta public
+$sessionPath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+if (strpos($sessionPath, '/public') !== false) {
+    $sessionPath = str_replace('/public', '', $sessionPath);
+}
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'path' => $sessionPath ?: '/',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start();
+}
 
 // Definir fuso horário global para o Brasil (Brasília)
 date_default_timezone_set('America/Sao_Paulo');
+
+// Detecção automática da URL Base para suporte a rede local e VHosts
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+// Remove /public se estiver no final (caso o Apache aponte para a raiz do projeto)
+$scriptDir = preg_replace('/\/public$/', '', $scriptDir);
+if ($scriptDir === '/') $scriptDir = '';
+define('URL_BASE', $scriptDir);
+define('FULL_URL', $protocol . "://" . $host . URL_BASE);
 
 try {
     $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4", DB_USER, DB_PASS);

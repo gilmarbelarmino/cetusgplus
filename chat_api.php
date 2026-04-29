@@ -1,5 +1,4 @@
 <?php
-session_start();
 require_once 'config.php';
 require_once 'auth.php';
 
@@ -38,10 +37,9 @@ switch ($action) {
             (CASE WHEN u.last_activity >= DATE_SUB(NOW(), INTERVAL 5 MINUTE) THEN 1 ELSE 0 END) as is_online
             FROM users u
             WHERE u.status = 'Ativo' AND u.id != ?
-            AND (u.id != 'U_PEIXINHO' OR (SELECT COUNT(*) FROM user_menus WHERE user_id = ? AND menu = 'peixinho') > 0)
             ORDER BY is_online DESC, u.name ASC
         ");
-        $stmt->execute([$current_id, $current_id, $current_id, $current_id]);
+        $stmt->execute([$current_id, $current_id, $current_id]);
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode($users);
         break;
@@ -106,10 +104,13 @@ switch ($action) {
     case 'get_messages':
         $other_id = $_GET['other_id'] ?? '';
         if ($other_id) {
+            // Marcar como lidas automaticamente
+            $up = $pdo->prepare("UPDATE chat_messages SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE sender_id = ? AND receiver_id = ? AND is_read = 0");
+            $up->execute([$other_id, $current_id]);
+
             $stmt = $pdo->prepare("
                 SELECT m.*, 
-                DATE_FORMAT(m.created_at, '%d/%m às %H:%i') as time_formatted,
-                DATE_FORMAT(m.read_at, '%d/%m às %H:%i') as read_formatted
+                DATE_FORMAT(m.created_at, '%H:%i') as time_formatted
                 FROM chat_messages m
                 LEFT JOIN chat_clears c ON c.user_id = ? AND c.other_id = ?
                 WHERE ((m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?))
@@ -142,6 +143,23 @@ switch ($action) {
         $stmt->execute([$current_id, $current_id]);
         $count = $stmt->fetchColumn();
         echo json_encode(['count' => (int)$count]);
+        break;
+
+    case 'widget_message':
+        $content = trim($_POST['content'] ?? '');
+        if ($content) {
+            require_once 'peixinho_api.php';
+            $user_menus = getUserMenus($user);
+            $brain = new \PeixinhoBrain($pdo, $user_menus);
+            $response = $brain->process($content);
+            
+            echo json_encode([
+                'success' => true,
+                'response' => $response
+            ]);
+        } else {
+            echo json_encode(['error' => 'Mensagem vazia']);
+        }
         break;
 
     default:

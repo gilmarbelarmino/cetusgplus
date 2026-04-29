@@ -1,190 +1,262 @@
 <?php
-// Permitir acesso global ao Dashboard (compatibilidade)
-$isAdmin = true;
-$isSectorManager = true;
-$isSupport = true;
-$isCollaborator = false;
+/**
+ * CETUSG - Dashboard Operacional (Command Center)
+ * Refactored for SaaS Enterprise Experience
+ */
 
-// Preparação de Dados para KPIs e Gráficos
-
-// 1. Locação de Salas (Soliicitado pelo Usuário)
+// 1. Data Preparation
 try {
+    // Tickets Stats
+    $openTickets = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status IN ('Aberto', 'Em Progresso')")->fetchColumn() ?: 0;
+    $criticalTickets = $pdo->query("SELECT * FROM tickets WHERE status IN ('Aberto', 'Em Progresso') AND (priority = 'Crítica' OR sla_status = 'Atrasado') ORDER BY priority DESC, sla_deadline ASC LIMIT 4")->fetchAll();
+    
+    // Rooms Stats
     $totalRooms = $pdo->query("SELECT COUNT(*) FROM rooms")->fetchColumn() ?: 0;
     $totalBookings = $pdo->query("SELECT COUNT(*) FROM room_bookings")->fetchColumn() ?: 0;
     $bookingsByRoom = $pdo->query("SELECT r.name, COUNT(b.id) as count FROM room_bookings b JOIN rooms r ON b.room_id = r.id GROUP BY r.id LIMIT 5")->fetchAll();
-    
-    // Percentual de ocupação (simplificado: reservas / (salas * 30 dias)) ou similar
-    // Vamos usar (Reservas Realizadas / (Salas * 10)) como uma métrica de densidade para o gráfico/valor %
-    $occupancyRate = $totalRooms > 0 ? ($totalBookings / ($totalRooms * 5)) * 100 : 0;
+    $occupancyRate = $totalRooms > 0 ? ($totalBookings / ($totalRooms * 10)) * 100 : 0;
     if ($occupancyRate > 100) $occupancyRate = 100;
-} catch(Exception $e) { 
-    $totalRooms = 0; 
-    $totalBookings = 0; 
-    $bookingsByRoom = []; 
-    $occupancyRate = 0;
-}
 
-// 2. Voluntariado / Retorno Financeiro (Solicitado pelo Usuário)
-try {
-    $totalVolunteers = $pdo->query("SELECT COUNT(*) FROM volunteers")->fetchColumn() ?: 0;
-    $totalHours = $pdo->query("SELECT SUM(total_hours) as total FROM volunteers")->fetchColumn() ?: 0;
+    // Volunteering Stats
+    $totalVolunteers = $pdo->query("SELECT COUNT(*) FROM volunteers WHERE status = 'Ativo'")->fetchColumn() ?: 0;
     $financialReturn = $pdo->query("SELECT SUM(total_hours * hourly_rate) as total FROM volunteers")->fetchColumn() ?: 0;
-} catch(Exception $e) { 
-    $totalVolunteers = 0; 
-    $totalHours = 0; 
-    $financialReturn = 0; 
-}
 
-// 3. Chamados (Mínimo necessário para contexto ou conforme solicitado para manter o que "já está no sistema" mas focar no novo)
-$openTickets = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status = 'Aberto'")->fetchColumn() ?: 0;
+    // Recent Activity (Audit Log)
+    $recentActivity = $pdo->query("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 6")->fetchAll();
+
+    // Birthdays (Already available in index.php via $birthdayPeople, but just in case)
+    $birthdayCount = count($birthdayPeople ?? []);
+
+} catch(Exception $e) {
+    // Fallback values
+    $openTickets = 0; $criticalTickets = []; $totalRooms = 0; $totalBookings = 0;
+    $occupancyRate = 0; $totalVolunteers = 0; $financialReturn = 0; $recentActivity = [];
+}
 
 ?>
 
-<!-- Header -->
-<div class="card" style="margin-bottom: 24px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; border: none; box-shadow: 0 10px 30px rgba(79, 70, 229, 0.3);">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <h1 style="font-size: 2.25rem; font-weight: 900; display: flex; align-items: center; gap: 16px; margin: 0; letter-spacing: -1px;">
+<div class="command-center">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="page-header-info">
+            <div class="page-header-icon">
                 <i class="fa-solid fa-gauge-high"></i>
-                Dashboard Gerencial
-            </h1>
-            <p style="opacity: 0.9; font-size: 1rem; margin-top: 8px; font-weight: 500;">Indicadores de impacto e utilização de recursos.</p>
-        </div>
-        <div style="background: rgba(255,255,255,0.2); padding: 12px 24px; border-radius: 16px; backdrop-filter: blur(10px); font-weight: 700; font-size: 0.875rem;">
-            <?= date('d/m/Y') ?>
-        </div>
-    </div>
-</div>
-
-<!-- KPIs Principais -->
-<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-    
-    <!-- Locação de Salas -->
-    <div class="stat-card" style="border-bottom: 4px solid #3b82f6;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <div class="stat-label" style="color: #1d4ed8; font-weight: 800; text-transform: uppercase; font-size: 0.75rem;">Locação de Salas</div>
-            <div style="padding: 10px; border-radius: 12px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 1.25rem;">
-                <i class="fa-solid fa-building-circle-check"></i>
+            </div>
+            <div class="page-header-text">
+                <h2>Centro de Comando</h2>
+                <p>Visão operacional e indicadores em tempo real.</p>
             </div>
         </div>
-        <div style="display: flex; align-items: baseline; gap: 8px;">
-            <div class="stat-value" style="font-size: 2.5rem; color: #1e293b;"><?= $totalBookings ?></div>
-            <div style="font-size: 0.875rem; color: #64748b; font-weight: 600;">locações</div>
-        </div>
-        
-        <div style="margin-top: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem; color: #475569;">
-                <span>OCUPAÇÃO / USO</span>
-                <span><?= number_format($occupancyRate, 1) ?>%</span>
-            </div>
-            <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
-                <div style="width: <?= $occupancyRate ?>%; height: 100%; background: #3b82f6; border-radius: 4px; transition: width 1s ease-in-out;"></div>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.8rem; color: #64748b;">
-                <span>Total de Salas: <strong><?= $totalRooms ?></strong></span>
-            </div>
+        <div class="page-header-actions">
+            <button class="btn-secondary" onclick="window.location.reload()">
+                <i class="fa-solid fa-rotate"></i>
+                Atualizar
+            </button>
+            <button class="btn-primary" onclick="openPalette()">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                Pesquisar (CTRL+K)
+            </button>
         </div>
     </div>
 
-    <!-- Retorno Financeiro Voluntariado -->
-    <div class="stat-card" style="border-bottom: 4px solid #10b981; background: linear-gradient(to bottom right, #ffffff, #f0fdf4);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <div class="stat-label" style="color: #047857; font-weight: 800; text-transform: uppercase; font-size: 0.75rem;">Retorno Financeiro Voluntariado</div>
-            <div style="padding: 10px; border-radius: 12px; background: rgba(16, 185, 129, 0.1); color: #10b981; font-size: 1.25rem;">
-                <i class="fa-solid fa-hand-holding-dollar"></i>
-            </div>
+    <!-- Top KPIs -->
+    <div class="dashboard-grid-top">
+        <div class="stat-card" style="border-left: 4px solid var(--brand-primary);">
+            <div class="stat-label">Chamados Pendentes</div>
+            <div class="stat-value"><?= $openTickets ?></div>
+            <div class="stat-subtext"><i class="fa-solid fa-arrow-trend-up"></i> Fluxo do sistema</div>
+            <i class="fa-solid fa-ticket stat-bg-icon"></i>
         </div>
-        <div class="stat-value" style="font-size: 2.25rem; color: #047857;">R$ <?= number_format((float)$financialReturn, 2, ',', '.') ?></div>
-        
-        <div style="background: rgba(16, 185, 129, 0.1); padding: 12px; border-radius: 12px; margin-top: 1.5rem;">
-            <div style="font-size: 0.7rem; color: #065f46; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Valor Economizado</div>
-            <div style="font-size: 0.9rem; color: #047857; font-weight: 500;">
-                Impacto de <strong><?= number_format((float)$totalHours, 1, ',', '.') ?></strong> horas de trabalho voluntário.
+
+        <div class="stat-card" style="border-left: 4px solid var(--success);">
+            <div class="stat-label">Impacto Financeiro</div>
+            <div class="stat-value">R$ <?= number_format($financialReturn, 2, ',', '.') ?></div>
+            <div class="stat-subtext"><i class="fa-solid fa-heart"></i> Retorno Voluntariado</div>
+            <i class="fa-solid fa-hand-holding-dollar stat-bg-icon"></i>
+        </div>
+
+        <div class="stat-card" style="border-left: 4px solid var(--info);">
+            <div class="stat-label">Ocupação de Salas</div>
+            <div class="stat-value"><?= number_format($occupancyRate, 1) ?>%</div>
+            <div style="width: 100%; height: 6px; background: var(--border-soft); border-radius: 3px; margin-top: 10px; overflow: hidden;">
+                <div style="width: <?= $occupancyRate ?>%; height: 100%; background: var(--info); border-radius: 3px;"></div>
             </div>
+            <i class="fa-solid fa-building-circle-check stat-bg-icon"></i>
+        </div>
+
+        <div class="stat-card" style="border-left: 4px solid var(--warning);">
+            <div class="stat-label">Aniversariantes</div>
+            <div class="stat-value"><?= $birthdayCount ?></div>
+            <div class="stat-subtext"><i class="fa-solid fa-cake-candles"></i> Celebrando hoje</div>
+            <i class="fa-solid fa-gift stat-bg-icon"></i>
         </div>
     </div>
 
-    <!-- Voluntários Ativos (Extra para preencher grid e dar % ) -->
-    <div class="stat-card" style="border-bottom: 4px solid #ec4899;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <div class="stat-label" style="color: #be185d; font-weight: 800; text-transform: uppercase; font-size: 0.75rem;">Corpo de Voluntários</div>
-            <div style="padding: 10px; border-radius: 12px; background: rgba(236, 72, 153, 0.1); color: #ec4899; font-size: 1.25rem;">
-                <i class="fa-solid fa-heart"></i>
+    <!-- Main Content Grid -->
+    <div class="dashboard-grid-main">
+        <!-- Left: Charts and Critical Tickets (Col 8) -->
+        <div class="grid-col-8">
+            <!-- Chart Section -->
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-chart-line"></i> Utilização de Salas</h3>
+                    <span class="card-subtitle">Volume de reservas por sala cadastrada</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="dashboardChart"></canvas>
+                </div>
             </div>
-        </div>
-        <div class="stat-value" style="font-size: 2.5rem; color: #be185d;"><?= $totalVolunteers ?></div>
-        <div style="margin-top: 1.5rem;">
-            <?php 
-                $activeVol = $pdo->query("SELECT COUNT(*) FROM volunteers WHERE status = 'Ativo'")->fetchColumn() ?: 0;
-                $activePerc = $totalVolunteers > 0 ? ($activeVol / $totalVolunteers) * 100 : 0;
-            ?>
-            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem; color: #475569;">
-                <span>VOLUNTÁRIOS ATIVOS</span>
-                <span><?= number_format($activePerc, 1) ?>%</span>
-            </div>
-            <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
-                <div style="width: <?= $activePerc ?>%; height: 100%; background: #ec4899; border-radius: 4px;"></div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Gráficos de Detalhamento -->
-<div style="display: grid; grid-template-columns: 1fr; gap: 2rem; margin-top: 2rem;">
-    <div class="card">
-        <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.5rem; color: #1e293b; display: flex; align-items: center; gap: 10px;">
-            <i class="fa-solid fa-chart-simple" style="color: #3b82f6;"></i> 
-            Reservas por Sala
-        </h3>
-        <div style="height: 350px;"><canvas id="salasChart"></canvas></div>
+            <!-- Critical Tickets -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger);"></i> Chamados Críticos / Atrasados</h3>
+                    <a href="index.php?page=chamados" class="btn-text">Ver todos</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>Ticket</th>
+                                <th>Assunto</th>
+                                <th>Prioridade</th>
+                                <th>SLA / Prazo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($criticalTickets)): ?>
+                                <tr>
+                                    <td colspan="4" class="text-center" style="padding: 2rem;">Nenhum chamado crítico pendente.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($criticalTickets as $ticket): ?>
+                                    <tr>
+                                        <td><strong>#<?= substr($ticket['id'], 0, 8) ?></strong></td>
+                                        <td><?= htmlspecialchars($ticket['title']) ?></td>
+                                        <td>
+                                            <span class="badge badge-<?= $ticket['priority'] === 'Crítica' ? 'danger pulse-critical' : 'warning' ?>">
+                                                <?= $ticket['priority'] ?>
+                                            </span>
+                                        </td>
+                                        <td class="<?= $ticket['sla_status'] === 'Atrasado' ? 'text-danger font-weight-bold' : '' ?>">
+                                            <?= $ticket['sla_deadline'] ? date('d/m H:i', strtotime($ticket['sla_deadline'])) : '--' ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Activity and Events (Col 4) -->
+        <div class="grid-col-4">
+            <!-- Recent Activity Timeline -->
+            <div class="card" style="margin-bottom: 24px; min-height: 450px;">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-bolt"></i> Atividade Recente</h3>
+                </div>
+                <div class="timeline">
+                    <?php if (empty($recentActivity)): ?>
+                        <div class="timeline-empty">Nenhuma atividade registrada.</div>
+                    <?php else: ?>
+                        <?php foreach ($recentActivity as $log): ?>
+                            <div class="timeline-item">
+                                <div class="timeline-icon">
+                                    <i class="fa-solid <?= str_contains(strtolower($log['action']), 'delete') ? 'fa-trash' : (str_contains(strtolower($log['action']), 'update') ? 'fa-pen-to-square' : 'fa-plus') ?>"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title"><?= htmlspecialchars($log['user_name']) ?></div>
+                                    <div class="timeline-desc"><?= htmlspecialchars($log['action']) ?> em <?= htmlspecialchars($log['module']) ?></div>
+                                    <div class="timeline-time"><?= date('H:i', strtotime($log['created_at'])) ?> • <?= date('d/m', strtotime($log['created_at'])) ?></div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Birthdays / Quick Info -->
+            <div class="card" style="background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%); color: white;">
+                <div class="card-header">
+                    <h3 style="color: white;"><i class="fa-solid fa-cake-candles"></i> Celebrações</h3>
+                </div>
+                <div class="birthday-list">
+                    <?php if (empty($birthdayPeople)): ?>
+                        <p style="opacity: 0.8; font-size: 0.9rem;">Nenhum aniversário hoje.</p>
+                    <?php else: ?>
+                        <?php foreach ($birthdayPeople as $p): ?>
+                            <div class="birthday-item">
+                                <div class="birthday-avatar">
+                                    <?php if ($p['avatar_url']): ?>
+                                        <img src="<?= $p['avatar_url'] ?>" alt="">
+                                    <?php else: ?>
+                                        <?= strtoupper(substr($p['name'], 0, 1)) ?>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="birthday-info">
+                                    <div class="name"><?= htmlspecialchars($p['name']) ?></div>
+                                    <div class="action">Enviar parabéns</div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const chartOptions = {
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('dashboardChart').getContext('2d');
+    
+    // Gradient for bars
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(79, 70, 229, 0.8)');
+    gradient.addColorStop(1, 'rgba(79, 70, 229, 0.2)');
+
+    const chartData = {
+        labels: <?= json_encode(array_column($bookingsByRoom, 'name')) ?>,
+        datasets: [{
+            label: 'Reservas por Sala',
+            data: <?= json_encode(array_column($bookingsByRoom, 'count')) ?>,
+            backgroundColor: gradient,
+            borderColor: '#4F46E5',
+            borderWidth: 2,
+            borderRadius: 10,
+            barThickness: 30
+        }]
+    };
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: chartData,
+        options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#1e293b',
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
                     padding: 12,
                     titleFont: { size: 14, weight: 'bold' },
                     bodyFont: { size: 13 }
                 }
             },
             scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { weight: '600' } }
-                },
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(0,0,0,0.05)' }
+                    grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+                    ticks: { color: '#94A3B8' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#64748B', font: { weight: '600' } }
                 }
             }
-        };
-
-        // Salas Chart
-        <?php
-            $salaLabels = array_column($bookingsByRoom, 'name');
-            $salaData = array_column($bookingsByRoom, 'count');
-        ?>
-        new Chart(document.getElementById('salasChart'), {
-            type: 'bar',
-            data: {
-                labels: <?= json_encode($salaLabels) ?: '[]' ?>,
-                datasets: [{ 
-                    label: 'Reservas',
-                    data: <?= json_encode($salaData) ?: '[]' ?>, 
-                    backgroundColor: 'linear-gradient(180deg, #3b82f6, #2563eb)',
-                    backgroundColor: '#3b82f6',
-                    borderRadius: 8,
-                    maxBarThickness: 50
-                }]
-            },
-            options: chartOptions
-        });
+        }
     });
+});
 </script>

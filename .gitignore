@@ -1,29 +1,18 @@
-# Cetusg - Git Ignore
-# ====================
-
-# Logs
-storage/logs/*.log
-
-# Uploads do usuário (não versionar dados pessoais)
-uploads/
-storage/uploads/
-
-# Configuração local (senhas, variáveis de ambiente)
-.env
-
-# IDE / Editores
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Sistema Operacional
-Thumbs.db
-.DS_Store
-
-# Node (caso venha a usar no futuro)
+# Pastas de dependências
 node_modules/
+vendor/
 
-# Temporários
-*.tmp
-*.bak
+# Arquivos de Sistema e Configuração Local
+.env
+config.local.php
+.DS_Store
+Thumbs.db
+
+# Pastas de Upload (opcional, se quiser manter os anexos apenas no servidor)
+# uploads/chat_files/*
+# uploads/avatars/*
+
+# Logs e Cache
+*.log
+.cache/
+.temp/

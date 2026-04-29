@@ -3,7 +3,6 @@ require_once 'config.php';
 require_once 'auth.php';
 require_once 'SimpleXLSX.php';
 
-session_start();
 $user = getCurrentUser($pdo);
 if (!$user || ($user['role'] != 'Administrador' && $user['role'] != 'Suporte Técnico')) {
     die('Acesso negado');

@@ -271,13 +271,15 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
                 <td>
                     <div style="display:flex; gap:0.25rem; flex-wrap:wrap;">
                     <?php 
-                    $locs = explode(', ', $v['location']);
+                    $locs = explode(', ', $v['location'] ?? '');
                     foreach($locs as $loc): 
+                        $loc = trim($loc);
                         if(empty($loc)) continue;
                         $lColor = $loc == 'Presencial' ? '#ef4444' : ($loc == 'Remoto' ? '#3b82f6' : '#8b5cf6');
+                        $lIcon = $loc == 'Presencial' ? 'fa-house-user' : ($loc == 'Remoto' ? 'fa-laptop-house' : 'fa-circle-nodes');
                     ?>
-                        <span style="font-size:0.65rem; font-weight:800; color:<?=$lColor?>; background:<?= $lColor.'0D' ?>; padding:2px 6px; border-radius:4px; border:1px solid <?=$lColor?>33;">
-                            <?=$loc?>
+                        <span style="font-size:0.65rem; font-weight:800; color:<?=$lColor?>; background:<?= $lColor.'0D' ?>; padding:2px 6px; border-radius:4px; border:1px solid <?=$lColor?>33; display: flex; align-items: center; gap: 3px;">
+                            <i class="fa-solid <?=$lIcon?>"></i> <?=$loc?>
                         </span>
                     <?php endforeach; ?>
                     </div>

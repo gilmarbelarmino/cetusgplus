@@ -2,7 +2,6 @@
 require_once 'config.php';
 require_once 'auth.php';
 
-session_start();
 $user = getCurrentUser();
 if (!$user || ($user['role'] != 'Administrador' && $user['role'] != 'Suporte Técnico')) {
     http_response_code(403);

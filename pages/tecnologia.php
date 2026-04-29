@@ -196,10 +196,10 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
     .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
     /* Notes System Styles */
-    .notes-layout { display: flex; gap: 1rem; height: 700px; background: #fff; border-radius: 1rem; overflow: hidden; border: 1px solid #e2e8f0; }
-    .notes-sections { width: 200px; background: #f8fafc; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; }
-    .notes-pages { width: 250px; background: #fff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; }
-    .notes-editor { flex: 1; display: flex; flex-direction: column; background: #fff; }
+    .notes-layout { display: flex; gap: 0; height: calc(100vh - 220px); min-height: 600px; background: #fff; border-radius: 1rem; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+    .notes-sections { width: 220px; background: #f8fafc; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow-y: auto; height: 100%; }
+    .notes-pages { width: 280px; background: #fff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow-y: auto; height: 100%; }
+    .notes-editor { flex: 1; display: flex; flex-direction: column; background: #fff; overflow: hidden; min-width: 0; min-height: 0; height: 100%; }
     
     .notes-header { padding: 1rem; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 0.875rem; color: #64748b; display: flex; justify-content: space-between; align-items: center; }
     .notes-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
@@ -215,15 +215,16 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
     .note-page-title { font-weight: 700; color: #1e293b; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .note-page-preview { font-size: 0.75rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
-    .editor-container { flex: 1; display: flex; flex-direction: column; padding: 2rem; }
-    .editor-title { border: none; font-size: 2rem; font-weight: 900; color: #1e293b; margin-bottom: 1.5rem; width: 100%; outline: none; }
-    .editor-content { border: none; flex: 1; font-size: 1rem; line-height: 1.6; color: #334155; width: 100%; outline: none; resize: none; min-height: 400px; }
+    .editor-container { flex: 1; display: flex; flex-direction: column; padding: 2rem 3rem; overflow-y: auto; min-height: 0; height: 100%; }
+    .editor-title { border: none; font-size: 2.2rem; font-weight: 900; color: #1e293b; margin-bottom: 1.5rem; width: 100%; outline: none; background: transparent; flex-shrink: 0; }
+    .editor-title::placeholder { color: #cbd5e1; font-weight: 800; }
+    .editor-content { border: none; flex: 1; display: flex; flex-direction: column; font-size: 1.05rem; line-height: 1.7; color: #334155; width: 100%; outline: none; min-height: 0; }
     
     /* Quill Customization */
-    .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f1f5f9 !important; background: #fff; padding: 0.5rem 1rem !important; position: sticky; top: 0; z-index: 10; }
-    .ql-container.ql-snow { border: none !important; font-family: inherit !important; font-size: 1rem !important; }
-    .ql-editor { padding: 2rem 3rem !important; min-height: 400px; }
-    .ql-editor.ql-blank::before { left: 3rem !important; font-style: normal !important; color: #94a3b8 !important; }
+    .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f1f5f9 !important; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); padding: 0.75rem 1.5rem !important; position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 0.5rem; flex-shrink: 0; }
+    .ql-container.ql-snow { border: none !important; font-family: 'Inter', sans-serif !important; font-size: 1.05rem !important; flex: 1; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+    .ql-editor { padding: 1rem 0 3rem 0 !important; flex: 1; min-height: 400px; height: 100%; }
+    .ql-editor.ql-blank::before { left: 0 !important; font-style: normal !important; color: #cbd5e1 !important; font-weight: 500; }
 
     /* Emoji Picker Simple Style */
     .emoji-drawer { display: none; position: absolute; bottom: 100%; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 1rem; grid-template-columns: repeat(6, 1fr); gap: 0.5rem; z-index: 100; max-height: 250px; overflow-y: auto; width: 250px; }
@@ -238,8 +239,11 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
     .sticker-item img { max-width: 100%; height: auto; }
 
     @media (max-width: 1024px) {
-        .notes-layout { flex-direction: column; height: auto; }
-        .notes-sections, .notes-pages { width: 100%; border-right: none; border-bottom: 1px solid #e2e8f0; max-height: 200px; }
+        .notes-layout { flex-direction: column; height: calc(100vh - 120px); min-height: auto; }
+        .notes-sections, .notes-pages { width: 100%; border-right: none; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; max-height: 150px; }
+        .notes-editor { flex: 1; }
+        .editor-container { padding: 1.5rem; }
+        .editor-title { font-size: 1.5rem; }
         .hide-mobile { display: none; }
     }
 </style>
@@ -520,7 +524,7 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
         <!-- Editor (Conteúdo) -->
         <div class="notes-editor">
             <?php if ($active_section_id): ?>
-                <form method="POST" id="noteForm" style="flex: 1; display: flex; flex-direction: column;">
+                <form method="POST" id="noteForm" style="flex: 1; display: flex; flex-direction: column; min-height: 0; height: 100%;">
                     <input type="hidden" name="action" value="save_note">
                     <input type="hidden" name="id" id="note_id" value="<?= $active_note['id'] ?? '' ?>">
                     <input type="hidden" name="section_id" value="<?= $active_section_id ?>">
@@ -599,9 +603,9 @@ $tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 
                         </span>
                     </div>
 
-                    <div class="editor-container" style="padding: 2.5rem 3rem; flex: 1; display: flex; flex-direction: column;">
+                    <div class="editor-container">
                         <input type="text" name="title" id="noteTitleInput" class="editor-title" placeholder="Título da nota..." value="<?= htmlspecialchars($active_note['title'] ?? '') ?>" required autocomplete="off">
-                        <div style="height: 1px; background: #f1f5f9; margin-bottom: 0.5rem;"></div>
+                        <div style="height: 1px; background: #f1f5f9; margin-bottom: 1rem; flex-shrink: 0;"></div>
                         
                         <input type="hidden" name="content" id="hiddenContent">
                         <div id="editor" class="editor-content"><?= $active_note['content'] ?? '' ?></div>
