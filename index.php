@@ -55,18 +55,19 @@ try {
     $cols_to_check = [
         'deleted_at' => "DATETIME NULL",
         'purge_after' => "DATE NULL",
-        'access_liberation_date' => "DATETIME NULL",
-        'last_payment_date' => "DATETIME NULL",
-        'subscription_value' => "DECIMAL(10,2) DEFAULT 0",
-        'last_amount_paid' => "DECIMAL(10,2) DEFAULT 0"
-    ];
-    foreach ($cols_to_check as $col => $definition) {
-        $check = $pdo->query("SHOW COLUMNS FROM tenants LIKE '$col'")->fetch();
-        if (!$check) {
-            $pdo->exec("ALTER TABLE tenants ADD COLUMN $col $definition");
-        }
-    }
-} catch(Exception $e) {}
+    // Garantir colunas de controle SaaS na tabela tenants
+    $cols = $pdo->query("SHOW COLUMNS FROM tenants")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('deleted_at', $cols)) $pdo->exec("ALTER TABLE tenants ADD COLUMN deleted_at TIMESTAMP NULL");
+    if (!in_array('purge_after', $cols)) $pdo->exec("ALTER TABLE tenants ADD COLUMN purge_after INT DEFAULT 90");
+    if (!in_array('subscription_value', $cols)) $pdo->exec("ALTER TABLE tenants ADD COLUMN subscription_value DECIMAL(10,2) DEFAULT 0.00");
+    if (!in_array('is_blocked', $cols)) $pdo->exec("ALTER TABLE tenants ADD COLUMN is_blocked TINYINT(1) DEFAULT 0");
+
+    // MIGRACAO: Corrigir administradores de empresas que ficaram sem papel
+    $pdo->exec("UPDATE users SET role = 'Administrador' WHERE (role IS NULL OR role = '' OR role = 'Colaborador') AND company_id > 1 AND id IN (SELECT user_id FROM user_menus WHERE menu = 'usuarios')");
+
+    // MIGRACAO: Garantir que usuários antigos sem ID de empresa pertençam ao Projeto Arrastão (ID 1)
+    $pdo->exec("UPDATE users SET company_id = 1 WHERE company_id IS NULL OR company_id = 0");
+} catch (Exception $e) {}
 
 // Buscar configurações da empresa do usuário logado
 $user_company_id = $user['company_id'] ?: 1;

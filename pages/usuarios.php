@@ -65,8 +65,21 @@ try {
         $user_accounts_map[$acc['user_id']][] = $acc;
     }
 
-    $query = "SELECT u.*, un.name as unit_name, rh.role_name as rh_role_name, rh.gender as rh_gender FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id LEFT JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id WHERE u.company_id = ?";
-    $params = [$compId];
+    $isSuperAdmin = ($user['is_super_admin'] ?? 0) == 1 || ($user['login_name'] ?? '') === 'superadmin';
+    
+    $query = "SELECT u.*, un.name as unit_name, rh.role_name as rh_role_name, rh.gender as rh_gender, t.name as tenant_name 
+              FROM users u 
+              LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id 
+              LEFT JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id 
+              LEFT JOIN tenants t ON u.company_id = t.id
+              WHERE 1=1";
+              
+    $params = [];
+    if (!$isSuperAdmin) {
+        $query .= " AND u.company_id = ?";
+        $params[] = $compId;
+    }
+    
     if ($search) {
         $query .= " AND (u.name LIKE ? OR u.email LIKE ? OR u.sector LIKE ? OR u.access_number LIKE ?)";
         $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%";
@@ -75,7 +88,7 @@ try {
         $query .= " AND u.unit_id = ?";
         $params[] = $unit_filter;
     }
-    $query .= " ORDER BY u.name ASC";
+    $query .= " ORDER BY u.company_id ASC, u.name ASC";
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
     while ($usr = $stmt->fetch()) {
@@ -468,7 +481,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         </div>
     </div>
     <div class="page-header-actions">
-        <?php if ($user['role'] == 'Administrador' || $user['login_name'] === 'superadmin'): ?>
+        <?php 
+        // Lógica resiliente para exibir o botão de inclusão
+        $userMenus = getUserMenus($pdo, $user['id']);
+        $hasUserPermission = is_array($userMenus) && in_array('usuarios', $userMenus);
+        
+        if ($user['role'] === 'Administrador' || $user['login_name'] === 'superadmin' || ($compId > 1 && $hasUserPermission)): 
+        ?>
         <button class="btn-primary" onclick="document.getElementById('formModal').style.display='flex'">
             <i class="fa-solid fa-plus"></i>
             Incluir Usuário
@@ -558,6 +577,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <p style="font-size: 0.75rem; color: var(--text-soft); font-weight: 600;">
                         <?= htmlspecialchars($usr['email'] ?? '') ?>
                     </p>
+                    <?php if (($isSuperAdmin ?? false) && !empty($usr['tenant_name'])): ?>
+                        <div style="font-size: 0.65rem; background: rgba(59, 130, 246, 0.1); color: #3B82F6; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; font-weight: 800;">
+                            <i class="fa-solid fa-building"></i> <?= htmlspecialchars($usr['tenant_name']) ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 
                 <div>
