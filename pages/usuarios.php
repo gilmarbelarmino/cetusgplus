@@ -76,8 +76,9 @@ try {
               
     $params = [];
     if (!$isSuperAdmin) {
-        $query .= " AND u.company_id = ?";
-        $params[] = $compId;
+        // Se for 0 ou null, assume 1 (Projeto Arrastão) para garantir visibilidade
+        $query .= " AND (u.company_id = ? OR u.company_id IS NULL OR u.company_id = 0)";
+        $params[] = ($compId ?: 1);
     }
     
     if ($search) {

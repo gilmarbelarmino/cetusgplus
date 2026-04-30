@@ -15,6 +15,16 @@ if (!$user) {
     exit;
 }
 
+// Garantir que a sessão tenha um ID de empresa válido (Default para Projeto Arrastão se for 0)
+if (empty($_SESSION['company_id']) || $_SESSION['company_id'] == 0) {
+    $_SESSION['company_id'] = $user['company_id'] ?: 1;
+}
+
+// Garantir que a sessão tenha um ID de empresa válido (Default para Projeto Arrastão se for 0)
+if (empty($_SESSION['company_id']) || $_SESSION['company_id'] == 0) {
+    $_SESSION['company_id'] = $user['company_id'] ?: 1;
+}
+
 // --- LOGICA SAAS: Verificar Licença da Empresa ---
 $tenant_id = $user['company_id'] ?: 1;
 $stmt_tenant = $pdo->prepare("SELECT * FROM tenants WHERE id = ?");
