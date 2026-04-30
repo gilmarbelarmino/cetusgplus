@@ -87,6 +87,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $pdo->prepare("UPDATE users SET status = 'Ativo' WHERE company_id = ?")->execute([$id]);
         $success = "Empresa reativada com sucesso! Todos os dados foram restaurados.";
     }
+
+    if ($_POST['action'] === 'edit_tenant') {
+        try {
+            $id = $_POST['tenant_id'];
+            $name = $_POST['name'];
+            $expires = $_POST['expires_at'];
+            $type = $_POST['license_type'];
+            $value = $_POST['subscription_value'] ?: 0;
+            
+            $stmt = $pdo->prepare("UPDATE tenants SET name = ?, expires_at = ?, license_type = ?, subscription_value = ? WHERE id = ?");
+            $stmt->execute([$name, $expires, $type, $value, $id]);
+            
+            // Atualizar também o nome da empresa nas configurações
+            $pdo->prepare("UPDATE company_settings SET company_name = ? WHERE id = ?")->execute([$name, $id]);
+            
+            $success = "Dados da empresa '$name' atualizados com sucesso!";
+        } catch (Exception $e) {
+            $error = "Erro ao atualizar: " . $e->getMessage();
+        }
+    }
 }
 
 // Purga automática: apagar dados de empresas com mais de 3 meses de exclusão
@@ -188,6 +208,10 @@ $tenants = $stmt->fetchAll();
                                 <button onclick="openRenewModal(<?= $tenant['id'] ?>, '<?= htmlspecialchars($tenant['name']) ?>', <?= $tenant['subscription_value'] ?>)" class="btn-primary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: #FBBF24; color: #000;" title="Renovar/Pagar">
                                     <i class="fa-solid fa-money-bill-transfer"></i>
                                 </button>
+                                <!-- Editar -->
+                                <button onclick="openEditModal(<?= $tenant['id'] ?>, '<?= htmlspecialchars(addslashes($tenant['name'])) ?>', '<?= $tenant['expires_at'] ?>', '<?= $tenant['license_type'] ?>', <?= $tenant['subscription_value'] ?>)" class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #3B82F6; border: none; cursor: pointer; border-radius: 6px;" title="Editar Cadastro">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
                                 <!-- Bloquear/Desbloquear -->
                                 <form method="POST" style="display: inline;"><input type="hidden" name="action" value="toggle_status"><input type="hidden" name="tenant_id" value="<?= $tenant['id'] ?>"><input type="hidden" name="status" value="<?= $tenant['status'] ?>">
                                     <button type="submit" class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: rgba(255,255,255,0.05);" title="<?= $tenant['status'] === 'active' ? 'Bloquear' : 'Desbloquear' ?>">
@@ -286,11 +310,57 @@ $tenants = $stmt->fetchAll();
     </div>
 </div>
 
+<!-- Modal Editar Cliente -->
+<div id="editTenantModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 3000; align-items: center; justify-content: center; padding: 2rem;">
+    <div class="glass-panel" style="max-width: 500px; width: 100%; padding: 2.5rem; max-height: 90vh; overflow-y: auto;">
+        <h3 id="editModalTitle" style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin-bottom: 2rem;">Editar Empresa</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="edit_tenant">
+            <input type="hidden" name="tenant_id" id="editTenantId">
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Nome da Empresa</label>
+                <input type="text" name="name" id="editTenantName" required class="form-input">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Valor do Plano (R$)</label>
+                    <input type="number" step="0.01" name="subscription_value" id="editTenantValue" required class="form-input">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Tipo</label>
+                    <select name="license_type" id="editTenantType" class="form-input">
+                        <option value="monthly">Mensal</option>
+                        <option value="yearly">Anual</option>
+                        <option value="lifetime">Vitalício</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Data de Vencimento</label>
+                <input type="date" name="expires_at" id="editTenantExpires" required class="form-input">
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 1.2rem; border-radius: 15px; font-weight: 800; font-size: 1rem; background: #3B82F6; color: white;">Salvar Alterações</button>
+        </form>
+        <button onclick="document.getElementById('editTenantModal').style.display='none'" style="width: 100%; background: none; border: none; color: var(--text-soft); margin-top: 1rem; cursor: pointer;">Cancelar</button>
+    </div>
+</div>
+
 <script>
 function openRenewModal(id, name, value) {
     document.getElementById('renewTenantId').value = id;
     document.getElementById('renewTitle').innerText = 'Renovar: ' + name;
     document.getElementById('renewAmount').value = value;
     document.getElementById('renewModal').style.display = 'flex';
+}
+
+function openEditModal(id, name, expires, type, value) {
+    document.getElementById('editTenantId').value = id;
+    document.getElementById('editTenantName').value = name;
+    document.getElementById('editTenantValue').value = value;
+    document.getElementById('editTenantType').value = type;
+    document.getElementById('editTenantExpires').value = expires.split(' ')[0];
+    document.getElementById('editModalTitle').innerText = 'Editar: ' + name;
+    document.getElementById('editTenantModal').style.display = 'flex';
 }
 </script>
