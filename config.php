@@ -83,11 +83,7 @@ if (!function_exists('getUserMenus')) {
             $loginName = $checkAdmin->fetchColumn();
 
             if ($loginName === 'superadmin') {
-                return [
-                    'rh', 'voluntariado', 'semanada', 'patrimonio', 'emprestimos', 
-                    'chamados', 'orcamentos', 'locacao_salas', 'relatorios', 
-                    'tecnologia', 'informacoes', 'usuarios', 'configuracoes', 'super_admin'
-                ];
+                return ['super_admin'];
             }
             return $menus;
         } catch(Exception $e) { return []; }

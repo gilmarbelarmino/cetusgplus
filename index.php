@@ -196,6 +196,7 @@ try {
                     </a>
                 </div>
 
+                <?php if (in_array('rh', $user_menus) || in_array('voluntariado', $user_menus) || in_array('semanada', $user_menus)): ?>
                 <div class="sidebar-group">
                     <span class="sidebar-category">Operacional</span>
                     <?php if (in_array('rh', $user_menus)): ?>
@@ -217,7 +218,9 @@ try {
                         </a>
                     <?php endif; ?>
                 </div>
+                <?php endif; ?>
 
+                <?php if (in_array('patrimonio', $user_menus) || in_array('emprestimos', $user_menus) || in_array('chamados', $user_menus)): ?>
                 <div class="sidebar-group">
                     <span class="sidebar-category">Gestão de Ativos</span>
                     <?php if (in_array('patrimonio', $user_menus)): ?>
@@ -242,7 +245,9 @@ try {
                         </a>
                     <?php endif; ?>
                 </div>
+                <?php endif; ?>
 
+                <?php if (in_array('orcamentos', $user_menus) || in_array('locacao_salas', $user_menus)): ?>
                 <div class="sidebar-group">
                     <span class="sidebar-category">Infraestrutura</span>
                     <?php if (in_array('orcamentos', $user_menus)): ?>
@@ -258,7 +263,9 @@ try {
                         </a>
                     <?php endif; ?>
                 </div>
+                <?php endif; ?>
 
+                <?php if (in_array('relatorios', $user_menus) || in_array('tecnologia', $user_menus) || in_array('informacoes', $user_menus)): ?>
                 <div class="sidebar-group">
                     <span class="sidebar-category">Sistemas</span>
                     <?php if (in_array('relatorios', $user_menus)): ?>
@@ -280,7 +287,9 @@ try {
                         </a>
                     <?php endif; ?>
                 </div>
+                <?php endif; ?>
 
+                <?php if (in_array('usuarios', $user_menus) || in_array('configuracoes', $user_menus)): ?>
                 <div class="sidebar-group">
                     <span class="sidebar-category">Ajustes</span>
                     <?php if (in_array('usuarios', $user_menus)): ?>
@@ -296,6 +305,7 @@ try {
                         </a>
                     <?php endif; ?>
                 </div>
+                <?php endif; ?>
 
                 <?php if (in_array('super_admin', $user_menus)): ?>
                 <div class="sidebar-group">
