@@ -68,10 +68,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt = $pdo->prepare("UPDATE tenants SET status = ? WHERE id = ?");
         $stmt->execute([$status, $id]);
     }
+
+    if ($_POST['action'] === 'delete_tenant') {
+        $id = $_POST['tenant_id'];
+        $purgeDate = date('Y-m-d', strtotime('+3 months'));
+        // Soft delete: marca data de exclusão e data de purga (3 meses)
+        $pdo->prepare("UPDATE tenants SET status = 'inactive', deleted_at = NOW(), purge_after = ? WHERE id = ?")->execute([$purgeDate, $id]);
+        // Bloquear todos os usuários da empresa
+        $pdo->prepare("UPDATE users SET status = 'Inativo' WHERE company_id = ?")->execute([$id]);
+        $success = "Empresa excluída. Dados serão mantidos até $purgeDate.";
+    }
+
+    if ($_POST['action'] === 'reactivate_tenant') {
+        $id = $_POST['tenant_id'];
+        // Reativar empresa e limpar datas de exclusão
+        $pdo->prepare("UPDATE tenants SET status = 'active', deleted_at = NULL, purge_after = NULL WHERE id = ?")->execute([$id]);
+        // Reativar usuários da empresa
+        $pdo->prepare("UPDATE users SET status = 'Ativo' WHERE company_id = ?")->execute([$id]);
+        $success = "Empresa reativada com sucesso! Todos os dados foram restaurados.";
+    }
 }
 
-// Buscar Tenants
-$stmt = $pdo->query("SELECT t.*, (SELECT COUNT(*) FROM users WHERE company_id = t.id) as user_count FROM tenants t ORDER BY t.id DESC");
+// Purga automática: apagar dados de empresas com mais de 3 meses de exclusão
+try {
+    $expired = $pdo->query("SELECT id FROM tenants WHERE purge_after IS NOT NULL AND purge_after < CURDATE()")->fetchAll();
+    foreach ($expired as $exp) {
+        $cid = $exp['id'];
+        $pdo->prepare("DELETE FROM user_menus WHERE user_id IN (SELECT id FROM users WHERE company_id = ?)")->execute([$cid]);
+        $pdo->prepare("DELETE FROM users WHERE company_id = ?")->execute([$cid]);
+        $pdo->prepare("DELETE FROM company_settings WHERE id = ?")->execute([$cid]);
+        $pdo->prepare("DELETE FROM tenants WHERE id = ?")->execute([$cid]);
+    }
+} catch(Exception $e) {}
+
+// Buscar Tenants (incluindo excluídos para o admin ver)
+$stmt = $pdo->query("SELECT t.*, (SELECT COUNT(*) FROM users WHERE company_id = t.id) as user_count FROM tenants t ORDER BY t.deleted_at IS NOT NULL, t.id DESC");
 $tenants = $stmt->fetchAll();
 ?>
 
@@ -137,23 +168,37 @@ $tenants = $stmt->fetchAll();
                         </div>
                     </td>
                     <td style="padding: 1.5rem;">
-                        <span class="badge" style="background: <?= $tenant['status'] === 'active' ? ($isExpired ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)') : 'rgba(100,116,139,0.1)' ?>; color: <?= $tenant['status'] === 'active' ? ($isExpired ? '#EF4444' : '#10B981') : '#64748B' ?>; padding: 0.5rem 1rem; border-radius: 100px;">
-                            <?= $isExpired ? 'Expirado' : ($tenant['status'] === 'active' ? 'Ativo' : 'Bloqueado') ?>
+                        <?php $isDeleted = !empty($tenant['deleted_at']); ?>
+                        <span class="badge" style="background: <?= $isDeleted ? 'rgba(239,68,68,0.1)' : ($tenant['status'] === 'active' ? ($isExpired ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)') : 'rgba(100,116,139,0.1)') ?>; color: <?= $isDeleted ? '#EF4444' : ($tenant['status'] === 'active' ? ($isExpired ? '#EF4444' : '#10B981') : '#64748B') ?>; padding: 0.5rem 1rem; border-radius: 100px;">
+                            <?= $isDeleted ? 'Excluído' : ($isExpired ? 'Expirado' : ($tenant['status'] === 'active' ? 'Ativo' : 'Bloqueado')) ?>
                         </span>
+                        <?php if ($isDeleted && $tenant['purge_after']): ?>
+                            <div style="font-size:0.65rem;color:#EF4444;margin-top:4px">Purga: <?= date('d/m/Y', strtotime($tenant['purge_after'])) ?></div>
+                        <?php endif; ?>
                     </td>
                     <td style="padding: 1.5rem;">
                         <div style="display: flex; gap: 0.5rem;">
-                            <button onclick="openRenewModal(<?= $tenant['id'] ?>, '<?= htmlspecialchars($tenant['name']) ?>', <?= $tenant['subscription_value'] ?>)" class="btn-primary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: #FBBF24; color: #000;" title="Renovar/Pagar">
-                                <i class="fa-solid fa-money-bill-transfer"></i>
-                            </button>
-                            <form method="POST" style="display: inline;">
-                                <input type="hidden" name="action" value="toggle_status">
-                                <input type="hidden" name="tenant_id" value="<?= $tenant['id'] ?>">
-                                <input type="hidden" name="status" value="<?= $tenant['status'] ?>">
-                                <button type="submit" class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: rgba(255,255,255,0.05);" title="<?= $tenant['status'] === 'active' ? 'Bloquear' : 'Desbloquear' ?>">
-                                    <i class="fa-solid <?= $tenant['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
+                            <?php if ($isDeleted): ?>
+                                <!-- Reativar -->
+                                <form method="POST" style="display:inline"><input type="hidden" name="action" value="reactivate_tenant"><input type="hidden" name="tenant_id" value="<?= $tenant['id'] ?>">
+                                    <button type="submit" style="padding:0.5rem 0.8rem;font-size:0.75rem;background:rgba(16,185,129,0.1);color:#10B981;border:none;cursor:pointer;border-radius:6px;font-weight:700" title="Reativar"><i class="fa-solid fa-rotate-left"></i></button>
+                                </form>
+                            <?php else: ?>
+                                <!-- Renovar -->
+                                <button onclick="openRenewModal(<?= $tenant['id'] ?>, '<?= htmlspecialchars($tenant['name']) ?>', <?= $tenant['subscription_value'] ?>)" class="btn-primary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: #FBBF24; color: #000;" title="Renovar/Pagar">
+                                    <i class="fa-solid fa-money-bill-transfer"></i>
                                 </button>
-                            </form>
+                                <!-- Bloquear/Desbloquear -->
+                                <form method="POST" style="display: inline;"><input type="hidden" name="action" value="toggle_status"><input type="hidden" name="tenant_id" value="<?= $tenant['id'] ?>"><input type="hidden" name="status" value="<?= $tenant['status'] ?>">
+                                    <button type="submit" class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: rgba(255,255,255,0.05);" title="<?= $tenant['status'] === 'active' ? 'Bloquear' : 'Desbloquear' ?>">
+                                        <i class="fa-solid <?= $tenant['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
+                                    </button>
+                                </form>
+                                <!-- Excluir -->
+                                <form method="POST" style="display:inline" onsubmit="return confirm('Tem certeza? Os dados serão mantidos por 3 meses.')"><input type="hidden" name="action" value="delete_tenant"><input type="hidden" name="tenant_id" value="<?= $tenant['id'] ?>">
+                                    <button type="submit" style="padding:0.5rem 0.8rem;font-size:0.75rem;background:rgba(239,68,68,0.1);color:#EF4444;border:none;cursor:pointer;border-radius:6px" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+                            <?php endif; ?>
                         </div>
                     </td>
                 </tr>
