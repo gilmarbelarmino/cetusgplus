@@ -332,11 +332,17 @@ try {
 
                 <?php if (in_array('usuarios', $user_menus) || in_array('configuracoes', $user_menus)): ?>
                 <div class="sidebar-group">
-                    <span class="sidebar-category">Ajustes</span>
+                    <span class="sidebar-category">Ajustes & Estrutura</span>
+                    <?php if ($user['role'] === 'Administrador' || $user['login_name'] === 'superadmin'): ?>
+                        <a href="index.php?page=configuracoes" class="sidebar-item <?= $page === 'configuracoes' ? 'sidebar-active' : '' ?>">
+                            <i class="fa-solid fa-sitemap"></i>
+                            <span>Unidades & Cargos</span>
+                        </a>
+                    <?php endif; ?>
                     <?php if (in_array('usuarios', $user_menus)): ?>
                         <a href="index.php?page=usuarios" class="sidebar-item <?= $page === 'usuarios' ? 'sidebar-active' : '' ?>">
                             <i class="fa-solid fa-user-gear"></i>
-                            <span>Usuários</span>
+                            <span>Gerenciar Usuários</span>
                         </a>
                     <?php endif; ?>
                     <?php if (in_array('configuracoes', $user_menus)): ?>
