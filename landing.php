@@ -249,7 +249,7 @@
     <!-- FOOTER -->
     <footer>
         <div style="color:#374151;font-size:.85rem">&copy; <?= date('Y') ?> CetusgTech. Todos os direitos reservados.</div>
-        <a href="login.php?type=admin" class="btn-admin"><i class="fa-solid fa-shield-halved"></i> Área do Administrador</a>
+        <a href="login.php" class="btn-admin"><i class="fa-solid fa-shield-halved"></i> Área do Administrador</a>
     </footer>
 
     <script>
