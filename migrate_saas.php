@@ -24,7 +24,7 @@ try {
     }
 
     // 4. Ativar Super Admin para o administrador
-    $pdo->exec("UPDATE users SET is_super_admin = 1 WHERE login_name = 'admin' OR id = '1'");
+    $pdo->exec("UPDATE users SET is_super_admin = 1 WHERE login_name IN ('admin', 'gil') OR id = '1'");
 
     echo "<div style='font-family:Arial; padding:2rem; text-align:center;'>
             <h1 style='color:#10B981;'>✅ Migração SaaS Concluída!</h1>

@@ -72,7 +72,15 @@ if (!function_exists('getUserMenus')) {
         try {
             $stmt = $target_pdo->prepare("SELECT menu FROM user_menus WHERE user_id = ?");
             $stmt->execute([$target_user_id]);
-            return array_column($stmt->fetchAll(), 'menu') ?: [];
+            $menus = array_column($stmt->fetchAll(), 'menu') ?: [];
+            
+            // Logica SaaS: Se for super admin, adicionar menu de gestão
+            if (is_array($user) && isset($user['is_super_admin']) && $user['is_super_admin'] == 1) {
+                if (!in_array('super_admin', $menus)) {
+                    $menus[] = 'super_admin';
+                }
+            }
+            return $menus;
         } catch(Exception $e) { return []; }
     }
 }
