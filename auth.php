@@ -119,9 +119,12 @@ function login($loginName, $password) {
             }
         }
         
-        // Garantir que a coluna company_id existe na tabela de logs (Migração Automática SaaS)
+        // Garantir que a coluna company_id existe na tabela de logs (Migração Manual para máxima compatibilidade SaaS)
         try {
-            $pdo->exec("ALTER TABLE login_logs ADD COLUMN IF NOT EXISTS company_id INT DEFAULT 0");
+            $checkCol = $pdo->query("SHOW COLUMNS FROM login_logs LIKE 'company_id'")->fetch();
+            if (!$checkCol) {
+                $pdo->exec("ALTER TABLE login_logs ADD COLUMN company_id INT DEFAULT 0");
+            }
         } catch(Exception $e) {}
 
         $stmt_log = $pdo->prepare("INSERT INTO login_logs (user_id, user_name, ip_address, mac_address, company_id) VALUES (?, ?, ?, ?, ?)");
