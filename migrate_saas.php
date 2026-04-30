@@ -10,6 +10,8 @@ try {
         status ENUM('active', 'inactive', 'pending') DEFAULT 'pending',
         license_type ENUM('monthly', 'yearly', 'lifetime') DEFAULT 'monthly',
         expires_at DATE,
+        subscription_value DECIMAL(10,2) DEFAULT 0.00,
+        last_amount_paid DECIMAL(10,2) DEFAULT 0.00,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
