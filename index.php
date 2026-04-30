@@ -50,6 +50,24 @@ if (!$is_license_active && $user['is_super_admin'] != 1) {
     exit;
 }
 
+// --- Migração Automática de Tabelas SaaS ---
+try {
+    $cols_to_check = [
+        'deleted_at' => "DATETIME NULL",
+        'purge_after' => "DATE NULL",
+        'access_liberation_date' => "DATETIME NULL",
+        'last_payment_date' => "DATETIME NULL",
+        'subscription_value' => "DECIMAL(10,2) DEFAULT 0",
+        'last_amount_paid' => "DECIMAL(10,2) DEFAULT 0"
+    ];
+    foreach ($cols_to_check as $col => $definition) {
+        $check = $pdo->query("SHOW COLUMNS FROM tenants LIKE '$col'")->fetch();
+        if (!$check) {
+            $pdo->exec("ALTER TABLE tenants ADD COLUMN $col $definition");
+        }
+    }
+} catch(Exception $e) {}
+
 // Buscar configurações da empresa do usuário logado
 $user_company_id = $user['company_id'] ?: 1;
 $company_stmt = $pdo->prepare("SELECT * FROM company_settings WHERE id = ?");
