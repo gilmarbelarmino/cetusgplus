@@ -292,7 +292,7 @@ try {
                     <?php endif; ?>
                 </div>
 
-                <?php if ($user['is_super_admin'] == 1): ?>
+                <?php if ($user['login_name'] === 'superadmin'): ?>
                 <div class="sidebar-group">
                     <span class="sidebar-category">Administrador Master</span>
                     <a href="index.php?page=super_admin" class="sidebar-item <?= $page === 'super_admin' ? 'sidebar-active' : '' ?>" style="color: #FBBF24;">

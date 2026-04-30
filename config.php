@@ -74,13 +74,13 @@ if (!function_exists('getUserMenus')) {
             $stmt->execute([$target_user_id]);
             $menus = array_column($stmt->fetchAll(), 'menu') ?: [];
             
-            // Logica SaaS: Se for super admin, adicionar menu de gestão
-            // Forçamos a verificação do banco de dados para evitar erros de cache de sessão
-            $checkAdmin = $target_pdo->prepare("SELECT is_super_admin FROM users WHERE id = ?");
+            // Logica SaaS: Se for o usuario superadmin, adicionar menu de gestão
+            // Verificamos o login_name diretamente para segurança máxima
+            $checkAdmin = $target_pdo->prepare("SELECT login_name FROM users WHERE id = ?");
             $checkAdmin->execute([$target_user_id]);
-            $isAdmin = $checkAdmin->fetchColumn();
+            $loginName = $checkAdmin->fetchColumn();
 
-            if ($isAdmin == 1) {
+            if ($loginName === 'superadmin') {
                 if (!in_array('super_admin', $menus)) {
                     $menus[] = 'super_admin';
                 }

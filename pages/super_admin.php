@@ -3,13 +3,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Segurança: Apenas Super Admin pode acessar esta página
-if (!$user || $user['is_super_admin'] != 1) {
+// Segurança Máxima: Apenas o usuário 'superadmin' tem acesso
+if (!$user || $user['login_name'] !== 'superadmin') {
     header("Location: index.php?page=dashboard");
     exit();
 }
-
-// Conexão já fornecida pelo index.php
 
 // Processar Ações
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -19,18 +17,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $type = $_POST['license_type'];
         $value = $_POST['subscription_value'] ?: 0;
         
-        $stmt = $pdo->prepare("INSERT INTO tenants (name, expires_at, license_type, status, subscription_value, last_amount_paid) VALUES (?, ?, ?, 'active', ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO tenants (name, expires_at, license_type, status, subscription_value, last_amount_paid, created_at, access_liberation_date) VALUES (?, ?, ?, 'active', ?, ?, NOW(), NOW())");
         $stmt->execute([$name, $expires, $type, $value, $value]);
-        $success = "Novo cliente cadastrado e acesso liberado!";
+        $success = "Empresa cadastrada e acesso liberado hoje!";
     }
     
-    if ($_POST['action'] === 'toggle_status') {
-        $id = $_POST['tenant_id'];
-        $status = $_POST['status'] === 'active' ? 'inactive' : 'active';
-        $stmt = $pdo->prepare("UPDATE tenants SET status = ? WHERE id = ?");
-        $stmt->execute([$status, $id]);
-    }
-
     if ($_POST['action'] === 'renew') {
         $id = $_POST['tenant_id'];
         $days = $_POST['days'];
@@ -38,9 +29,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt = $pdo->prepare("UPDATE tenants SET 
             expires_at = DATE_ADD(IF(expires_at > NOW(), expires_at, NOW()), INTERVAL ? DAY), 
             status = 'active',
-            last_amount_paid = ?
+            last_amount_paid = ?,
+            last_payment_date = NOW(),
+            access_liberation_date = NOW()
             WHERE id = ?");
         $stmt->execute([$days, $paid, $id]);
+        $success = "Pagamento registrado e licença renovada com sucesso!";
+    }
+
+    if ($_POST['action'] === 'toggle_status') {
+        $id = $_POST['tenant_id'];
+        $status = $_POST['status'] === 'active' ? 'inactive' : 'active';
+        $stmt = $pdo->prepare("UPDATE tenants SET status = ? WHERE id = ?");
+        $stmt->execute([$status, $id]);
     }
 }
 
@@ -49,127 +50,153 @@ $stmt = $pdo->query("SELECT t.*, (SELECT COUNT(*) FROM users WHERE company_id = 
 $tenants = $stmt->fetchAll();
 ?>
 
-<div class="main-content-header" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
-    <div>
-        <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin-bottom: 0.5rem;">Gestão Financeira SaaS</h2>
-        <p style="color: var(--text-soft); font-size: 0.875rem;">Controle de pagamentos e licenciamento manual.</p>
+<div class="main-content-header" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="font-size: 1.8rem; font-weight: 900; color: #FBBF24; margin-bottom: 0.5rem;"><i class="fa-solid fa-shield-halved"></i> Painel Master SaaS</h2>
+            <p style="color: var(--text-soft); font-size: 0.9rem;">Acesso restrito ao Administrador Mestre do Cetusg Plus.</p>
+        </div>
+        <button onclick="document.getElementById('addTenantModal').style.display='flex'" class="btn-primary" style="padding: 0.8rem 1.5rem; border-radius: 12px; font-weight: 800;">
+            <i class="fa-solid fa-building-circle-check"></i> Cadastrar Nova Empresa
+        </button>
     </div>
-    <button onclick="document.getElementById('addTenantModal').style.display='flex'" class="btn-primary" style="padding: 0.75rem 1.5rem; border-radius: var(--radius-md); display: flex; align-items: center; gap: 0.5rem;">
-        <i class="fa-solid fa-plus"></i> Novo Cliente
-    </button>
 </div>
 
 <?php if (isset($success)): ?>
-    <div style="background: rgba(16,185,129,0.1); color: #10B981; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid rgba(16,185,129,0.2);">
-        <i class="fa-solid fa-check-circle"></i> <?= $success ?>
+    <div style="background: rgba(16,185,129,0.1); color: #10B981; padding: 1.2rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid rgba(16,185,129,0.2); display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-circle-check" style="font-size: 1.5rem;"></i> <?= $success ?>
     </div>
 <?php endif; ?>
 
-<div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
-    <?php foreach ($tenants as $tenant): 
-        $isExpired = strtotime($tenant['expires_at']) < time() && $tenant['license_type'] !== 'lifetime';
-    ?>
-        <div class="glass-panel" style="padding: 1.5rem; border-top: 4px solid <?= $tenant['status'] === 'active' ? ($isExpired ? '#EF4444' : '#10B981') : '#64748B' ?>;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                <div>
-                    <h3 style="font-weight: 800; color: var(--text-main);"><?= htmlspecialchars($tenant['name']) ?></h3>
-                    <span style="font-size: 0.75rem; color: var(--text-soft);">Plano: <?= ucfirst($tenant['license_type']) ?></span>
-                </div>
-                <span class="badge" style="background: <?= $tenant['status'] === 'active' ? ($isExpired ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)') : 'rgba(100,116,139,0.1)' ?>; color: <?= $tenant['status'] === 'active' ? ($isExpired ? '#EF4444' : '#10B981') : '#64748B' ?>;">
-                    <?= $isExpired ? 'Expirado' : ($tenant['status'] === 'active' ? 'Ativo' : 'Bloqueado') ?>
-                </span>
-            </div>
+<div style="overflow-x: auto; background: var(--bg-secondary); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
+    <table style="width: 100%; border-collapse: collapse; min-width: 1000px;">
+        <thead>
+            <tr style="background: rgba(0,0,0,0.2); text-align: left;">
+                <th style="padding: 1.5rem; color: var(--text-soft); font-size: 0.75rem; text-transform: uppercase;">Empresa / ID</th>
+                <th style="padding: 1.5rem; color: var(--text-soft); font-size: 0.75rem; text-transform: uppercase;">Início / Vencimento</th>
+                <th style="padding: 1.5rem; color: var(--text-soft); font-size: 0.75rem; text-transform: uppercase;">Último Pagamento</th>
+                <th style="padding: 1.5rem; color: var(--text-soft); font-size: 0.75rem; text-transform: uppercase;">Liberação</th>
+                <th style="padding: 1.5rem; color: var(--text-soft); font-size: 0.75rem; text-transform: uppercase;">Status</th>
+                <th style="padding: 1.5rem; color: var(--text-soft); font-size: 0.75rem; text-transform: uppercase;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($tenants as $tenant): 
+                $isExpired = strtotime($tenant['expires_at']) < time() && $tenant['license_type'] !== 'lifetime';
+            ?>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+                    <td style="padding: 1.5rem;">
+                        <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;"><?= htmlspecialchars($tenant['name']) ?></div>
+                        <div style="font-size: 0.75rem; color: var(--text-soft);">#<?= $tenant['id'] ?> • <?= $tenant['user_count'] ?> usuários</div>
+                    </td>
+                    <td style="padding: 1.5rem;">
+                        <div style="font-size: 0.85rem; color: var(--text-main);"><i class="fa-solid fa-calendar-plus" style="color: #10B981; width: 20px;"></i> <?= date('d/m/Y', strtotime($tenant['created_at'])) ?></div>
+                        <div style="font-size: 0.85rem; color: <?= $isExpired ? '#EF4444' : '#FBBF24' ?>; font-weight: 700;">
+                            <i class="fa-solid fa-calendar-xmark" style="width: 20px;"></i> <?= $tenant['license_type'] === 'lifetime' ? 'Vitalício' : date('d/m/Y', strtotime($tenant['expires_at'])) ?>
+                        </div>
+                    </td>
+                    <td style="padding: 1.5rem;">
+                        <div style="font-weight: 800; color: var(--brand-primary);">R$ <?= number_format($tenant['last_amount_paid'], 2, ',', '.') ?></div>
+                        <div style="font-size: 0.7rem; color: var(--text-soft);">
+                            <?= $tenant['last_payment_date'] ? date('d/m/Y H:i', strtotime($tenant['last_payment_date'])) : 'Sem registro' ?>
+                        </div>
+                    </td>
+                    <td style="padding: 1.5rem;">
+                        <div style="font-size: 0.85rem; color: #10B981; font-weight: 600;">
+                            <i class="fa-solid fa-unlock-keyhole"></i> <?= $tenant['access_liberation_date'] ? date('d/m/Y H:i', strtotime($tenant['access_liberation_date'])) : '---' ?>
+                        </div>
+                    </td>
+                    <td style="padding: 1.5rem;">
+                        <span class="badge" style="background: <?= $tenant['status'] === 'active' ? ($isExpired ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)') : 'rgba(100,116,139,0.1)' ?>; color: <?= $tenant['status'] === 'active' ? ($isExpired ? '#EF4444' : '#10B981') : '#64748B' ?>; padding: 0.5rem 1rem; border-radius: 100px;">
+                            <?= $isExpired ? 'Expirado' : ($tenant['status'] === 'active' ? 'Ativo' : 'Bloqueado') ?>
+                        </span>
+                    </td>
+                    <td style="padding: 1.5rem;">
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button onclick="openRenewModal(<?= $tenant['id'] ?>, '<?= htmlspecialchars($tenant['name']) ?>', <?= $tenant['subscription_value'] ?>)" class="btn-primary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: #FBBF24; color: #000;" title="Renovar/Pagar">
+                                <i class="fa-solid fa-money-bill-transfer"></i>
+                            </button>
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="action" value="toggle_status">
+                                <input type="hidden" name="tenant_id" value="<?= $tenant['id'] ?>">
+                                <input type="hidden" name="status" value="<?= $tenant['status'] ?>">
+                                <button type="submit" class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: rgba(255,255,255,0.05);" title="<?= $tenant['status'] === 'active' ? 'Bloquear' : 'Desbloquear' ?>">
+                                    <i class="fa-solid <?= $tenant['status'] === 'active' ? 'fa-ban' : 'fa-check' ?>"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; background: rgba(0,0,0,0.05); padding: 1rem; border-radius: 12px;">
-                <div>
-                    <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Valor do Plano</p>
-                    <p style="font-weight: 800; color: var(--brand-primary); font-size: 1.1rem;">R$ <?= number_format($tenant['subscription_value'], 2, ',', '.') ?></p>
-                </div>
-                <div>
-                    <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Último Recebido</p>
-                    <p style="font-weight: 700; color: var(--text-main);">R$ <?= number_format($tenant['last_amount_paid'], 2, ',', '.') ?></p>
-                </div>
+<!-- Modal Renovar -->
+<div id="renewModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 3000; align-items: center; justify-content: center; padding: 2rem;">
+    <div class="glass-panel" style="max-width: 450px; width: 100%; padding: 2.5rem;">
+        <h3 id="renewTitle" style="font-size: 1.5rem; font-weight: 900; color: #FBBF24; margin-bottom: 0.5rem;">Renovar Licença</h3>
+        <p style="color: var(--text-soft); font-size: 0.85rem; margin-bottom: 2rem;">Registre o pagamento para liberar o acesso.</p>
+        <form method="POST">
+            <input type="hidden" name="action" value="renew">
+            <input type="hidden" name="tenant_id" id="renewTenantId">
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Tipo de Renovação</label>
+                <select name="days" class="form-input">
+                    <option value="30">Mensal (+30 dias)</option>
+                    <option value="365">Anual (+365 dias)</option>
+                </select>
             </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-                <div>
-                    <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Expira em</p>
-                    <p style="font-weight: 700; color: <?= $isExpired ? '#EF4444' : 'var(--text-main)' ?>;">
-                        <?= $tenant['license_type'] === 'lifetime' ? 'Vitalício' : date('d/m/Y', strtotime($tenant['expires_at'])) ?>
-                    </p>
-                </div>
-                <div>
-                    <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Usuários</p>
-                    <p style="font-weight: 700; color: var(--text-main);"><?= $tenant['user_count'] ?></p>
-                </div>
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Valor Recebido (R$)</label>
+                <input type="number" step="0.01" name="amount_paid" id="renewAmount" required class="form-input" style="font-size: 1.2rem; font-weight: 800; color: #10B981;">
             </div>
-
-            <div style="background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.1); padding: 1rem; border-radius: 12px; margin-bottom: 1rem;">
-                <p style="font-size: 0.8rem; font-weight: 800; color: #FBBF24; margin-bottom: 0.75rem;"><i class="fa-solid fa-money-bill-wave"></i> Registrar Pagamento e Renovar</p>
-                <form method="POST">
-                    <input type="hidden" name="action" value="renew">
-                    <input type="hidden" name="tenant_id" value="<?= $tenant['id'] ?>">
-                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-                        <select name="days" class="form-input" style="flex: 1; padding: 0.4rem; font-size: 0.8rem;">
-                            <option value="30">Mensal (+30 dias)</option>
-                            <option value="365">Anual (+365 dias)</option>
-                        </select>
-                        <input type="number" step="0.01" name="amount_paid" placeholder="Valor R$" required class="form-input" style="flex: 1; padding: 0.4rem; font-size: 0.8rem;">
-                    </div>
-                    <button type="submit" class="btn-primary" style="width: 100%; font-size: 0.8rem; padding: 0.6rem; background: #FBBF24; color: #000;">Confirmar Recebimento</button>
-                </form>
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" onclick="document.getElementById('renewModal').style.display='none'" class="btn-secondary" style="flex: 1; padding: 1rem; border-radius: 12px;">Cancelar</button>
+                <button type="submit" class="btn-primary" style="flex: 1; padding: 1rem; border-radius: 12px; background: #10B981; color: white;">Confirmar e Liberar</button>
             </div>
-            
-            <form method="POST">
-                <input type="hidden" name="action" value="toggle_status">
-                <input type="hidden" name="tenant_id" value="<?= $tenant['id'] ?>">
-                <input type="hidden" name="status" value="<?= $tenant['status'] ?>">
-                <button type="submit" style="width: 100%; font-size: 0.8rem; padding: 0.6rem; background: <?= $tenant['status'] === 'active' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)' ?>; color: <?= $tenant['status'] === 'active' ? '#EF4444' : '#10B981' ?>; border: none; cursor: pointer; border-radius: 6px; font-weight: 700;">
-                    <?= $tenant['status'] === 'active' ? 'Bloquear Empresa' : 'Ativar Manualmente' ?>
-                </button>
-            </form>
-        </div>
-    <?php endforeach; ?>
+        </form>
+    </div>
 </div>
 
 <!-- Modal Novo Cliente -->
-<div id="addTenantModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 2000; align-items: center; justify-content: center; padding: 2rem;">
-    <div class="glass-panel" style="max-width: 500px; width: 100%; padding: 2rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--text-main);">Configurar Novo Cliente</h3>
-            <button onclick="document.getElementById('addTenantModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: var(--text-soft); font-size: 1.5rem;">&times;</button>
-        </div>
+<div id="addTenantModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 3000; align-items: center; justify-content: center; padding: 2rem;">
+    <div class="glass-panel" style="max-width: 500px; width: 100%; padding: 2.5rem;">
+        <h3 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin-bottom: 2rem;">Novo Cliente SaaS</h3>
         <form method="POST">
             <input type="hidden" name="action" value="add_tenant">
-            
             <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Nome da Empresa</label>
-                <input type="text" name="name" required class="form-input" placeholder="Nome do Cliente">
+                <input type="text" name="name" required class="form-input" placeholder="Ex: Arrastão Tech">
             </div>
-
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                 <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Valor da Assinatura (R$)</label>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Valor do Plano (R$)</label>
                     <input type="number" step="0.01" name="subscription_value" required class="form-input" placeholder="0,00">
                 </div>
                 <div>
-                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Tipo de Plano</label>
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Tipo</label>
                     <select name="license_type" class="form-input">
                         <option value="monthly">Mensal</option>
                         <option value="yearly">Anual</option>
-                        <option value="lifetime">Vitalício</option>
                     </select>
                 </div>
             </div>
-
             <div style="margin-bottom: 2rem;">
                 <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Primeiro Vencimento</label>
                 <input type="date" name="expires_at" required class="form-input" value="<?= date('Y-m-d', strtotime('+30 days')) ?>">
             </div>
-
-            <button type="submit" class="btn-primary" style="width: 100%; padding: 1rem; border-radius: 12px; font-weight: 800; background: var(--brand-primary); color: white;">
-                Cadastrar e Liberar Acesso
-            </button>
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 1.2rem; border-radius: 15px; font-weight: 800; font-size: 1rem;">Cadastrar e Ativar Agora</button>
         </form>
+        <button onclick="document.getElementById('addTenantModal').style.display='none'" style="width: 100%; background: none; border: none; color: var(--text-soft); margin-top: 1rem; cursor: pointer;">Fechar sem salvar</button>
     </div>
 </div>
+
+<script>
+function openRenewModal(id, name, value) {
+    document.getElementById('renewTenantId').value = id;
+    document.getElementById('renewTitle').innerText = 'Renovar: ' + name;
+    document.getElementById('renewAmount').value = value;
+    document.getElementById('renewModal').style.display = 'flex';
+}
+</script>
