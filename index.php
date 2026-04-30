@@ -52,9 +52,6 @@ if (!$is_license_active && $user['is_super_admin'] != 1) {
 
 // --- Migração Automática de Tabelas SaaS ---
 try {
-    $cols_to_check = [
-        'deleted_at' => "DATETIME NULL",
-        'purge_after' => "DATE NULL",
     // Garantir colunas de controle SaaS na tabela tenants
     $cols = $pdo->query("SHOW COLUMNS FROM tenants")->fetchAll(PDO::FETCH_COLUMN);
     if (!in_array('deleted_at', $cols)) $pdo->exec("ALTER TABLE tenants ADD COLUMN deleted_at TIMESTAMP NULL");
