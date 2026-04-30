@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             // 3. Criar o usuário administrador da empresa
             $hashedPass = password_hash($admin_password, PASSWORD_DEFAULT);
             $userId = 'U' . time() . rand(100,999);
-            $stmtUser = $pdo->prepare("INSERT INTO users (id, login_name, name, password, company_id, status, is_super_admin) VALUES (?, ?, ?, ?, ?, 'Ativo', 0)");
+            $stmtUser = $pdo->prepare("INSERT INTO users (id, login_name, name, password, company_id, status, is_super_admin, role) VALUES (?, ?, ?, ?, ?, 'Ativo', 0, 'Administrador')");
             $stmtUser->execute([$userId, $admin_login, $admin_name, $hashedPass, $newCompanyId]);
             
             // 4. Liberar todos os menus para o admin da empresa

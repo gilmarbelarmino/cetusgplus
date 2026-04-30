@@ -468,7 +468,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         </div>
     </div>
     <div class="page-header-actions">
-        <?php if ($user['role'] == 'Administrador'): ?>
+        <?php if ($user['role'] == 'Administrador' || $user['login_name'] === 'superadmin'): ?>
         <button class="btn-primary" onclick="document.getElementById('formModal').style.display='flex'">
             <i class="fa-solid fa-plus"></i>
             Incluir Usuário
