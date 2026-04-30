@@ -7,10 +7,12 @@ require_once 'config.php';
  */
 class PeixinhoBrain {
     private $pdo;
+    private $company_id;
     private $allowed_menus;
     
-    public function __construct($pdo, $allowed_menus = []) {
+    public function __construct($pdo, $company_id, $allowed_menus = []) {
         $this->pdo = $pdo;
+        $this->company_id = $company_id;
         $this->allowed_menus = $allowed_menus;
     }
 
@@ -64,8 +66,8 @@ class PeixinhoBrain {
         
         // Estatísticas de HOJE
         if ($this->match($msg, ['hoje', 'solucionado', 'concluído', 'concluido', 'resolvido'])) {
-            $solucionadosHoje = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE status = 'Concluído' AND (DATE(resolved_at) = ? OR DATE(closed_at) = ?)", [$hoje, $hoje]);
-            $novosHoje = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE DATE(created_at) = ?", [$hoje]);
+            $solucionadosHoje = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE status = 'Concluído' AND (DATE(resolved_at) = ? OR DATE(closed_at) = ?) AND company_id = ?", [$hoje, $hoje, $this->company_id]);
+            $novosHoje = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE DATE(created_at) = ? AND company_id = ?", [$hoje, $this->company_id]);
             
             return "🛠️ **Análise de Chamados de Hoje:**\n" .
                    "- Foram **solucionados $solucionadosHoje chamados** até agora! 🐠✨\n" .
@@ -74,8 +76,8 @@ class PeixinhoBrain {
         }
 
         // Estatísticas GERAIS
-        $abertos = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE status = 'Aberto'");
-        $atrasados = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE status != 'Concluído' AND sla_deadline < NOW()");
+        $abertos = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE status = 'Aberto' AND company_id = ?", [$this->company_id]);
+        $atrasados = $this->queryValue("SELECT COUNT(*) FROM tickets WHERE status != 'Concluído' AND sla_deadline < NOW() AND company_id = ?", [$this->company_id]);
         
         $res = "🛠️ **Status Geral de Chamados:**\n";
         $res .= "Atualmente temos **$abertos chamados aguardando** início.";
@@ -84,8 +86,8 @@ class PeixinhoBrain {
     }
 
     private function getBudgetIntelligence($msg) {
-        $pedidos = $this->queryValue("SELECT COUNT(*) FROM budget_requests WHERE status = 'Pendente'");
-        $cotacoes = $this->queryValue("SELECT COUNT(*) FROM budget_quotes");
+        $pedidos = $this->queryValue("SELECT COUNT(*) FROM budget_requests WHERE status = 'Pendente' AND company_id = ?", [$this->company_id]);
+        $cotacoes = $this->queryValue("SELECT COUNT(*) FROM budget_quotes WHERE company_id = ?", [$this->company_id]);
         
         return "💰 **Menu Orçamentos:**\n" .
                "Encontrei **$pedidos pedidos de orçamento pendentes** de aprovação. 🐠\n" .
@@ -94,7 +96,8 @@ class PeixinhoBrain {
 
     private function getRHIntelligence($msg) {
         if ($this->match($msg, ['férias', 'ferias'])) {
-            $stmt = $this->pdo->query("SELECT u.name, v.end_date FROM rh_vacations v JOIN users u ON v.user_id = u.id WHERE CURDATE() BETWEEN v.start_date AND v.end_date");
+            $stmt = $this->pdo->prepare("SELECT u.name, v.end_date FROM rh_vacations v JOIN users u ON v.user_id = u.id WHERE CURDATE() BETWEEN v.start_date AND v.end_date AND v.company_id = ?");
+            $stmt->execute([$this->company_id]);
             $emFerias = $stmt->fetchAll();
             if (empty($emFerias)) return "🌴 **RH:** Não temos nenhum colaborador em férias hoje. Time completo! 🐠";
             $res = "🌴 **Colaboradores em Férias:**\n";
@@ -103,7 +106,8 @@ class PeixinhoBrain {
         }
         
         if ($this->match($msg, ['aniversário', 'niver'])) {
-            $stmt = $this->pdo->query("SELECT u.name, DATE_FORMAT(rh.birth_date, '%d/%m') as dia FROM users u JOIN rh_employee_details rh ON u.id = rh.user_id WHERE MONTH(rh.birth_date) = MONTH(CURDATE()) ORDER BY DAY(rh.birth_date) ASC");
+            $stmt = $this->pdo->prepare("SELECT u.name, DATE_FORMAT(rh.birth_date, '%d/%m') as dia FROM users u JOIN rh_employee_details rh ON u.id = rh.user_id WHERE MONTH(rh.birth_date) = MONTH(CURDATE()) AND u.company_id = ? ORDER BY DAY(rh.birth_date) ASC");
+            $stmt->execute([$this->company_id]);
             $list = $stmt->fetchAll();
             $res = "🎂 **Aniversariantes do Mês:**\n";
             foreach ($list as $b) { $res .= "• " . $b['name'] . " (" . $b['dia'] . ")\n"; }
@@ -112,8 +116,8 @@ class PeixinhoBrain {
 
         $name = trim(str_replace(['quem é', 'quem e', 'colaborador'], '', $msg));
         if (strlen($name) > 2) {
-            $stmt = $this->pdo->prepare("SELECT name, sector, role FROM users WHERE name LIKE ? LIMIT 1");
-            $stmt->execute(['%' . $name . '%']);
+            $stmt = $this->pdo->prepare("SELECT name, sector, role FROM users WHERE name LIKE ? AND company_id = ? LIMIT 1");
+            $stmt->execute(['%' . $name . '%', $this->company_id]);
             $u = $stmt->fetch();
             if ($u) return "👤 **" . $u['name'] . "** atua no setor de **" . $u['sector'] . "** como **" . $u['role'] . "**. 🐠";
         }
@@ -122,7 +126,8 @@ class PeixinhoBrain {
 
     private function getPatrimonioIntelligence($msg) {
         if ($this->match($msg, ['devol', 'emprest', 'pendente', 'pegou'])) {
-            $stmt = $this->pdo->query("SELECT borrower_name, asset_name, expected_return_date FROM loans WHERE status = 'Ativo'");
+            $stmt = $this->pdo->prepare("SELECT borrower_name, asset_name, expected_return_date FROM loans WHERE status = 'Ativo' AND company_id = ?");
+            $stmt->execute([$this->company_id]);
             $pendentes = $stmt->fetchAll();
             if (empty($pendentes)) return "Não temos nenhum empréstimo pendente no momento! 🐠";
             $res = "🔍 **Itens com Colaboradores:**\n";
@@ -132,14 +137,14 @@ class PeixinhoBrain {
             }
             return $res . "🐠";
         }
-        $total = $this->queryValue("SELECT COUNT(*) FROM assets");
-        $valor = $this->queryValue("SELECT SUM(estimated_value) FROM assets");
+        $total = $this->queryValue("SELECT COUNT(*) FROM assets WHERE company_id = ?", [$this->company_id]);
+        $valor = $this->queryValue("SELECT SUM(estimated_value) FROM assets WHERE company_id = ?", [$this->company_id]);
         return "📦 **Patrimônio:** Temos **$total itens** cadastrados (Valor total: R$ " . number_format($valor, 2, ',', '.') . "). 🐠";
     }
 
     private function getSocialIntelligence($msg) {
-        $eventos = $this->queryValue("SELECT COUNT(*) FROM semanada_events WHERE event_date >= CURDATE()");
-        $voluntarios = $this->queryValue("SELECT COUNT(*) FROM volunteers WHERE status = 'Ativo'");
+        $eventos = $this->queryValue("SELECT COUNT(*) FROM semanada_events WHERE event_date >= CURDATE() AND company_id = ?", [$this->company_id]);
+        $voluntarios = $this->queryValue("SELECT COUNT(*) FROM volunteers WHERE status = 'Ativo' AND company_id = ?", [$this->company_id]);
         return "📢 **Social & Semanada:**\n" .
                "- Temos **$eventos próximos eventos** agendados no mural. 🐠\n" .
                "- Nossa rede conta com **$voluntarios voluntários** ativos transformando vidas! ❤️";

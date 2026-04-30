@@ -1,6 +1,13 @@
 <?php
 require_once 'access_control.php';
 
+// Migrações SaaS
+try { $pdo->exec("ALTER TABLE tech_cameras ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE tech_remote_access ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE tech_emails ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE tech_note_sections ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE tech_notes ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+
 // Verificação de Acesso (Módulo liberado via configuração de usuário)
 if (function_exists('canAccess') && !canAccess('tecnologia')) {
     echo '<div style="text-align:center;padding:4rem;color:#64748b;"><i class="fa-solid fa-lock" style="font-size:3rem;color:#e2e8f0;"></i><p style="margin-top:1rem;font-weight:700;">Acesso restrito. Módulo não liberado para o seu usuário.</p></div>';
@@ -35,116 +42,142 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     // Ações para Câmeras
+    $compId = getCurrentUserCompanyId();
     if ($action === 'add_camera') {
-        $stmt = $pdo->prepare("INSERT INTO tech_cameras (name, quantity, ip_address, doc) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$_POST['name'], $_POST['quantity'], $_POST['ip_address'], $_POST['doc']]);
+        $stmt = $pdo->prepare("INSERT INTO tech_cameras (name, quantity, ip_address, doc, company_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$_POST['name'], $_POST['quantity'], $_POST['ip_address'], $_POST['doc'], $compId]);
         header('Location: ?page=tecnologia&tab=cameras&success=1'); exit;
     }
     if ($action === 'edit_camera') {
-        $stmt = $pdo->prepare("UPDATE tech_cameras SET name = ?, quantity = ?, ip_address = ?, doc = ? WHERE id = ?");
-        $stmt->execute([$_POST['name'], $_POST['quantity'], $_POST['ip_address'], $_POST['doc'], $_POST['id']]);
+        $stmt = $pdo->prepare("UPDATE tech_cameras SET name = ?, quantity = ?, ip_address = ?, doc = ? WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['name'], $_POST['quantity'], $_POST['ip_address'], $_POST['doc'], $_POST['id'], $compId]);
         header('Location: ?page=tecnologia&tab=cameras&success=2'); exit;
     }
     if ($action === 'delete_camera') {
-        $stmt = $pdo->prepare("DELETE FROM tech_cameras WHERE id = ?");
-        $stmt->execute([$_POST['id']]);
+        $stmt = $pdo->prepare("DELETE FROM tech_cameras WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['id'], $compId]);
         header('Location: ?page=tecnologia&tab=cameras&success=3'); exit;
     }
 
     // Ações para Acessos Remotos
     if ($action === 'add_remote') {
-        $stmt = $pdo->prepare("INSERT INTO tech_remote_access (user_id, pc_password, email_password, pc_name, observations) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['user_id'], $_POST['pc_password'], $_POST['email_password'], $_POST['pc_name'], $_POST['observations']]);
+        $stmt = $pdo->prepare("INSERT INTO tech_remote_access (user_id, pc_password, email_password, pc_name, observations, company_id) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$_POST['user_id'], $_POST['pc_password'], $_POST['email_password'], $_POST['pc_name'], $_POST['observations'], $compId]);
         header('Location: ?page=tecnologia&tab=remotos&success=4'); exit;
     }
     if ($action === 'edit_remote') {
-        $stmt = $pdo->prepare("UPDATE tech_remote_access SET user_id = ?, pc_password = ?, email_password = ?, pc_name = ?, observations = ? WHERE id = ?");
-        $stmt->execute([$_POST['user_id'], $_POST['pc_password'], $_POST['email_password'], $_POST['pc_name'], $_POST['observations'], $_POST['id']]);
+        $stmt = $pdo->prepare("UPDATE tech_remote_access SET user_id = ?, pc_password = ?, email_password = ?, pc_name = ?, observations = ? WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['user_id'], $_POST['pc_password'], $_POST['email_password'], $_POST['pc_name'], $_POST['observations'], $_POST['id'], $compId]);
         header('Location: ?page=tecnologia&tab=remotos&success=5'); exit;
     }
     if ($action === 'delete_remote') {
-        $stmt = $pdo->prepare("DELETE FROM tech_remote_access WHERE id = ?");
-        $stmt->execute([$_POST['id']]);
+        $stmt = $pdo->prepare("DELETE FROM tech_remote_access WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['id'], $compId]);
         header('Location: ?page=tecnologia&tab=remotos&success=6'); exit;
     }
 
     // Ações para E-mails
     if ($action === 'add_email') {
-        $stmt = $pdo->prepare("INSERT INTO tech_emails (email, password, type, remote_user_id, usage_date) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['email'], $_POST['password'], $_POST['type'], $_POST['remote_user_id'], $_POST['usage_date']]);
+        $stmt = $pdo->prepare("INSERT INTO tech_emails (email, password, type, remote_user_id, usage_date, company_id) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$_POST['email'], $_POST['password'], $_POST['type'], $_POST['remote_user_id'], $_POST['usage_date'], $compId]);
         header('Location: ?page=tecnologia&tab=emails&success=7'); exit;
     }
     if ($action === 'edit_email') {
-        $stmt = $pdo->prepare("UPDATE tech_emails SET email = ?, password = ?, type = ?, remote_user_id = ?, usage_date = ? WHERE id = ?");
-        $stmt->execute([$_POST['email'], $_POST['password'], $_POST['type'], $_POST['remote_user_id'], $_POST['usage_date'], $_POST['id']]);
+        $stmt = $pdo->prepare("UPDATE tech_emails SET email = ?, password = ?, type = ?, remote_user_id = ?, usage_date = ? WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['email'], $_POST['password'], $_POST['type'], $_POST['remote_user_id'], $_POST['usage_date'], $_POST['id'], $compId]);
         header('Location: ?page=tecnologia&tab=emails&success=8'); exit;
     }
     if ($action === 'delete_email') {
-        $stmt = $pdo->prepare("DELETE FROM tech_emails WHERE id = ?");
-        $stmt->execute([$_POST['id']]);
+        $stmt = $pdo->prepare("DELETE FROM tech_emails WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['id'], $compId]);
         header('Location: ?page=tecnologia&tab=emails&success=9'); exit;
     }
 
     // Ações para Anotações (Seções)
     if ($action === 'add_note_section') {
-        $stmt = $pdo->prepare("INSERT INTO tech_note_sections (name, color, icon) VALUES (?, ?, ?)");
-        $stmt->execute([$_POST['name'], $_POST['color'], $_POST['icon']]);
+        $stmt = $pdo->prepare("INSERT INTO tech_note_sections (name, color, icon, company_id) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$_POST['name'], $_POST['color'], $_POST['icon'], $compId]);
         header('Location: ?page=tecnologia&tab=anotacoes&success=10'); exit;
     }
     if ($action === 'edit_note_section') {
-        $stmt = $pdo->prepare("UPDATE tech_note_sections SET name = ?, color = ?, icon = ? WHERE id = ?");
-        $stmt->execute([$_POST['name'], $_POST['color'], $_POST['icon'], $_POST['id']]);
+        $stmt = $pdo->prepare("UPDATE tech_note_sections SET name = ?, color = ?, icon = ? WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['name'], $_POST['color'], $_POST['icon'], $_POST['id'], $compId]);
         header('Location: ?page=tecnologia&tab=anotacoes&success=11'); exit;
     }
     if ($action === 'delete_note_section') {
-        $stmt = $pdo->prepare("DELETE FROM tech_note_sections WHERE id = ?");
-        $stmt->execute([$_POST['id']]);
+        $stmt = $pdo->prepare("DELETE FROM tech_note_sections WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['id'], $compId]);
         header('Location: ?page=tecnologia&tab=anotacoes&success=12'); exit;
     }
 
     // Ações para Anotações (Páginas)
     if ($action === 'save_note') {
         if (!empty($_POST['id'])) {
-            $stmt = $pdo->prepare("UPDATE tech_notes SET title = ?, content = ? WHERE id = ?");
-            $stmt->execute([$_POST['title'], $_POST['content'], $_POST['id']]);
+            $stmt = $pdo->prepare("UPDATE tech_notes SET title = ?, content = ? WHERE id = ? AND company_id = ?");
+            $stmt->execute([$_POST['title'], $_POST['content'], $_POST['id'], $compId]);
         } else {
-            $stmt = $pdo->prepare("INSERT INTO tech_notes (section_id, title, content) VALUES (?, ?, ?)");
-            $stmt->execute([$_POST['section_id'], $_POST['title'], $_POST['content']]);
+            $stmt = $pdo->prepare("INSERT INTO tech_notes (section_id, title, content, company_id) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$_POST['section_id'], $_POST['title'], $_POST['content'], $compId]);
         }
         header('Location: ?page=tecnologia&tab=anotacoes&section_id='.$_POST['section_id'].'&success=13'); exit;
     }
     if ($action === 'delete_note') {
-        $stmt = $pdo->prepare("DELETE FROM tech_notes WHERE id = ?");
-        $stmt->execute([$_POST['id']]);
+        $stmt = $pdo->prepare("DELETE FROM tech_notes WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['id'], $compId]);
         header('Location: ?page=tecnologia&tab=anotacoes&section_id='.$_POST['section_id'].'&success=14'); exit;
     }
 }
 
-// Busca de dados
-$cameras = $pdo->query("SELECT * FROM tech_cameras ORDER BY name")->fetchAll();
-$remotes = $pdo->query("SELECT tr.*, u.name as user_name, u.avatar_url, u.email as user_email FROM tech_remote_access tr LEFT JOIN users u ON tr.user_id = u.id ORDER BY u.name")->fetchAll();
-$emails = $pdo->query("SELECT te.*, u.name as user_name FROM tech_emails te LEFT JOIN users u ON te.remote_user_id = u.id ORDER BY te.email")->fetchAll();
-$all_users = $pdo->query("SELECT id, name, avatar_url FROM users ORDER BY name")->fetchAll();
+// Busca de dados - Isolado por empresa
+$compId = getCurrentUserCompanyId();
+$stmt_c = $pdo->prepare("SELECT * FROM tech_cameras WHERE company_id = ? ORDER BY name");
+$stmt_c->execute([$compId]);
+$cameras = $stmt_c->fetchAll();
+
+$stmt_r = $pdo->prepare("SELECT tr.*, u.name as user_name, u.avatar_url, u.email as user_email 
+                        FROM tech_remote_access tr 
+                        LEFT JOIN users u ON tr.user_id = u.id 
+                        WHERE tr.company_id = ?
+                        ORDER BY u.name");
+$stmt_r->execute([$compId]);
+$remotes = $stmt_r->fetchAll();
+
+$stmt_e = $pdo->prepare("SELECT te.*, u.name as user_name 
+                        FROM tech_emails te 
+                        LEFT JOIN users u ON te.remote_user_id = u.id 
+                        WHERE te.company_id = ?
+                        ORDER BY te.email");
+$stmt_e->execute([$compId]);
+$emails = $stmt_e->fetchAll();
+
+$stmt_u = $pdo->prepare("SELECT id, name, avatar_url FROM users WHERE company_id = ? ORDER BY name");
+$stmt_u->execute([$compId]);
+$all_users = $stmt_u->fetchAll();
 
 // Dados de Anotações
-$note_sections = $pdo->query("SELECT * FROM tech_note_sections ORDER BY name")->fetchAll();
+$stmt_ns = $pdo->prepare("SELECT * FROM tech_note_sections WHERE company_id = ? ORDER BY name");
+$stmt_ns->execute([$compId]);
+$note_sections = $stmt_ns->fetchAll();
+
 $active_section_id = $_GET['section_id'] ?? ($note_sections[0]['id'] ?? null);
 $notes = [];
 if ($active_section_id) {
-    $stmt = $pdo->prepare("SELECT * FROM tech_notes WHERE section_id = ? ORDER BY updated_at DESC");
-    $stmt->execute([$active_section_id]);
+    $stmt = $pdo->prepare("SELECT * FROM tech_notes WHERE section_id = ? AND company_id = ? ORDER BY updated_at DESC");
+    $stmt->execute([$active_section_id, $compId]);
     $notes = $stmt->fetchAll();
 }
 $active_note_id = $_GET['note_id'] ?? null;
 $active_note = null;
 if ($active_note_id) {
-    $stmt = $pdo->prepare("SELECT * FROM tech_notes WHERE id = ?");
-    $stmt->execute([$active_note_id]);
+    $stmt = $pdo->prepare("SELECT * FROM tech_notes WHERE id = ? AND company_id = ?");
+    $stmt->execute([$active_note_id, $compId]);
     $active_note = $stmt->fetch();
 }
 
 $activeTab = $_GET['tab'] ?? 'cameras';
-$tech_pass = $pdo->query("SELECT tech_password FROM company_settings WHERE id = 1")->fetchColumn() ?: '1968';
+$stmt_pass = $pdo->prepare("SELECT tech_password FROM company_settings WHERE id = ?");
+$stmt_pass->execute([$compId]);
+$tech_pass = $stmt_pass->fetchColumn() ?: '1968';
 ?>
 
 <div class="page-header">

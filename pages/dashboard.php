@@ -5,30 +5,65 @@
  */
 
 // 1. Data Preparation
+// 1. Data Preparation
 try {
+    $cid = getCurrentUserCompanyId();
+    $isSuper = (isset($user['is_super_admin']) && $user['is_super_admin'] == 1) || (isset($_SESSION['login_name']) && $_SESSION['login_name'] === 'superadmin');
+    
     // Tickets Stats
-    $openTickets = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status IN ('Aberto', 'Em Progresso')")->fetchColumn() ?: 0;
-    $criticalTickets = $pdo->query("SELECT * FROM tickets WHERE status IN ('Aberto', 'Em Progresso') AND (priority = 'Crítica' OR sla_status = 'Atrasado') ORDER BY priority DESC, sla_deadline ASC LIMIT 4")->fetchAll();
+    if ($isSuper) {
+        $stmt = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status IN ('Aberto', 'Em Progresso')");
+        $openTickets = $stmt->fetchColumn() ?: 0;
+        $stmt = $pdo->query("SELECT * FROM tickets WHERE status IN ('Aberto', 'Em Progresso') AND (priority = 'Crítica' OR sla_status = 'Atrasado') ORDER BY priority DESC, sla_deadline ASC LIMIT 4");
+        $criticalTickets = $stmt->fetchAll();
+    } else {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE status IN ('Aberto', 'Em Progresso') AND company_id = ?");
+        $stmt->execute([$cid]);
+        $openTickets = $stmt->fetchColumn() ?: 0;
+        $stmt = $pdo->prepare("SELECT * FROM tickets WHERE status IN ('Aberto', 'Em Progresso') AND (priority = 'Crítica' OR sla_status = 'Atrasado') AND company_id = ? ORDER BY priority DESC, sla_deadline ASC LIMIT 4");
+        $stmt->execute([$cid]);
+        $criticalTickets = $stmt->fetchAll();
+    }
     
     // Rooms Stats
-    $totalRooms = $pdo->query("SELECT COUNT(*) FROM rooms")->fetchColumn() ?: 0;
-    $totalBookings = $pdo->query("SELECT COUNT(*) FROM room_bookings")->fetchColumn() ?: 0;
-    $bookingsByRoom = $pdo->query("SELECT r.name, COUNT(b.id) as count FROM room_bookings b JOIN rooms r ON b.room_id = r.id GROUP BY r.id LIMIT 5")->fetchAll();
+    if ($isSuper) {
+        $totalRooms = $pdo->query("SELECT COUNT(*) FROM rooms")->fetchColumn() ?: 0;
+        $totalBookings = $pdo->query("SELECT COUNT(*) FROM room_bookings")->fetchColumn() ?: 0;
+        $bookingsByRoom = $pdo->query("SELECT r.name, COUNT(b.id) as count FROM room_bookings b JOIN rooms r ON b.room_id = r.id GROUP BY r.id LIMIT 5")->fetchAll();
+    } else {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM rooms WHERE company_id = ?"); $stmt->execute([$cid]);
+        $totalRooms = $stmt->fetchColumn() ?: 0;
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM room_bookings WHERE company_id = ?"); $stmt->execute([$cid]);
+        $totalBookings = $stmt->fetchColumn() ?: 0;
+        $stmt = $pdo->prepare("SELECT r.name, COUNT(b.id) as count FROM room_bookings b JOIN rooms r ON b.room_id = r.id WHERE b.company_id = ? GROUP BY r.id LIMIT 5"); $stmt->execute([$cid]);
+        $bookingsByRoom = $stmt->fetchAll();
+    }
     $occupancyRate = $totalRooms > 0 ? ($totalBookings / ($totalRooms * 10)) * 100 : 0;
     if ($occupancyRate > 100) $occupancyRate = 100;
 
     // Volunteering Stats
-    $totalVolunteers = $pdo->query("SELECT COUNT(*) FROM volunteers WHERE status = 'Ativo'")->fetchColumn() ?: 0;
-    $financialReturn = $pdo->query("SELECT SUM(total_hours * hourly_rate) as total FROM volunteers")->fetchColumn() ?: 0;
+    if ($isSuper) {
+        $totalVolunteers = $pdo->query("SELECT COUNT(*) FROM volunteers WHERE status = 'Ativo'")->fetchColumn() ?: 0;
+        $financialReturn = $pdo->query("SELECT SUM(total_hours * hourly_rate) as total FROM volunteers")->fetchColumn() ?: 0;
+    } else {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM volunteers WHERE status = 'Ativo' AND company_id = ?"); $stmt->execute([$cid]);
+        $totalVolunteers = $stmt->fetchColumn() ?: 0;
+        $stmt = $pdo->prepare("SELECT SUM(total_hours * hourly_rate) as total FROM volunteers WHERE company_id = ?"); $stmt->execute([$cid]);
+        $financialReturn = $stmt->fetchColumn() ?: 0;
+    }
 
-    // Recent Activity (Audit Log)
-    $recentActivity = $pdo->query("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 6")->fetchAll();
+    // Recent Activity
+    if ($isSuper) {
+        $recentActivity = $pdo->query("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 6")->fetchAll();
+    } else {
+        $stmt_audit = $pdo->prepare("SELECT * FROM audit_logs WHERE company_id = ? ORDER BY created_at DESC LIMIT 6");
+        $stmt_audit->execute([$cid]);
+        $recentActivity = $stmt_audit->fetchAll();
+    }
 
-    // Birthdays (Already available in index.php via $birthdayPeople, but just in case)
     $birthdayCount = count($birthdayPeople ?? []);
 
 } catch(Exception $e) {
-    // Fallback values
     $openTickets = 0; $criticalTickets = []; $totalRooms = 0; $totalBookings = 0;
     $occupancyRate = 0; $totalVolunteers = 0; $financialReturn = 0; $recentActivity = [];
 }

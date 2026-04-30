@@ -60,17 +60,18 @@ try {
 
     if ($method === 'GET' && $action === 'history') {
         $hist_id = $_GET['id'];
+        $compId = getCurrentUserCompanyId();
         
-        $asset_info = $pdo->prepare("SELECT * FROM assets WHERE id = ?");
-        $asset_info->execute([$hist_id]);
+        $asset_info = $pdo->prepare("SELECT * FROM assets WHERE id = ? AND company_id = ?");
+        $asset_info->execute([$hist_id, $compId]);
         $asset_data = $asset_info->fetch(PDO::FETCH_ASSOC);
         
-        $loan_hist = $pdo->prepare("SELECT * FROM loans WHERE asset_id = ? ORDER BY loan_date DESC");
-        $loan_hist->execute([$hist_id]);
+        $loan_hist = $pdo->prepare("SELECT * FROM loans WHERE asset_id = ? AND company_id = ? ORDER BY loan_date DESC");
+        $loan_hist->execute([$hist_id, $compId]);
         $loans = $loan_hist->fetchAll(PDO::FETCH_ASSOC);
         
-        $ticket_hist = $pdo->prepare("SELECT t.*, u.name as req_name FROM tickets t LEFT JOIN users u ON BINARY t.requester_id = BINARY u.id WHERE t.asset_id = ? ORDER BY t.created_at DESC");
-        $ticket_hist->execute([$hist_id]);
+        $ticket_hist = $pdo->prepare("SELECT t.*, u.name as req_name FROM tickets t LEFT JOIN users u ON BINARY t.requester_id = BINARY u.id WHERE t.asset_id = ? AND t.company_id = ? ORDER BY t.created_at DESC");
+        $ticket_hist->execute([$hist_id, $compId]);
         $tickets = $ticket_hist->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode(['success' => true, 'data' => [

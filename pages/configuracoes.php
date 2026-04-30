@@ -4,15 +4,24 @@ if ($user['role'] !== 'Administrador' && $user['role'] !== 'Suporte Técnico') {
     exit;
 }
 
+// Migrações SaaS
+try { $pdo->exec("ALTER TABLE company_settings ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE units ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE sectors ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE rh_positions ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE login_logs ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+
 // Auto-migrate: Tabela de Cargos
 try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS rh_positions (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100) NOT NULL UNIQUE,
+        name VARCHAR(100) NOT NULL,
+        company_id INT NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
-    // Migrar cargos já existentes no RH para a tabela de cargos
-    $pdo->exec("INSERT IGNORE INTO rh_positions (name) SELECT DISTINCT role_name FROM rh_employee_details WHERE role_name IS NOT NULL AND role_name != ''");
+    // Migrar cargos já existentes no RH para a tabela de cargos (com filtro de empresa)
+    $compId = getCurrentUserCompanyId();
+    $pdo->exec("INSERT IGNORE INTO rh_positions (name, company_id) SELECT DISTINCT role_name, company_id FROM rh_employee_details WHERE role_name IS NOT NULL AND role_name != ''");
 } catch(Exception $e) {}
 
 // Auto-migrate: Colunas de mensagens de aniversário
@@ -63,55 +72,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
     }
 
-    $pdo->prepare("UPDATE company_settings SET company_name = ?, logo_url = ?, certificate_signature_url = ?, certificate_global_text = ?, login_announcement = ?, announcement_image_url = ? WHERE id = 1")
-        ->execute([$_POST['company_name'], $logo_url, $sig_url, $_POST['certificate_global_text'], $_POST['login_announcement'], $announcement_image_url]);
+    $compId = getCurrentUserCompanyId();
+    $pdo->prepare("UPDATE company_settings SET company_name = ?, logo_url = ?, certificate_signature_url = ?, certificate_global_text = ?, login_announcement = ?, announcement_image_url = ? WHERE id = ?")
+        ->execute([$_POST['company_name'], $logo_url, $sig_url, $_POST['certificate_global_text'], $_POST['login_announcement'], $announcement_image_url, $compId]);
     header('Location: ?page=configuracoes&success=company');
     exit;
 }
 
 // Atualizar Senha Tecnologia
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_tech_password') {
-    $pdo->prepare("UPDATE company_settings SET tech_password = ? WHERE id = 1")->execute([$_POST['tech_password']]);
+    $compId = getCurrentUserCompanyId();
+    $pdo->prepare("UPDATE company_settings SET tech_password = ? WHERE id = ?")->execute([$_POST['tech_password'], $compId]);
     header('Location: ?page=configuracoes&success=tech_pass');
     exit;
 }
 
 // Salvar mensagens de aniversário
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_birthday_messages') {
-    $pdo->prepare("UPDATE company_settings SET birthday_message_all = ?, birthday_message_self = ? WHERE id = 1")
-        ->execute([$_POST['birthday_message_all'] ?? '', $_POST['birthday_message_self'] ?? '']);
+    $compId = getCurrentUserCompanyId();
+    $pdo->prepare("UPDATE company_settings SET birthday_message_all = ?, birthday_message_self = ? WHERE id = ?")
+        ->execute([$_POST['birthday_message_all'] ?? '', $_POST['birthday_message_self'] ?? '', $compId]);
     header('Location: ?page=configuracoes&success=birthday&tab=aniversarios');
     exit;
 }
 
 // Adicionar Setor
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_sector') {
-    $stmt = $pdo->prepare("INSERT INTO sectors (id, name, unit_id) VALUES (?, ?, ?)");
-    $stmt->execute(['S' . time(), $_POST['sector_name'], $_POST['unit_id']]);
+    $compId = getCurrentUserCompanyId();
+    $stmt = $pdo->prepare("INSERT INTO sectors (id, name, unit_id, company_id) VALUES (?, ?, ?, ?)");
+    $stmt->execute(['S' . time(), $_POST['sector_name'], $_POST['unit_id'], $compId]);
     header('Location: ?page=configuracoes&success=sector');
     exit;
 }
 
 // Adicionar Unidade
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_unit') {
-    $stmt = $pdo->prepare("INSERT INTO units (id, name, address, cnpj, responsible_name, contact) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->execute(['U' . time(), $_POST['name'], $_POST['address'], $_POST['cnpj'], $_POST['responsible_name'], $_POST['contact']]);
+    $compId = getCurrentUserCompanyId();
+    $stmt = $pdo->prepare("INSERT INTO units (id, name, address, cnpj, responsible_name, contact, company_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute(['U' . time(), $_POST['name'], $_POST['address'], $_POST['cnpj'], $_POST['responsible_name'], $_POST['contact'], $compId]);
     header('Location: ?page=configuracoes&success=unit');
     exit;
 }
 
 // Editar Unidade
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_unit') {
-    $stmt = $pdo->prepare("UPDATE units SET name = ?, address = ?, cnpj = ?, responsible_name = ?, contact = ? WHERE id = ?");
-    $stmt->execute([$_POST['name'], $_POST['address'], $_POST['cnpj'], $_POST['responsible_name'], $_POST['contact'], $_POST['unit_id']]);
+    $compId = getCurrentUserCompanyId();
+    $stmt = $pdo->prepare("UPDATE units SET name = ?, address = ?, cnpj = ?, responsible_name = ?, contact = ? WHERE id = ? AND company_id = ?");
+    $stmt->execute([$_POST['name'], $_POST['address'], $_POST['cnpj'], $_POST['responsible_name'], $_POST['contact'], $_POST['unit_id'], $compId]);
     header('Location: ?page=configuracoes&success=unit_edit');
     exit;
 }
 
 // Excluir Unidade
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_unit') {
+    $compId = getCurrentUserCompanyId();
     if ($user['role'] === 'Administrador') {
-        $pdo->prepare("DELETE FROM units WHERE id = ?")->execute([$_POST['unit_id']]);
+        $pdo->prepare("DELETE FROM units WHERE id = ? AND company_id = ?")->execute([$_POST['unit_id'], $compId]);
     }
     header('Location: ?page=configuracoes&success=unit_del');
     exit;
@@ -119,11 +135,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Adicionar Cargo
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_position') {
+    $compId = getCurrentUserCompanyId();
     $posName = trim($_POST['position_name'] ?? '');
     if ($posName) {
         try {
-            $stmt = $pdo->prepare("INSERT IGNORE INTO rh_positions (name) VALUES (?)");
-            $stmt->execute([$posName]);
+            $stmt = $pdo->prepare("INSERT INTO rh_positions (name, company_id) VALUES (?, ?)");
+            $stmt->execute([$posName, $compId]);
         } catch(Exception $e) {}
     }
     header('Location: ?page=configuracoes&success=position');
@@ -132,20 +149,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Excluir Cargo
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_position') {
+    $compId = getCurrentUserCompanyId();
     if ($user['role'] === 'Administrador') {
-        $pdo->prepare("DELETE FROM rh_positions WHERE id = ?")->execute([$_POST['position_id']]);
+        $pdo->prepare("DELETE FROM rh_positions WHERE id = ? AND company_id = ?")->execute([$_POST['position_id'], $compId]);
     }
     header('Location: ?page=configuracoes&success=position_del');
     exit;
 }
 
-$units = $pdo->query("SELECT * FROM units ORDER BY name")->fetchAll();
-$sectors = $pdo->query("SELECT s.*, u.name as unit_name FROM sectors s LEFT JOIN units u ON BINARY s.unit_id = BINARY u.id ORDER BY s.name")->fetchAll();
-$positions = $pdo->query("SELECT * FROM rh_positions ORDER BY name ASC")->fetchAll();
-$company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch();
+$units = $pdo->prepare("SELECT * FROM units WHERE company_id = ? ORDER BY name");
+$units->execute([$compId]);
+$units = $units->fetchAll();
 
-// Buscar Logs de Acesso
-$logs = $pdo->query("SELECT * FROM login_logs ORDER BY login_at DESC LIMIT 100")->fetchAll();
+$sectors = $pdo->prepare("SELECT s.*, u.name as unit_name FROM sectors s LEFT JOIN units u ON BINARY s.unit_id = BINARY u.id WHERE s.company_id = ? ORDER BY s.name");
+$sectors->execute([$compId]);
+$sectors = $sectors->fetchAll();
+
+$positions = $pdo->prepare("SELECT * FROM rh_positions WHERE company_id = ? ORDER BY name ASC");
+$positions->execute([$compId]);
+$positions = $positions->fetchAll();
+
+$company = $pdo->prepare("SELECT * FROM company_settings WHERE id = ?");
+$company->execute([$compId]);
+$company = $company->fetch();
+
+// Buscar Logs de Acesso (Filtrado por empresa)
+$logs = $pdo->prepare("SELECT * FROM login_logs WHERE company_id = ? ORDER BY login_at DESC LIMIT 100");
+$logs->execute([$compId]);
+$logs = $logs->fetchAll();
 ?>
 
 <style>

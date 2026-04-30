@@ -1,22 +1,34 @@
 <?php
 require_once 'access_control.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'approve_budget') {
-    $pdo->exec("UPDATE budget_requests SET status = 'Aprovado', approved_by = '{$user['id']}', approved_at = NOW() WHERE id = '{$_POST['budget_id']}'");
-    header('Location: ?page=orcamentos&success=2');
-    exit;
-}
+// Migrações SaaS - Lista de Desejos
+try { $pdo->exec("ALTER TABLE wishlist_requests ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE wishlist_items ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE budget_requests ADD COLUMN wishlist_id VARCHAR(50) NULL"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE budget_quotes ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reject_budget') {
-    $pdo->exec("UPDATE budget_requests SET status = 'Rejeitado', approved_by = '{$user['id']}', rejection_reason = '{$_POST['rejection_reason']}', rejected_at = NOW() WHERE id = '{$_POST['budget_id']}'");
-    header('Location: ?page=orcamentos&success=3');
-    exit;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $compId = getCurrentUserCompanyId();
+    if ($_POST['action'] === 'approve_budget') {
+        $stmt = $pdo->prepare("UPDATE budget_requests SET status = 'Aprovado', approved_by = ?, approved_at = NOW() WHERE id = ? AND company_id = ?");
+        $stmt->execute([$user['id'], $_POST['budget_id'], $compId]);
+        header('Location: ?page=orcamentos&success=2');
+        exit;
+    }
+
+    if ($_POST['action'] === 'reject_budget') {
+        $stmt = $pdo->prepare("UPDATE budget_requests SET status = 'Rejeitado', approved_by = ?, rejection_reason = ?, rejected_at = NOW() WHERE id = ? AND company_id = ?");
+        $stmt->execute([$user['id'], $_POST['rejection_reason'], $_POST['budget_id'], $compId]);
+        header('Location: ?page=orcamentos&success=3');
+        exit;
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_budget') {
+    $compId = getCurrentUserCompanyId();
     $budget_id = 'B' . time();
-    $stmt = $pdo->prepare("INSERT INTO budget_requests (id, product_name, description, quantity, sector, unit_id, requester_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pendente', NOW())");
-    $stmt->execute([$budget_id, $_POST['product_name'], $_POST['description'], $_POST['quantity'], $_POST['sector'], $_POST['unit_id'], $_POST['requester_id']]);
+    $stmt = $pdo->prepare("INSERT INTO budget_requests (id, product_name, description, quantity, sector, unit_id, requester_id, company_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pendente', NOW())");
+    $stmt->execute([$budget_id, $_POST['product_name'], $_POST['description'], $_POST['quantity'], $_POST['sector'], $_POST['unit_id'], $_POST['requester_id'], $compId]);
     header('Location: ?page=orcamentos&add_quotes=' . $budget_id);
     exit;
 }
@@ -29,23 +41,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         
         $pdo->beginTransaction();
         try {
+            $compId = getCurrentUserCompanyId();
             if ($isEdit) {
-                $stmt = $pdo->prepare("UPDATE wishlist_requests SET sector_id = ? WHERE id = ? AND status = 'Pendente'");
-                $stmt->execute([$_POST['sector_id'], $request_id]);
-                $pdo->exec("DELETE FROM wishlist_items WHERE request_id = '$request_id'");
+                $stmt = $pdo->prepare("UPDATE wishlist_requests SET sector_id = ? WHERE id = ? AND company_id = ? AND status = 'Pendente'");
+                $stmt->execute([$_POST['sector_id'], $request_id, $compId]);
+                $stmt_del = $pdo->prepare("DELETE wi FROM wishlist_items wi JOIN wishlist_requests wr ON wi.request_id = wr.id WHERE wi.request_id = ? AND wr.company_id = ?");
+                $stmt_del->execute([$request_id, $compId]);
             } else {
-                // Gerar número do pedido (Ex: #2024001)
-                $count = $pdo->query("SELECT COUNT(*) FROM wishlist_requests WHERE DATE(created_at) = CURDATE()")->fetchColumn();
+                // Gerar número do pedido (Ex: #2024001) - filtrado por empresa
+                $stmt_count = $pdo->prepare("SELECT COUNT(*) FROM wishlist_requests WHERE DATE(created_at) = CURDATE() AND company_id = ?");
+                $stmt_count->execute([$compId]);
+                $count = $stmt_count->fetchColumn();
                 $request_number = date('Ymd') . str_pad($count + 1, 3, '0', STR_PAD_LEFT);
-                $stmt = $pdo->prepare("INSERT INTO wishlist_requests (id, request_number, requester_id, sector_id, created_at) VALUES (?, ?, ?, ?, NOW())");
-                $stmt->execute([$request_id, $request_number, $user['id'], $_POST['sector_id']]);
+                $stmt = $pdo->prepare("INSERT INTO wishlist_requests (id, request_number, requester_id, sector_id, company_id, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+                $stmt->execute([$request_id, $request_number, $user['id'], $_POST['sector_id'], $compId]);
             }
             
             $items = $_POST['items']; 
-            $stmt_item = $pdo->prepare("INSERT INTO wishlist_items (id, request_id, item_name, item_type, quantity) VALUES (?, ?, ?, ?, ?)");
+            $stmt_item = $pdo->prepare("INSERT INTO wishlist_items (id, request_id, item_name, item_type, quantity, company_id) VALUES (?, ?, ?, ?, ?, ?)");
             foreach ($items as $idx => $item) {
                 if (empty($item['name'])) continue;
-                $stmt_item->execute(['WI' . time() . $idx, $request_id, $item['name'], $item['type'], $item['qty']]);
+                $stmt_item->execute(['WI' . time() . $idx, $request_id, $item['name'], $item['type'], $item['qty'], $compId]);
             }
             
             $pdo->commit();
@@ -58,31 +74,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 
     if ($_POST['action'] === 'approve_wishlist') {
-        $pdo->prepare("UPDATE wishlist_requests SET status = 'Aprovado', approved_by = ?, approved_at = NOW() WHERE id = ?")
-            ->execute([$user['id'], $_POST['request_id']]);
+        $compId = getCurrentUserCompanyId();
+        $pdo->prepare("UPDATE wishlist_requests SET status = 'Aprovado', approved_by = ?, approved_at = NOW() WHERE id = ? AND company_id = ?")
+            ->execute([$user['id'], $_POST['request_id'], $compId]);
         header('Location: ?page=orcamentos&tab=wishlist&success=2');
         exit;
     }
 
     if ($_POST['action'] === 'reject_wishlist') {
-        $pdo->prepare("UPDATE wishlist_requests SET status = 'Reprovado', approved_by = ?, approved_at = NOW(), rejection_reason = ? WHERE id = ?")
-            ->execute([$user['id'], $_POST['rejection_reason'], $_POST['request_id']]);
+        $compId = getCurrentUserCompanyId();
+        $pdo->prepare("UPDATE wishlist_requests SET status = 'Reprovado', approved_by = ?, approved_at = NOW(), rejection_reason = ? WHERE id = ? AND company_id = ?")
+            ->execute([$user['id'], $_POST['rejection_reason'], $_POST['request_id'], $compId]);
         header('Location: ?page=orcamentos&tab=wishlist&success=3');
         exit;
     }
 
     if ($_POST['action'] === 'generate_budgets') {
+        $compId = getCurrentUserCompanyId();
         $request_id = $_POST['request_id'];
-        $request = $pdo->query("SELECT * FROM wishlist_requests WHERE id = '$request_id'")->fetch();
-        $items = $pdo->query("SELECT * FROM wishlist_items WHERE request_id = '$request_id'")->fetchAll();
-        $unit_id = $pdo->query("SELECT unit_id FROM users WHERE id = '{$request['requester_id']}'")->fetchColumn();
-        $sector_name = $pdo->query("SELECT name FROM sectors WHERE id = '{$request['sector_id']}'")->fetchColumn();
+        
+        $stmt_w = $pdo->prepare("SELECT * FROM wishlist_requests WHERE id = ? AND company_id = ?");
+        $stmt_w->execute([$request_id, $compId]);
+        $request = $stmt_w->fetch();
+        
+        $stmt_i = $pdo->prepare("SELECT * FROM wishlist_items WHERE request_id = ? AND company_id = ?");
+        $stmt_i->execute([$request_id, $compId]);
+        $items = $stmt_i->fetchAll();
+        
+        $stmt_u = $pdo->prepare("SELECT unit_id FROM users WHERE id = ? AND company_id = ?");
+        $stmt_u->execute([$request['requester_id'], $compId]);
+        $unit_id = $stmt_u->fetchColumn();
+        
+        $stmt_s = $pdo->prepare("SELECT name FROM sectors WHERE id = ? AND company_id = ?");
+        $stmt_s->execute([$request['sector_id'], $compId]);
+        $sector_name = $stmt_s->fetchColumn();
 
         $pdo->beginTransaction();
         try {
             foreach ($items as $item) {
                 $budget_id = 'B' . time() . rand(10,99);
-                $stmt = $pdo->prepare("INSERT INTO budget_requests (id, product_name, description, quantity, sector, unit_id, requester_id, wishlist_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pendente', NOW())");
+                $stmt = $pdo->prepare("INSERT INTO budget_requests (id, product_name, description, quantity, sector, unit_id, requester_id, wishlist_id, company_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pendente', NOW())");
                 $stmt->execute([
                     $budget_id, 
                     $item['item_name'], 
@@ -91,13 +122,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $sector_name, 
                     $unit_id, 
                     $request['requester_id'],
-                    $request['id']
+                    $request['id'],
+                    $compId
                 ]);
                 
-                $pdo->prepare("UPDATE wishlist_items SET converted_to_budget_id = ? WHERE id = ?")
-                   ->execute([$budget_id, $item['id']]);
+                $pdo->prepare("UPDATE wishlist_items SET converted_to_budget_id = ? WHERE id = ? AND company_id = ?")
+                   ->execute([$budget_id, $item['id'], $compId]);
             }
-            $pdo->prepare("UPDATE wishlist_requests SET status = 'Convertido' WHERE id = ?")->execute([$request_id]);
+            $pdo->prepare("UPDATE wishlist_requests SET status = 'Convertido' WHERE id = ? AND company_id = ?")->execute([$request_id, $compId]);
             $pdo->commit();
             header('Location: ?page=orcamentos&success=1');
         } catch (Exception $e) {
@@ -108,9 +140,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 
     if ($_POST['action'] === 'delete_wishlist') {
+        $compId = getCurrentUserCompanyId();
         $pdo->beginTransaction();
-        $pdo->exec("DELETE FROM wishlist_items WHERE request_id = '{$_POST['request_id']}'");
-        $pdo->exec("DELETE FROM wishlist_requests WHERE id = '{$_POST['request_id']}'");
+        $pdo->prepare("DELETE FROM wishlist_items WHERE request_id = ? AND company_id = ?")->execute([$_POST['request_id'], $compId]);
+        $pdo->prepare("DELETE FROM wishlist_requests WHERE id = ? AND company_id = ?")->execute([$_POST['request_id'], $compId]);
         $pdo->commit();
         header('Location: ?page=orcamentos&tab=wishlist&success=7');
         exit;
@@ -118,16 +151,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_budget') {
-    $pdo->prepare("UPDATE budget_requests SET product_name = ?, description = ?, quantity = ?, sector = ?, unit_id = ?, edited_by = ?, edited_at = NOW() WHERE id = ? AND status = 'Pendente'")
-        ->execute([$_POST['product_name'], $_POST['description'], $_POST['quantity'], $_POST['sector'], $_POST['unit_id'], $user['id'], $_POST['budget_id']]);
+    $compId = getCurrentUserCompanyId();
+    $pdo->prepare("UPDATE budget_requests SET product_name = ?, description = ?, quantity = ?, sector = ?, unit_id = ?, edited_by = ?, edited_at = NOW() WHERE id = ? AND company_id = ? AND status = 'Pendente'")
+        ->execute([$_POST['product_name'], $_POST['description'], $_POST['quantity'], $_POST['sector'], $_POST['unit_id'], $user['id'], $_POST['budget_id'], $compId]);
     header('Location: ?page=orcamentos&success=4');
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_quotes') {
+    $compId = getCurrentUserCompanyId();
     $budget_id = $_POST['budget_id'];
-    $budget = $pdo->query("SELECT quantity FROM budget_requests WHERE id = '$budget_id'")->fetch();
-    $quantity = $budget['quantity'];
+    $stmt_b = $pdo->prepare("SELECT quantity FROM budget_requests WHERE id = ? AND company_id = ?");
+    $stmt_b->execute([$budget_id, $compId]);
+    $budget = $stmt_b->fetch();
+    $quantity = $budget['quantity'] ?? 0;
     
     for ($i = 1; $i <= 3; $i++) {
         $product_price = floatval($_POST["product_price_$i"]);
@@ -140,23 +177,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             move_uploaded_file($_FILES["product_image_$i"]['tmp_name'], "uploads/" . $image_name);
         }
         
-        $stmt = $pdo->prepare("INSERT INTO budget_quotes (id, budget_id, supplier_name, price, shipping_cost, total, link, attachment_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute(['Q' . time() . $i, $budget_id, 'Fornecedor ' . $i, $product_price, $delivery_price, $total_price, $_POST["product_link_$i"], $image_name]);
+        $stmt = $pdo->prepare("INSERT INTO budget_quotes (id, budget_id, supplier_name, price, shipping_cost, total, link, attachment_url, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute(['Q' . time() . $i, $budget_id, 'Fornecedor ' . $i, $product_price, $delivery_price, $total_price, $_POST["product_link_$i"], $image_name, $compId]);
     }
     
-    $best = $pdo->query("SELECT id FROM budget_quotes WHERE budget_id = '$budget_id' ORDER BY total ASC LIMIT 1")->fetch();
-    $pdo->exec("UPDATE budget_requests SET best_quote_id = '{$best['id']}' WHERE id = '$budget_id'");
+    $stmt_best = $pdo->prepare("SELECT id FROM budget_quotes WHERE budget_id = ? AND company_id = ? ORDER BY total ASC LIMIT 1");
+    $stmt_best->execute([$budget_id, $compId]);
+    $best = $stmt_best->fetch();
+    if ($best) {
+        $pdo->prepare("UPDATE budget_requests SET best_quote_id = ? WHERE id = ? AND company_id = ?")->execute([$best['id'], $budget_id, $compId]);
+    }
     
     header('Location: ?page=orcamentos&success=1');
     exit;
 }
 
+$compId = getCurrentUserCompanyId();
 // Filtro baseado no perfil do usuário
 $query = "SELECT br.*, u.name as unit_name, 
           us.name as requester_name, us.avatar_url as requester_avatar,
           ap.name as approver_name, ap.avatar_url as approver_avatar,
           ed.name as editor_name, ed.avatar_url as editor_avatar,
-          (SELECT COUNT(*) FROM budget_quotes WHERE budget_id = br.id) as quotes_count,
+          (SELECT COUNT(*) FROM budget_quotes bq WHERE bq.budget_id = br.id AND bq.company_id = br.company_id) as quotes_count,
           wa.name as wishlist_approver_name, wa.avatar_url as wishlist_approver_avatar, wr.approved_at as wishlist_approved_at, wr.request_number as wishlist_number
           FROM budget_requests br 
           LEFT JOIN units u ON BINARY br.unit_id = BINARY u.id 
@@ -165,8 +207,8 @@ $query = "SELECT br.*, u.name as unit_name,
           LEFT JOIN users ed ON BINARY br.edited_by = BINARY ed.id
           LEFT JOIN wishlist_requests wr ON BINARY br.wishlist_id = BINARY wr.id
           LEFT JOIN users wa ON BINARY wr.approved_by = BINARY wa.id
-          WHERE 1=1";
-$params = [];
+          WHERE br.company_id = ?";
+$params = [$compId];
 
 // 100% Liberado conforme definido pela gestão de menus
 // Para todos os cargos, se tiverem acesso ao menu, veem tudo.
@@ -176,22 +218,35 @@ $query .= " ORDER BY br.created_at DESC";
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $budgets = $stmt->fetchAll();
-$units = $pdo->query("SELECT * FROM units ORDER BY name")->fetchAll();
-$users = $pdo->query("SELECT id, name, sector, unit_id FROM users ORDER BY name")->fetchAll();
-$sectors = $pdo->query("SELECT * FROM sectors ORDER BY name")->fetchAll();
+$stmt_u = $pdo->prepare("SELECT * FROM units WHERE company_id = ? ORDER BY name");
+$stmt_u->execute([$compId]);
+$units = $stmt_u->fetchAll();
+
+$stmt_us = $pdo->prepare("SELECT id, name, sector, unit_id FROM users WHERE company_id = ? ORDER BY name");
+$stmt_us->execute([$compId]);
+$users = $stmt_us->fetchAll();
+
+$stmt_s = $pdo->prepare("SELECT * FROM sectors WHERE company_id = ? ORDER BY name");
+$stmt_s->execute([$compId]);
+$sectors = $stmt_s->fetchAll();
 
 // Buscar wishlist PRO
-$wishlist = $pdo->query("SELECT w.*, s.name as sector_name, u.name as requester_name, u.avatar_url as requester_avatar,
+$stmt_w = $pdo->prepare("SELECT w.*, s.name as sector_name, u.name as requester_name, u.avatar_url as requester_avatar,
                         ap.name as approver_name, ap.avatar_url as approver_avatar,
-                        (SELECT COUNT(*) FROM wishlist_items WHERE request_id = w.id) as item_count
+                        (SELECT COUNT(*) FROM wishlist_items wi WHERE wi.request_id = w.id AND wi.company_id = w.company_id) as item_count
                         FROM wishlist_requests w
                         JOIN sectors s ON BINARY w.sector_id = BINARY s.id
                         JOIN users u ON BINARY w.requester_id = BINARY u.id
                         LEFT JOIN users ap ON BINARY w.approved_by = BINARY ap.id
-                        ORDER BY w.created_at DESC")->fetchAll();
+                        WHERE w.company_id = ?
+                        ORDER BY w.created_at DESC");
+$stmt_w->execute([$compId]);
+$wishlist = $stmt_w->fetchAll();
 
 // Buscar todos os itens para o detalhamento
-$wishlist_items_raw = $pdo->query("SELECT * FROM wishlist_items")->fetchAll();
+$stmt_wi = $pdo->prepare("SELECT * FROM wishlist_items WHERE company_id = ?");
+$stmt_wi->execute([$compId]);
+$wishlist_items_raw = $stmt_wi->fetchAll();
 $wishlist_items = [];
 foreach ($wishlist_items_raw as $wi) {
     $wishlist_items[$wi['request_id']][] = $wi;
@@ -527,7 +582,11 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
 </div>
 
 <?php if (isset($_GET['add_quotes'])): 
-    $budget = $pdo->query("SELECT * FROM budget_requests WHERE id = '{$_GET['add_quotes']}'")->fetch();
+    $compId = getCurrentUserCompanyId();
+    $stmt_b = $pdo->prepare("SELECT * FROM budget_requests WHERE id = ? AND company_id = ?");
+    $stmt_b->execute([$_GET['add_quotes'], $compId]);
+    $budget = $stmt_b->fetch();
+    if (!$budget) { echo "<script>window.location.href='?page=orcamentos';</script>"; exit; }
 ?>
 <div style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem; overflow-y: auto;">
     <div class="glass-panel" style="max-width: 1200px; width: 100%; margin: 2rem auto; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.2);">
@@ -594,7 +653,8 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
 <?php endif; ?>
 
 <?php if (isset($_GET['view'])): 
-    $budget = $pdo->query("SELECT br.*, u.name as unit_name, us.name as requester_name, ap.name as approver_name,
+    $compId = getCurrentUserCompanyId();
+    $stmt_v = $pdo->prepare("SELECT br.*, u.name as unit_name, us.name as requester_name, ap.name as approver_name,
                           wa.name as wishlist_approver_name, wa.avatar_url as wishlist_approver_avatar, wr.approved_at as wishlist_approved_at, wr.request_number as wishlist_number
                           FROM budget_requests br 
                           LEFT JOIN units u ON BINARY br.unit_id = BINARY u.id 
@@ -602,8 +662,14 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
                           LEFT JOIN users ap ON BINARY br.approved_by = BINARY ap.id 
                           LEFT JOIN wishlist_requests wr ON BINARY br.wishlist_id = BINARY wr.id
                           LEFT JOIN users wa ON BINARY wr.approved_by = BINARY wa.id
-                          WHERE br.id = '{$_GET['view']}'")->fetch();
-    $quotes = $pdo->query("SELECT * FROM budget_quotes WHERE budget_id = '{$_GET['view']}' ORDER BY total ASC")->fetchAll();
+                          WHERE br.id = ? AND br.company_id = ?");
+    $stmt_v->execute([$_GET['view'], $compId]);
+    $budget = $stmt_v->fetch();
+    if (!$budget) { echo "<script>window.location.href='?page=orcamentos';</script>"; exit; }
+    
+    $stmt_q = $pdo->prepare("SELECT * FROM budget_quotes WHERE budget_id = ? AND company_id = ? ORDER BY total ASC");
+    $stmt_q->execute([$_GET['view'], $compId]);
+    $quotes = $stmt_q->fetchAll();
 ?>
 <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem; overflow-y: auto;">
     <div class="glass-panel" style="max-width: 1200px; width: 100%; margin: 2rem auto; max-height: 90vh; overflow-y: auto;">

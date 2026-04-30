@@ -55,15 +55,18 @@ $history_loans = [];
 $history_tickets = [];
 
 try {
+    $compId = getCurrentUserCompanyId();
     // Buscar todas as contas de e-mail extras de uma vez para otimizar
-    $accounts_raw = $pdo->query("SELECT * FROM user_accounts")->fetchAll();
+    $stmt_acc = $pdo->prepare("SELECT ua.* FROM user_accounts ua JOIN users u ON ua.user_id = u.id WHERE u.company_id = ?");
+    $stmt_acc->execute([$compId]);
+    $accounts_raw = $stmt_acc->fetchAll();
     $user_accounts_map = [];
     foreach ($accounts_raw as $acc) {
         $user_accounts_map[$acc['user_id']][] = $acc;
     }
 
-    $query = "SELECT u.*, un.name as unit_name, rh.role_name as rh_role_name, rh.gender as rh_gender FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id LEFT JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id WHERE 1=1";
-    $params = [];
+    $query = "SELECT u.*, un.name as unit_name, rh.role_name as rh_role_name, rh.gender as rh_gender FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id LEFT JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id WHERE u.company_id = ?";
+    $params = [$compId];
     if ($search) {
         $query .= " AND (u.name LIKE ? OR u.email LIKE ? OR u.sector LIKE ? OR u.access_number LIKE ?)";
         $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%";
@@ -83,11 +86,35 @@ try {
     }
 } catch(Exception $e) { echo "<!-- Erro users: " . $e->getMessage() . " -->"; }
 
-try { $units = $pdo->query("SELECT * FROM units")->fetchAll(); } catch(Exception $e) { $units = []; }
-try { $sectors = $pdo->query("SELECT s.id, s.name, s.unit_id FROM sectors s ORDER BY s.name")->fetchAll(); } catch(Exception $e) { $sectors = []; }
-try { $all_positions = $pdo->query("SELECT * FROM rh_positions ORDER BY name ASC")->fetchAll(); } catch(Exception $e) { $all_positions = []; }
-try { $history_loans = $pdo->query("SELECT l.*, a.name as asset_full_name FROM loans l LEFT JOIN assets a ON BINARY l.asset_id = BINARY a.id ORDER BY l.loan_date DESC")->fetchAll(); } catch(Exception $e) { $history_loans = []; }
-try { $history_tickets = $pdo->query("SELECT t.*, u.name as unit_name FROM tickets t LEFT JOIN units u ON BINARY t.unit_id = BINARY u.id ORDER BY t.created_at DESC")->fetchAll(); } catch(Exception $e) { $history_tickets = []; }
+try { 
+    $stmt_units = $pdo->prepare("SELECT * FROM units WHERE company_id = ?");
+    $stmt_units->execute([$compId]);
+    $units = $stmt_units->fetchAll(); 
+} catch(Exception $e) { $units = []; }
+
+try { 
+    $stmt_sects = $pdo->prepare("SELECT s.id, s.name, s.unit_id FROM sectors s WHERE s.company_id = ? ORDER BY s.name");
+    $stmt_sects->execute([$compId]);
+    $sectors = $stmt_sects->fetchAll(); 
+} catch(Exception $e) { $sectors = []; }
+
+try { 
+    $stmt_pos = $pdo->prepare("SELECT * FROM rh_positions WHERE company_id = ? ORDER BY name ASC");
+    $stmt_pos->execute([$compId]);
+    $all_positions = $stmt_pos->fetchAll(); 
+} catch(Exception $e) { $all_positions = []; }
+
+try { 
+    $stmt_loans = $pdo->prepare("SELECT l.*, a.name as asset_full_name FROM loans l LEFT JOIN assets a ON BINARY l.asset_id = BINARY a.id WHERE l.company_id = ? ORDER BY l.loan_date DESC");
+    $stmt_loans->execute([$compId]);
+    $history_loans = $stmt_loans->fetchAll(); 
+} catch(Exception $e) { $history_loans = []; }
+
+try { 
+    $stmt_tix = $pdo->prepare("SELECT t.*, u.name as unit_name FROM tickets t LEFT JOIN units u ON BINARY t.unit_id = BINARY u.id WHERE t.company_id = ? ORDER BY t.created_at DESC");
+    $stmt_tix->execute([$compId]);
+    $history_tickets = $stmt_tix->fetchAll(); 
+} catch(Exception $e) { $history_tickets = []; }
 ?>
 <script>
     // Dados consolidados no topo para evitar atrasos de carregamento
@@ -290,19 +317,20 @@ try { $history_tickets = $pdo->query("SELECT t.*, u.name as unit_name FROM ticke
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_user') {
+    $compId = getCurrentUserCompanyId();
     $del_id = $_POST['user_id'];
     if ($del_id !== $user['id']) {
-        // Nullificar FKs antes de excluir
-        $pdo->prepare("UPDATE tickets SET requester_id = NULL WHERE requester_id = ?")->execute([$del_id]);
-        $pdo->prepare("UPDATE budget_requests SET requester_id = NULL WHERE requester_id = ?")->execute([$del_id]);
-        $pdo->prepare("UPDATE volunteers SET user_id = NULL WHERE user_id = ?")->execute([$del_id]);
+        // Nullificar FKs antes de excluir - filtrados por company_id
+        $pdo->prepare("UPDATE tickets SET requester_id = NULL WHERE requester_id = ? AND company_id = ?")->execute([$del_id, $compId]);
+        $pdo->prepare("UPDATE budget_requests SET requester_id = NULL WHERE requester_id = ? AND company_id = ?")->execute([$del_id, $compId]);
+        $pdo->prepare("UPDATE volunteers SET user_id = NULL WHERE user_id = ? AND company_id = ?")->execute([$del_id, $compId]);
         // Deletes manuais do modulo RH (substituto à FOREIGN KEY nativa)
-        $pdo->prepare("DELETE FROM rh_employee_details WHERE user_id = ?")->execute([$del_id]);
-        $pdo->prepare("DELETE FROM rh_vacations WHERE user_id = ?")->execute([$del_id]);
-        $pdo->prepare("DELETE FROM rh_certificates WHERE user_id = ?")->execute([$del_id]);
+        $pdo->prepare("DELETE FROM rh_employee_details WHERE user_id = ? AND company_id = ?")->execute([$del_id, $compId]);
+        $pdo->prepare("DELETE FROM rh_vacations WHERE user_id = ? AND company_id = ?")->execute([$del_id, $compId]);
+        $pdo->prepare("DELETE FROM rh_certificates WHERE user_id = ? AND company_id = ?")->execute([$del_id, $compId]);
         // Menus e Usuário Base
-        $pdo->prepare("DELETE FROM user_menus WHERE user_id = ?")->execute([$del_id]);
-        $pdo->prepare("DELETE FROM users WHERE id = ?")->execute([$del_id]);
+        $pdo->prepare("DELETE FROM user_menus WHERE user_id = ?")->execute([$del_id]); // user_id é único por menu
+        $pdo->prepare("DELETE FROM users WHERE id = ? AND company_id = ?")->execute([$del_id, $compId]);
     }
     header('Location: ?page=usuarios&success=4');
     exit;
@@ -318,13 +346,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $avatar_url = 'uploads/' . $filename;
         }
     }
-    $gender = $_POST['gender'] ?? '';
-    $position = $_POST['position'] ?? '';
-    $access_number = $_POST['access_number'] ?? '';
-    $email = !empty($_POST['email']) ? $_POST['email'] : null;
-    
-    $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ?, sector = ?, unit_id = ?, role = ?, phone = ?, avatar_url = ?, gender = ?, position = ?, access_number = ? WHERE id = ?");
-    $stmt->execute([$_POST['name'], $email, $_POST['sector'], $_POST['unit_id'], $_POST['role'], $_POST['phone'], $avatar_url, $gender, $position, $access_number, $_POST['user_id']]);
+    $compId = getCurrentUserCompanyId();
+    $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ?, sector = ?, unit_id = ?, role = ?, phone = ?, avatar_url = ?, gender = ?, position = ?, access_number = ? WHERE id = ? AND company_id = ?");
+    $stmt->execute([$_POST['name'], $email, $_POST['sector'], $_POST['unit_id'], $_POST['role'], $_POST['phone'], $avatar_url, $gender, $position, $access_number, $_POST['user_id'], $compId]);
     
     // Sincronizar contas extras
     $user_id = $_POST['user_id'];
@@ -340,12 +364,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     // Sync automático com RH
     try {
-        $rhCheck = $pdo->prepare("SELECT COUNT(*) FROM rh_employee_details WHERE user_id = ?");
-        $rhCheck->execute([$_POST['user_id']]);
+        $rhCheck = $pdo->prepare("SELECT COUNT(*) FROM rh_employee_details WHERE user_id = ? AND company_id = ?");
+        $rhCheck->execute([$_POST['user_id'], $compId]);
         if ($rhCheck->fetchColumn() > 0) {
-            $pdo->prepare("UPDATE rh_employee_details SET gender = ?, role_name = ? WHERE user_id = ?")->execute([$gender, $position, $_POST['user_id']]);
+            $pdo->prepare("UPDATE rh_employee_details SET gender = ?, role_name = ? WHERE user_id = ? AND company_id = ?")->execute([$gender, $position, $_POST['user_id'], $compId]);
         } else {
-            $pdo->prepare("INSERT INTO rh_employee_details (user_id, gender, role_name) VALUES (?, ?, ?)")->execute([$_POST['user_id'], $gender, $position]);
+            $pdo->prepare("INSERT INTO rh_employee_details (user_id, gender, role_name, company_id) VALUES (?, ?, ?, ?)")->execute([$_POST['user_id'], $gender, $position, $compId]);
         }
     } catch(Exception $e) {}
 
@@ -359,17 +383,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reset_password') {
+    $compId = getCurrentUserCompanyId();
     $new_password = password_hash($_POST['new_password'], PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare("UPDATE users SET password = ?, login_name = ? WHERE id = ?");
-    $stmt->execute([$new_password, $_POST['new_login'], $_POST['user_id']]);
+    $stmt = $pdo->prepare("UPDATE users SET password = ?, login_name = ? WHERE id = ? AND company_id = ?");
+    $stmt->execute([$new_password, $_POST['new_login'], $_POST['user_id'], $compId]);
     header('Location: ?page=usuarios&success=3');
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_user') {
+    $compId = getCurrentUserCompanyId();
     $email = !empty($_POST['email']) ? $_POST['email'] : null;
     $login_name = $_POST['login_name'];
     
+    // Verificações globais (login e email devem ser únicos no sistema ou pelo menos por empresa?)
+    // Aqui vamos manter verificação por empresa para permitir re-uso se for o caso, ou global para segurança.
+    // O ideal no SaaS é login único global.
     $check = $pdo->prepare("SELECT COUNT(*) FROM users WHERE email = ? AND email != ''");
     $check->execute([$email]);
     if (!empty($email) && $check->fetchColumn() > 0) { header('Location: ?page=usuarios&error=email_exists'); exit; }
@@ -399,8 +428,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $access_number = $_POST['access_number'] ?? '';
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
     
-    $stmt = $pdo->prepare("INSERT INTO users (id, name, email, sector, unit_id, role, phone, login_name, password, avatar_url, gender, position, status, access_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?)");
-    $stmt->execute([$new_id, $name, $email, $sector, $unit_id, $role, $phone, $login_name, $password, $avatar_url, $gender, $position, $access_number]);
+    $stmt = $pdo->prepare("INSERT INTO users (id, name, email, sector, unit_id, role, phone, login_name, password, avatar_url, gender, position, status, access_number, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?, ?)");
+    $stmt->execute([$new_id, $name, $email, $sector, $unit_id, $role, $phone, $login_name, $password, $avatar_url, $gender, $position, $access_number, $compId]);
 
     // Salvar contas extras
     $extra_emails = $_POST['extra_emails'] ?? [];
@@ -414,7 +443,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     // Sync automático com RH
     try {
-        $pdo->prepare("INSERT INTO rh_employee_details (user_id, gender, role_name) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE gender = VALUES(gender), role_name = VALUES(role_name)")->execute([$new_id, $gender, $position]);
+        $pdo->prepare("INSERT INTO rh_employee_details (user_id, gender, role_name, company_id) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE gender = VALUES(gender), role_name = VALUES(role_name), company_id = VALUES(company_id)")->execute([$new_id, $gender, $position, $compId]);
     } catch(Exception $e) {}
 
     $pdo->prepare("DELETE FROM user_menus WHERE user_id = ?")->execute([$new_id]);

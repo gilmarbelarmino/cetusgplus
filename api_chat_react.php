@@ -40,19 +40,43 @@ try {
 
     switch ($action) {
         case 'list_users':
-            $stmt = $pdo->prepare("
-                SELECT u.id, u.name, u.avatar_url, u.last_activity,
-                (SELECT COUNT(*) FROM chat_messages m 
-                 LEFT JOIN chat_clears c ON c.user_id = ? AND c.other_id = u.id
-                 WHERE m.sender_id = u.id AND m.receiver_id = ? AND m.is_read = 0 
-                 AND (c.cleared_at IS NULL OR m.created_at > c.cleared_at)
-                ) as unread_count,
-                (CASE WHEN u.last_activity >= DATE_SUB(NOW(), INTERVAL 5 MINUTE) THEN 1 ELSE 0 END) as is_online
-                FROM users u
-                WHERE u.status = 'Ativo' AND u.id != ?
-                ORDER BY is_online DESC, u.name ASC
-            ");
-            $stmt->execute([$current_id, $current_id, $current_id]);
+            $compId = getCurrentUserCompanyId();
+            $loginName = $pdo->query("SELECT login_name FROM users WHERE id = '$current_id'")->fetchColumn();
+            $isSuper = ($loginName === 'superadmin');
+
+            if ($isSuper) {
+                // Super Admin vê todos os usuários (especialmente os admins das empresas)
+                $stmt = $pdo->prepare("
+                    SELECT u.id, u.name, u.avatar_url, u.last_activity, u.company_id,
+                    (SELECT name FROM tenants WHERE id = u.company_id) as company_name,
+                    (SELECT COUNT(*) FROM chat_messages m 
+                     LEFT JOIN chat_clears c ON c.user_id = ? AND c.other_id = u.id
+                     WHERE m.sender_id = u.id AND m.receiver_id = ? AND m.is_read = 0 
+                     AND (c.cleared_at IS NULL OR m.created_at > c.cleared_at)
+                    ) as unread_count,
+                    (CASE WHEN u.last_activity >= DATE_SUB(NOW(), INTERVAL 5 MINUTE) THEN 1 ELSE 0 END) as is_online
+                    FROM users u
+                    WHERE u.status = 'Ativo' AND u.id != ?
+                    ORDER BY u.company_id ASC, is_online DESC, u.name ASC
+                ");
+                $stmt->execute([$current_id, $current_id, $current_id]);
+            } else {
+                // Usuário comum vê apenas pessoas da mesma empresa + o Super Admin (Suporte)
+                $stmt = $pdo->prepare("
+                    SELECT u.id, u.name, u.avatar_url, u.last_activity,
+                    (SELECT COUNT(*) FROM chat_messages m 
+                     LEFT JOIN chat_clears c ON c.user_id = ? AND c.other_id = u.id
+                     WHERE m.sender_id = u.id AND m.receiver_id = ? AND m.is_read = 0 
+                     AND (c.cleared_at IS NULL OR m.created_at > c.cleared_at)
+                    ) as unread_count,
+                    (CASE WHEN u.last_activity >= DATE_SUB(NOW(), INTERVAL 5 MINUTE) THEN 1 ELSE 0 END) as is_online
+                    FROM users u
+                    WHERE u.status = 'Ativo' AND u.id != ? 
+                    AND (u.company_id = ? OR u.login_name = 'superadmin')
+                    ORDER BY is_online DESC, u.name ASC
+                ");
+                $stmt->execute([$current_id, $current_id, $current_id, $compId]);
+            }
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode($users);
             break;
@@ -62,11 +86,18 @@ try {
             $receiver_id = $data['receiver_id'] ?? '';
             $content = trim($data['content'] ?? '');
             $type = $data['type'] ?? 'text';
+            $compId = getCurrentUserCompanyId();
             
             if ($receiver_id && $content) {
-                // Salvar mensagem do usuário
-                $stmt = $pdo->prepare("INSERT INTO chat_messages (sender_id, receiver_id, content, type) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$current_id, $receiver_id, $content, $type]);
+                // Se for superadmin enviando, a mensagem deve pertencer à empresa do destinatário para isolamento
+                $loginName = $pdo->query("SELECT login_name FROM users WHERE id = '$current_id'")->fetchColumn();
+                if ($loginName === 'superadmin') {
+                    $compId = $pdo->query("SELECT company_id FROM users WHERE id = '$receiver_id'")->fetchColumn() ?: $compId;
+                }
+
+                // Salvar mensagem
+                $stmt = $pdo->prepare("INSERT INTO chat_messages (sender_id, receiver_id, content, type, company_id) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$current_id, $receiver_id, $content, $type, $compId]);
 
                 // SE O DESTINATÁRIO FOR O PEIXINHO IA
                 if ($receiver_id === 'U_PEIXINHO') {
@@ -75,8 +106,8 @@ try {
                     $brain = new PeixinhoBrain($pdo, $user_menus);
                     $response = $brain->process($content);
                     
-                    $stmt = $pdo->prepare("INSERT INTO chat_messages (sender_id, receiver_id, content, type, is_read, read_at) VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)");
-                    $stmt->execute(['U_PEIXINHO', $current_id, $response, 'text']);
+                    $stmt = $pdo->prepare("INSERT INTO chat_messages (sender_id, receiver_id, content, type, is_read, read_at, company_id) VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, ?)");
+                    $stmt->execute(['U_PEIXINHO', $current_id, $response, 'text', $compId]);
                     
                     echo json_encode(['success' => true, 'is_peixinho' => true, 'peixinho_response' => $response]);
                     exit;

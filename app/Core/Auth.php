@@ -133,4 +133,22 @@ class Auth {
             </div>');
         }
     }
+
+    /**
+     * Retorna o ID da empresa do usuário logado
+     */
+    public static function companyId() {
+        if (isset($_SESSION['company_id'])) {
+            return (int)$_SESSION['company_id'];
+        }
+        
+        $userId = $_SESSION['user_id'] ?? null;
+        if (!$userId || !self::$pdo) return 0;
+
+        $stmt = self::$pdo->prepare("SELECT company_id FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $compId = $stmt->fetchColumn();
+        $_SESSION['company_id'] = ($compId !== false && $compId !== null) ? (int)$compId : 0;
+        return $_SESSION['company_id'];
+    }
 }

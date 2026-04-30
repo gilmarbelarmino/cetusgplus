@@ -19,6 +19,7 @@ try {
         type VARCHAR(50) NOT NULL, -- 'general' ou 'sector'
         sector VARCHAR(100) DEFAULT '',
         content TEXT NOT NULL,
+        company_id INT NOT NULL DEFAULT 1,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )");
     
@@ -27,14 +28,22 @@ try {
         sector VARCHAR(100) NOT NULL,
         title VARCHAR(150) NOT NULL,
         url TEXT NOT NULL,
+        company_id INT NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    
+    // Migração de colunas caso existam tabelas antigas
+    try { $pdo->exec("ALTER TABLE info_messages ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+    try { $pdo->exec("ALTER TABLE info_links ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 } catch (Exception $e) {}
 
 // Inicializar Mensagem Geral caso não exista
-$checkGen = $pdo->query("SELECT id FROM info_messages WHERE type = 'general' LIMIT 1")->fetch();
-if (!$checkGen) {
-    $pdo->exec("INSERT INTO info_messages (type, content) VALUES ('general', 'Bem-vindo ao Quadro de Informações Geral do Cetus.')");
+$compId = getCurrentUserCompanyId();
+$checkGen = $pdo->prepare("SELECT id FROM info_messages WHERE type = 'general' AND company_id = ? LIMIT 1");
+$checkGen->execute([$compId]);
+if (!$checkGen->fetch()) {
+    $pdo->prepare("INSERT INTO info_messages (type, content, company_id) VALUES ('general', 'Bem-vindo ao Quadro de Informações Geral do Cetus.', ?)")
+        ->execute([$compId]);
 }
 
 // ======================== MANUSEIO DE POST (Ações) ========================
@@ -42,37 +51,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdminInfo) {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'update_general') {
-        $stmt = $pdo->prepare("UPDATE info_messages SET content = ? WHERE type = 'general'");
-        $stmt->execute([$_POST['content']]);
+        $stmt = $pdo->prepare("UPDATE info_messages SET content = ? WHERE type = 'general' AND company_id = ?");
+        $stmt->execute([$_POST['content'], $compId]);
         header('Location: ?page=informacoes&success=1'); exit;
     }
 
     if ($action === 'update_sector') {
         $sector = $_POST['sector'];
         $content = $_POST['content'];
-        $checkSec = $pdo->prepare("SELECT id FROM info_messages WHERE type = 'sector' AND sector = ? LIMIT 1");
-        $checkSec->execute([$sector]);
+        $checkSec = $pdo->prepare("SELECT id FROM info_messages WHERE type = 'sector' AND sector = ? AND company_id = ? LIMIT 1");
+        $checkSec->execute([$sector, $compId]);
         if ($checkSec->fetch()) {
-            $stmt = $pdo->prepare("UPDATE info_messages SET content = ? WHERE type = 'sector' AND sector = ?");
-            $stmt->execute([$content, $sector]);
+            $stmt = $pdo->prepare("UPDATE info_messages SET content = ? WHERE type = 'sector' AND sector = ? AND company_id = ?");
+            $stmt->execute([$content, $sector, $compId]);
         } else {
-            $stmt = $pdo->prepare("INSERT INTO info_messages (type, sector, content) VALUES ('sector', ?, ?)");
-            $stmt->execute([$sector, $content]);
+            $stmt = $pdo->prepare("INSERT INTO info_messages (type, sector, content, company_id) VALUES ('sector', ?, ?, ?)");
+            $stmt->execute([$sector, $content, $compId]);
         }
         $tab = urlencode($sector);
         header("Location: ?page=informacoes&tab=$tab&success=1"); exit;
     }
 
     if ($action === 'add_link') {
-        $stmt = $pdo->prepare("INSERT INTO info_links (sector, title, url) VALUES (?, ?, ?)");
-        $stmt->execute([$_POST['sector'], $_POST['title'], $_POST['url']]);
+        $stmt = $pdo->prepare("INSERT INTO info_links (sector, title, url, company_id) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$_POST['sector'], $_POST['title'], $_POST['url'], $compId]);
         $tab = urlencode($_POST['sector']);
         header("Location: ?page=informacoes&tab=$tab&success=1"); exit;
     }
 
     if ($action === 'delete_link') {
-        $stmt = $pdo->prepare("DELETE FROM info_links WHERE id = ?");
-        $stmt->execute([$_POST['link_id']]);
+        $stmt = $pdo->prepare("DELETE FROM info_links WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['link_id'], $compId]);
         $tab = urlencode($_POST['tab_sector']);
         header("Location: ?page=informacoes&tab=$tab&success=1"); exit;
     }
@@ -81,7 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdminInfo) {
 // ======================== BUSCA DE DADOS ========================
 // 1. Setores Disponíveis
 if ($isAdminInfo) {
-    $sectorsResult = $pdo->query("SELECT DISTINCT name FROM sectors ORDER BY name ASC")->fetchAll();
+    $stmt_s = $pdo->prepare("SELECT DISTINCT name FROM sectors WHERE company_id = ? ORDER BY name ASC");
+    $stmt_s->execute([$compId]);
+    $sectorsResult = $stmt_s->fetchAll();
     $sectorsList = array_column($sectorsResult, 'name');
 } else {
     // Colaborador comum vê apenas o seu setor
@@ -89,13 +100,18 @@ if ($isAdminInfo) {
 }
 
 // 2. Mensagem Geral
-$generalMsg = $pdo->query("SELECT content FROM info_messages WHERE type = 'general' LIMIT 1")->fetchColumn();
+$stmt_msg = $pdo->prepare("SELECT content FROM info_messages WHERE type = 'general' AND company_id = ? LIMIT 1");
+$stmt_msg->execute([$compId]);
+$generalMsg = $stmt_msg->fetchColumn();
 
-// 3. Usuários por Setor (Com Foto e Nome)
-$allUsersResult = $pdo->query("SELECT u.id, u.name, u.avatar_url, rh.role_name as position, u.sector 
+// 3. Usuários por Setor (Com Foto e Nome) - Isolado por empresa
+$stmt_usrs = $pdo->prepare("SELECT u.id, u.name, u.avatar_url, rh.role_name as position, u.sector 
                                FROM users u 
                                LEFT JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id 
-                               ORDER BY u.name ASC")->fetchAll();
+                               WHERE u.company_id = ?
+                               ORDER BY u.name ASC");
+$stmt_usrs->execute([$compId]);
+$allUsersResult = $stmt_usrs->fetchAll();
 
 $usersBySector = [];
 foreach ($allUsersResult as $u) {
@@ -104,14 +120,18 @@ foreach ($allUsersResult as $u) {
 }
 
 // 4. Mensagens Setoriais
-$sectorMessagesResult = $pdo->query("SELECT sector, content FROM info_messages WHERE type = 'sector'")->fetchAll();
+$stmt_sm = $pdo->prepare("SELECT sector, content FROM info_messages WHERE type = 'sector' AND company_id = ?");
+$stmt_sm->execute([$compId]);
+$sectorMessagesResult = $stmt_sm->fetchAll();
 $sectorMessages = [];
 foreach ($sectorMessagesResult as $sm) {
     $sectorMessages[$sm['sector']] = $sm['content'];
 }
 
 // 5. Links Setoriais
-$sectorLinksResult = $pdo->query("SELECT * FROM info_links ORDER BY created_at DESC")->fetchAll();
+$stmt_sl = $pdo->prepare("SELECT * FROM info_links WHERE company_id = ? ORDER BY created_at DESC");
+$stmt_sl->execute([$compId]);
+$sectorLinksResult = $stmt_sl->fetchAll();
 $sectorLinks = [];
 foreach ($sectorLinksResult as $sl) {
     $sectorLinks[$sl['sector']][] = $sl;

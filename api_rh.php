@@ -11,7 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'config.php';
 
-try {
+    $compId = getCurrentUserCompanyId();
+
     // 1. Relatório Geral de Funcionários com detalhes de RH
     $query = "
         SELECT 
@@ -21,22 +22,34 @@ try {
         FROM users u
         LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id
         LEFT JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id
+        WHERE u.company_id = ?
         ORDER BY u.sector ASC, u.name ASC
     ";
     $stmt = $pdo->prepare($query);
-    $stmt->execute();
+    $stmt->execute([$compId]);
     $users_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 2. Outras tabelas vitais do RH
-    $vacations = $pdo->query("SELECT * FROM rh_vacations ORDER BY start_date DESC")->fetchAll(PDO::FETCH_ASSOC);
-    $certificates = $pdo->query("SELECT * FROM rh_certificates ORDER BY issue_date DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $vacations = $pdo->prepare("SELECT * FROM rh_vacations WHERE company_id = ? ORDER BY start_date DESC");
+    $vacations->execute([$compId]);
+    $vacations = $vacations->fetchAll(PDO::FETCH_ASSOC);
+
+    $certificates = $pdo->prepare("SELECT * FROM rh_certificates WHERE company_id = ? ORDER BY issue_date DESC");
+    $certificates->execute([$compId]);
+    $certificates = $certificates->fetchAll(PDO::FETCH_ASSOC);
     
     $notes = [];
-    try { $notes = $pdo->query("SELECT * FROM rh_notes ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC); } catch(Exception $e){}
+    try { 
+        $stmt = $pdo->prepare("SELECT * FROM rh_notes WHERE company_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$compId]);
+        $notes = $stmt->fetchAll(PDO::FETCH_ASSOC); 
+    } catch(Exception $e){}
 
     $announcements = [];
     try { 
-        $announcements = $pdo->query("SELECT a.*, (SELECT COUNT(*) FROM announcement_views v WHERE v.announcement_id = a.id) as views FROM announcements a ORDER BY a.created_at DESC")->fetchAll(PDO::FETCH_ASSOC); 
+        $stmt = $pdo->prepare("SELECT a.*, (SELECT COUNT(*) FROM announcement_views v WHERE v.announcement_id = a.id) as views FROM announcements a WHERE a.company_id = ? ORDER BY a.created_at DESC");
+        $stmt->execute([$compId]);
+        $announcements = $stmt->fetchAll(PDO::FETCH_ASSOC); 
     } catch(Exception $e) {}
 
     echo json_encode([
@@ -59,10 +72,11 @@ try {
             
             if ($action === 'add_announcement') {
                 $msg = $_POST['message'] ?? $json_data['message'] ?? '';
-                $user = $_POST['created_by'] ?? $json_data['created_by'] ?? 'Sistema';
+                $user_name = $_POST['created_by'] ?? $json_data['created_by'] ?? 'Sistema';
+                $compId = getCurrentUserCompanyId();
                 
-                $stmt = $pdo->prepare("INSERT INTO announcements (message, created_by, created_at) VALUES (?, ?, NOW())");
-                $stmt->execute([$msg, $user]);
+                $stmt = $pdo->prepare("INSERT INTO announcements (message, created_by, company_id, created_at) VALUES (?, ?, ?, NOW())");
+                $stmt->execute([$msg, $user_name, $compId]);
                 
                 triggerSocketUpdate('data_updated', ['module' => 'rh', 'action' => 'add_announcement']);
                 echo json_encode(['success' => true]);

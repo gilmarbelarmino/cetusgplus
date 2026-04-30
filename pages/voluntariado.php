@@ -5,6 +5,7 @@ require_once 'access_control.php';
 $pdo->exec("CREATE TABLE IF NOT EXISTS volunteer_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     volunteer_id VARCHAR(50) NOT NULL,
+    company_id INT NOT NULL DEFAULT 1,
     start_date DATE,
     end_date DATE,
     total_hours DECIMAL(10,2) DEFAULT 0,
@@ -13,8 +14,10 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS volunteer_history (
     edited_by VARCHAR(50) NULL,
     edited_at TIMESTAMP NULL
 )");
+try { $pdo->exec("ALTER TABLE volunteer_history ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 
 // ─── Garantir colunas na tabela volunteers ──────────────────────────────
+try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN points INT DEFAULT 0"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN end_date DATE NULL"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE volunteer_history ADD COLUMN points INT DEFAULT 0"); } catch(Exception $e) {}
@@ -38,44 +41,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_v
         }
     }
 
-    $stmt = $pdo->prepare("INSERT INTO volunteers (id, name, cpf, avatar_url, gender, email, phone, unit_id, sector_id, volunteering_sector, action_type, location, profession, hourly_rate, start_date, work_area, hours_jan, hours_feb, hours_mar, hours_apr, hours_may, hours_jun, hours_jul, hours_aug, hours_sep, hours_oct, hours_nov, hours_dec, total_hours, points, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo')");
+    $compId = getCurrentUserCompanyId();
+    $stmt = $pdo->prepare("INSERT INTO volunteers (id, name, cpf, avatar_url, gender, email, phone, unit_id, sector_id, volunteering_sector, action_type, location, profession, hourly_rate, start_date, work_area, hours_jan, hours_feb, hours_mar, hours_apr, hours_may, hours_jun, hours_jul, hours_aug, hours_sep, hours_oct, hours_nov, hours_dec, total_hours, points, status, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?)");
     $stmt->execute([$vid, $_POST['name'], $_POST['cpf'], $avatar_url, $_POST['gender'] ?? 'Outro', $_POST['email'], $_POST['phone'], $_POST['unit_id'], $_POST['sector_id'], $_POST['volunteering_sector'], $_POST['action_type'] ?? '', implode(', ', $_POST['location'] ?? []), $_POST['profession'], $_POST['hourly_rate'], $_POST['start_date'], $_POST['work_area'],
         floatval($_POST['hours_jan']??0), floatval($_POST['hours_feb']??0), floatval($_POST['hours_mar']??0), floatval($_POST['hours_apr']??0),
         floatval($_POST['hours_may']??0), floatval($_POST['hours_jun']??0), floatval($_POST['hours_jul']??0), floatval($_POST['hours_aug']??0),
         floatval($_POST['hours_sep']??0), floatval($_POST['hours_oct']??0), floatval($_POST['hours_nov']??0), floatval($_POST['hours_dec']??0),
-        $total, floor($total)
+        $total, floor($total), $compId
     ]);
     header('Location: ?page=voluntariado&success=1'); exit;
 }
 
 // Inativar voluntário (salva histórico)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'inativar') {
+    $compId = getCurrentUserCompanyId();
     $vid = $_POST['volunteer_id'];
-    $vol = $pdo->prepare("SELECT * FROM volunteers WHERE id = ?");
-    $vol->execute([$vid]);
+    $vol = $pdo->prepare("SELECT * FROM volunteers WHERE id = ? AND company_id = ?");
+    $vol->execute([$vid, $compId]);
     $vol = $vol->fetch();
     if ($vol) {
-        $pdo->prepare("INSERT INTO volunteer_history (volunteer_id, start_date, end_date, total_hours, points, edited_by, edited_at) VALUES (?, ?, CURDATE(), ?, ?, ?, NOW())")
-            ->execute([$vid, $vol['start_date'], $vol['total_hours'], $vol['points'], $user['id']]);
-        $pdo->prepare("UPDATE volunteers SET status = 'Inativo', end_date = CURDATE() WHERE id = ?")
-            ->execute([$vid]);
+        $pdo->prepare("INSERT INTO volunteer_history (volunteer_id, start_date, end_date, total_hours, points, edited_by, edited_at, company_id) VALUES (?, ?, CURDATE(), ?, ?, ?, NOW(), ?)")
+            ->execute([$vid, $vol['start_date'], $vol['total_hours'], $vol['points'], $user['id'], $compId]);
+        $pdo->prepare("UPDATE volunteers SET status = 'Inativo', end_date = CURDATE() WHERE id = ? AND company_id = ?")
+            ->execute([$vid, $compId]);
     }
     header('Location: ?page=voluntariado&cert='.$vid.'&inativado=1'); exit;
 }
 
 // Reativar voluntário (zera horas, mantém histórico)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reativar') {
+    $compId = getCurrentUserCompanyId();
     $vid = $_POST['volunteer_id'];
     // Reativar com bônus de 20 pontos
     $pdo->prepare("UPDATE volunteers SET status = 'Ativo', end_date = NULL, start_date = CURDATE(), total_hours = 0, points = 20,
         hours_jan=0,hours_feb=0,hours_mar=0,hours_apr=0,hours_may=0,hours_jun=0,
         hours_jul=0,hours_aug=0,hours_sep=0,hours_oct=0,hours_nov=0,hours_dec=0,
-        last_edited_by = ?, last_edited_at = NOW() WHERE id = ?")
-        ->execute([$user['id'], $vid]);
+        last_edited_by = ?, last_edited_at = NOW() WHERE id = ? AND company_id = ?")
+        ->execute([$user['id'], $vid, $compId]);
     
     // Registrar reativação com início de ciclo (sem horas, mas com pontos de bônus registrados se necessário)
-    $pdo->prepare("INSERT INTO volunteer_history (volunteer_id, start_date, total_hours, points, edited_by, edited_at) VALUES (?, CURDATE(), 0, 20, ?, NOW())")
-        ->execute([$vid, $user['id']]);
+    $pdo->prepare("INSERT INTO volunteer_history (volunteer_id, start_date, total_hours, points, edited_by, edited_at, company_id) VALUES (?, CURDATE(), 0, 20, ?, NOW(), ?)")
+        ->execute([$vid, $user['id'], $compId]);
         
     header('Location: ?page=voluntariado&reativado=1'); exit;
 }
@@ -83,9 +89,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reati
 // Excluir voluntário permanentemente
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'excluir') {
     if ($user['role'] === 'Administrador') {
+        $compId = getCurrentUserCompanyId();
         $vid = $_POST['volunteer_id'];
-        $pdo->prepare("DELETE FROM volunteer_history WHERE volunteer_id = ?")->execute([$vid]);
-        $pdo->prepare("DELETE FROM volunteers WHERE id = ?")->execute([$vid]);
+        $pdo->prepare("DELETE FROM volunteer_history WHERE volunteer_id = ? AND company_id = ?")->execute([$vid, $compId]);
+        $pdo->prepare("DELETE FROM volunteers WHERE id = ? AND company_id = ?")->execute([$vid, $compId]);
     }
     header('Location: ?page=voluntariado&excluido=1'); exit;
 }
@@ -106,45 +113,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
         }
     }
 
+    $compId = getCurrentUserCompanyId();
     $pdo->prepare("UPDATE volunteers SET name=?, cpf=?, avatar_url=?, gender=?, email=?, phone=?, volunteering_sector=?, work_area=?, location=?, profession=?, hourly_rate=?,
         hours_jan=?,hours_feb=?,hours_mar=?,hours_apr=?,hours_may=?,hours_jun=?,hours_jul=?,hours_aug=?,hours_sep=?,hours_oct=?,hours_nov=?,hours_dec=?,
-        total_hours=?, points=?, last_edited_by=?, last_edited_at=NOW() WHERE id=?")
+        total_hours=?, points=?, last_edited_by=?, last_edited_at=NOW() WHERE id=? AND company_id=?")
         ->execute([$_POST['name'], $_POST['cpf'], $avatar_url, $_POST['gender'] ?? 'Outro', $_POST['email'], $_POST['phone'], $_POST['volunteering_sector'], $_POST['work_area'], implode(', ', $_POST['location'] ?? []), $_POST['profession'], floatval($_POST['hourly_rate']),
-            floatval($_POST['hours_jan']??0), floatval($_POST['hours_feb']??0), floatval($_POST['hours_mar']??0), floatval($_POST['hours_apr']??0),
-            floatval($_POST['hours_may']??0), floatval($_POST['hours_jun']??0), floatval($_POST['hours_jul']??0), floatval($_POST['hours_aug']??0),
-            floatval($_POST['hours_sep']??0), floatval($_POST['hours_oct']??0), floatval($_POST['hours_nov']??0), floatval($_POST['hours_dec']??0),
-            $total, floor($total), $user['id'], $_POST['volunteer_id']
-        ]);
+        floatval($_POST['hours_jan']??0), floatval($_POST['hours_feb']??0), floatval($_POST['hours_mar']??0), floatval($_POST['hours_apr']??0),
+        floatval($_POST['hours_may']??0), floatval($_POST['hours_jun']??0), floatval($_POST['hours_jul']??0), floatval($_POST['hours_aug']??0),
+        floatval($_POST['hours_sep']??0), floatval($_POST['hours_oct']??0), floatval($_POST['hours_nov']??0), floatval($_POST['hours_dec']??0),
+        $total, floor($total), $user['id'], $_POST['volunteer_id'], $compId
+    ]);
     header('Location: ?page=voluntariado&editado=1'); exit;
 }
 
 // ─── CARREGAR DADOS ───────────────────────────────────────────────────────────
-$query = "SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON BINARY v.unit_id = BINARY u.id WHERE 1=1";
-$params = [];
+$compId = getCurrentUserCompanyId();
+$query = "SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON BINARY v.unit_id = BINARY u.id WHERE v.company_id = ?";
+$params = [$compId];
 $query .= " ORDER BY v.created_at DESC";
 $stmt = $pdo->prepare($query); $stmt->execute($params);
 $volunteers = $stmt->fetchAll();
 
-$units   = $pdo->query("SELECT * FROM units")->fetchAll();
-$users   = $pdo->query("SELECT u.id, u.name, u.email, u.phone, u.sector, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id ORDER BY u.name")->fetchAll();
-$sectors = $pdo->query("SELECT s.id, s.name, s.unit_id FROM sectors s ORDER BY s.name")->fetchAll();
+$units_stmt = $pdo->prepare("SELECT * FROM units WHERE company_id = ?");
+$units_stmt->execute([$compId]);
+$units = $units_stmt->fetchAll();
+
+$users_stmt = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+$users_stmt->execute([$compId]);
+$users = $users_stmt->fetchAll();
+
+$sectors_stmt = $pdo->prepare("SELECT s.id, s.name, s.unit_id FROM sectors s WHERE s.company_id = ? ORDER BY s.name");
+$sectors_stmt->execute([$compId]);
+$sectors = $sectors_stmt->fetchAll();
 
 // Voluntário para edição
 $editVol = null;
 if (isset($_GET['edit'])) {
-    $s = $pdo->prepare("SELECT * FROM volunteers WHERE id = ?");
-    $s->execute([$_GET['edit']]);
+    $s = $pdo->prepare("SELECT * FROM volunteers WHERE id = ? AND company_id = ?");
+    $s->execute([$_GET['edit'], $compId]);
     $editVol = $s->fetch();
 }
 
 // Voluntário para certificado
 $certVol = null;
 if (isset($_GET['cert'])) {
-    $s = $pdo->prepare("SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON BINARY v.unit_id = BINARY u.id WHERE v.id = ?");
-    $s->execute([$_GET['cert']]);
+    $s = $pdo->prepare("SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON BINARY v.unit_id = BINARY u.id WHERE v.id = ? AND v.company_id = ?");
+    $s->execute([$_GET['cert'], $compId]);
     $certVol = $s->fetch();
 }
-$company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch();
+$stmt_comp = $pdo->prepare("SELECT * FROM company_settings WHERE id = ?");
+$stmt_comp->execute([$compId]);
+$company = $stmt_comp->fetch();
 
 $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abril','may'=>'Maio','jun'=>'Junho','jul'=>'Julho','aug'=>'Agosto','sep'=>'Setembro','oct'=>'Outubro','nov'=>'Novembro','dec'=>'Dezembro'];
 ?>

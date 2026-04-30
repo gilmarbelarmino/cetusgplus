@@ -1,42 +1,41 @@
 <?php
-// Migração: adicionar coluna estimated_value se não existir
-try {
-    $pdo->exec("ALTER TABLE assets ADD COLUMN estimated_value DECIMAL(12,2) DEFAULT 0");
-} catch(Exception $e) { /* coluna já existe */ }
-
-try {
-    $pdo->exec("ALTER TABLE assets ADD COLUMN image_url VARCHAR(255) DEFAULT NULL");
-} catch(Exception $e) { /* coluna já existe */ }
+// Migrações SaaS
+try { $pdo->exec("ALTER TABLE assets ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE assets ADD COLUMN estimated_value DECIMAL(12,2) DEFAULT 0"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE assets ADD COLUMN image_url VARCHAR(255) DEFAULT NULL"); } catch(Exception $e) {}
 
 try {
     $pdo->exec("ALTER TABLE assets MODIFY patrimony_id VARCHAR(255) NULL");
 } catch(Exception $e) { /* falha silenciosa se houver erro ao modificar */ }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_asset') {
+    $compId = getCurrentUserCompanyId();
     $image_name = null;
     if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] == 0) {
         $image_name = 'asset_' . time() . '.' . pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION);
         move_uploaded_file($_FILES['product_image']['tmp_name'], __DIR__ . '/../uploads/' . $image_name);
     }
     
-    $stmt = $pdo->prepare("INSERT INTO assets (id, name, category, patrimony_id, sector, unit_id, status, responsible_name, estimated_value, image_url) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO assets (id, name, category, patrimony_id, sector, unit_id, status, responsible_name, estimated_value, image_url, company_id) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)");
     $estimated = floatval(str_replace(['.', ','], ['', '.'], $_POST['estimated_value'] ?? '0'));
     $patrimony_id = !empty($_POST['patrimony_id']) ? $_POST['patrimony_id'] : null;
-    $stmt->execute(['A' . time(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['responsible_name'], $estimated, $image_name]);
+    $stmt->execute(['A' . time(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['responsible_name'], $estimated, $image_name, $compId]);
     header('Location: ?page=patrimonio&success=1');
     exit;
 }
 
 // Handler para Exclusão de Categorias
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_category') {
+    $compId = getCurrentUserCompanyId();
     $catToDelete = $_POST['category_name'];
-    $stmt = $pdo->prepare("UPDATE assets SET category = NULL WHERE category = ?");
-    $stmt->execute([$catToDelete]);
+    $stmt = $pdo->prepare("UPDATE assets SET category = NULL WHERE category = ? AND company_id = ?");
+    $stmt->execute([$catToDelete, $compId]);
     header('Location: ?page=patrimonio&success=3');
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_asset') {
+    $compId = getCurrentUserCompanyId();
     $estimated = floatval(str_replace(['.', ','], ['', '.'], $_POST['estimated_value'] ?? '0'));
     
     $image_update = "";
@@ -51,8 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
     
     $params[] = $_POST['asset_id'];
+    $params[] = $compId;
     
-    $stmt = $pdo->prepare("UPDATE assets SET name = ?, category = ?, patrimony_id = ?, sector = ?, unit_id = ?, status = ?, responsible_name = ?, estimated_value = ? $image_update WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE assets SET name = ?, category = ?, patrimony_id = ?, sector = ?, unit_id = ?, status = ?, responsible_name = ?, estimated_value = ? $image_update WHERE id = ? AND company_id = ?");
     $stmt->execute($params);
     header('Location: ?page=patrimonio&success=2');
     exit;
@@ -60,11 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 $search = $_GET['search'] ?? '';
 $unit_filter = $_GET['unit'] ?? '';
+$compId = getCurrentUserCompanyId();
 
 // Filtro baseado no perfil do usuário - Agora liberado se tiver acesso ao menu
 $query = "SELECT a.*, u.name as unit_name FROM assets a 
-          LEFT JOIN units u ON BINARY a.unit_id = BINARY u.id WHERE 1=1";
-$params = [];
+          LEFT JOIN units u ON BINARY a.unit_id = BINARY u.id WHERE a.company_id = ?";
+$params = [$compId];
 
 if ($search) {
     $query .= " AND (a.name LIKE ? OR a.patrimony_id LIKE ?)";
@@ -81,16 +82,27 @@ $query .= " ORDER BY a.created_at DESC";
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 
-$units = $pdo->query("SELECT * FROM units")->fetchAll();
-$categories = $pdo->query("SELECT DISTINCT category FROM assets WHERE category IS NOT NULL AND category != '' ORDER BY category")->fetchAll();
-$sectors = $pdo->query("SELECT DISTINCT sector FROM assets WHERE sector IS NOT NULL AND sector != '' ORDER BY sector")->fetchAll();
-$all_users = $pdo->query("SELECT u.id, u.name, u.email, u.phone, u.sector, u.role, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id ORDER BY u.name")->fetchAll();
+$stmt_units = $pdo->prepare("SELECT * FROM units WHERE company_id = ?");
+$stmt_units->execute([$compId]);
+$units = $stmt_units->fetchAll();
+
+$stmt_cats = $pdo->prepare("SELECT DISTINCT category FROM assets WHERE category IS NOT NULL AND category != '' AND company_id = ? ORDER BY category");
+$stmt_cats->execute([$compId]);
+$categories = $stmt_cats->fetchAll();
+
+$stmt_sects = $pdo->prepare("SELECT DISTINCT sector FROM assets WHERE sector IS NOT NULL AND sector != '' AND company_id = ? ORDER BY sector");
+$stmt_sects->execute([$compId]);
+$sectors = $stmt_sects->fetchAll();
+
+$stmt_users = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.role, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+$stmt_users->execute([$compId]);
+$all_users = $stmt_users->fetchAll();
 
 // Ativo para edição
 $editAsset = null;
 if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) {
-    $stmt_edit = $pdo->prepare("SELECT * FROM assets WHERE id = ?");
-    $stmt_edit->execute([$_GET['id']]);
+    $stmt_edit = $pdo->prepare("SELECT * FROM assets WHERE id = ? AND company_id = ?");
+    $stmt_edit->execute([$_GET['id'], $compId]);
     $editAsset = $stmt_edit->fetch();
 }
 ?>

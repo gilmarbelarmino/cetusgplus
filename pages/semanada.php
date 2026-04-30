@@ -3,15 +3,20 @@
 // SEMANADA - PDF Viewer + Comentários Interativos
 // ============================================================
 
-// --- LIMPEZA AUTOMÁTICA (30 DIAS) ---
+// Migrações SaaS
+try { $pdo->exec("ALTER TABLE semanada_uploads ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE semanada_comments ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+
+// --- LIMPEZA AUTOMÁTICA (30 DIAS) - Isolado por empresa ---
+$compId = getCurrentUserCompanyId();
 $thirtyDaysAgo = date('Y-m-d H:i:s', strtotime('-30 days'));
-$toDelete = $pdo->prepare("SELECT filename FROM semanada_uploads WHERE is_history = 1 AND uploaded_at < ?");
-$toDelete->execute([$thirtyDaysAgo]);
+$toDelete = $pdo->prepare("SELECT filename FROM semanada_uploads WHERE is_history = 1 AND uploaded_at < ? AND company_id = ?");
+$toDelete->execute([$thirtyDaysAgo, $compId]);
 $filesToDelete = $toDelete->fetchAll(PDO::FETCH_COLUMN);
 foreach ($filesToDelete as $f) {
     if (file_exists(__DIR__ . '/../uploads/semanada/' . $f)) unlink(__DIR__ . '/../uploads/semanada/' . $f);
 }
-$pdo->prepare("DELETE FROM semanada_uploads WHERE is_history = 1 AND uploaded_at < ?")->execute([$thirtyDaysAgo]);
+$pdo->prepare("DELETE FROM semanada_uploads WHERE is_history = 1 AND uploaded_at < ? AND company_id = ?")->execute([$thirtyDaysAgo, $compId]);
 
 $uploadDir = __DIR__ . '/../uploads/semanada/';
 if (!is_dir($uploadDir)) {
@@ -31,14 +36,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit;
         }
         
-        // Mover PDFs anteriores para o histórico
-        $pdo->exec("UPDATE semanada_uploads SET is_history = 1 WHERE is_history = 0");
+        // Mover PDFs anteriores para o histórico - filtrado por empresa
+        $pdo->prepare("UPDATE semanada_uploads SET is_history = 1 WHERE is_history = 0 AND company_id = ?")->execute([$compId]);
         
         // Salvar novo arquivo
         $filename = 'semanada_' . date('Ymd_His') . '.pdf';
         if (move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
-            $stmt = $pdo->prepare("INSERT INTO semanada_uploads (filename, original_name, uploaded_by, expiry_date, is_history) VALUES (?, ?, ?, ?, 0)");
-            $stmt->execute([$filename, $file['name'], $user['id'], $expiryDate]);
+            $stmt = $pdo->prepare("INSERT INTO semanada_uploads (filename, original_name, uploaded_by, expiry_date, is_history, company_id) VALUES (?, ?, ?, ?, 0, ?)");
+            $stmt->execute([$filename, $file['name'], $user['id'], $expiryDate, $compId]);
             header('Location: ?page=semanada&success=1');
         } else {
             header('Location: ?page=semanada&error=upload');
@@ -48,21 +53,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     
     // DELETAR PDF
     if ($_POST['action'] === 'delete_pdf') {
-        $old = glob($uploadDir . '*.pdf');
-        foreach ($old as $f) unlink($f);
-        $pdo->exec("DELETE FROM semanada_comments");
-        $pdo->exec("DELETE FROM semanada_uploads");
+        $compId = getCurrentUserCompanyId();
+        // Deletar arquivos físicos da empresa (baseado nos registros do banco)
+        $stmt_f = $pdo->prepare("SELECT filename FROM semanada_uploads WHERE company_id = ?");
+        $stmt_f->execute([$compId]);
+        $files = $stmt_f->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($files as $f) {
+            if (file_exists($uploadDir . $f)) unlink($uploadDir . $f);
+        }
+        $pdo->prepare("DELETE FROM semanada_comments WHERE company_id = ?")->execute([$compId]);
+        $pdo->prepare("DELETE FROM semanada_uploads WHERE company_id = ?")->execute([$compId]);
         header('Location: ?page=semanada&success=2');
         exit;
     }
     
     // NOVO COMENTÁRIO
     if ($_POST['action'] === 'add_comment') {
+        $compId = getCurrentUserCompanyId();
         $text = trim($_POST['comment_text'] ?? '');
         $parentId = !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : null;
         if ($text !== '') {
-            $stmt = $pdo->prepare("INSERT INTO semanada_comments (user_id, comment_text, parent_id) VALUES (?, ?, ?)");
-            $stmt->execute([$user['id'], $text, $parentId]);
+            $stmt = $pdo->prepare("INSERT INTO semanada_comments (user_id, comment_text, parent_id, company_id) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$user['id'], $text, $parentId, $compId]);
         }
         header('Location: ?page=semanada&success=3#comments');
         exit;
@@ -70,45 +82,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     
     // DELETAR COMENTÁRIO
     if ($_POST['action'] === 'delete_comment') {
+        $compId = getCurrentUserCompanyId();
         $cid = intval($_POST['comment_id']);
-        $stmt = $pdo->prepare("DELETE FROM semanada_comments WHERE id = ? AND user_id = ?");
-        $stmt->execute([$cid, $user['id']]);
+        $stmt = $pdo->prepare("DELETE FROM semanada_comments WHERE id = ? AND user_id = ? AND company_id = ?");
+        $stmt->execute([$cid, $user['id'], $compId]);
         header('Location: ?page=semanada#comments');
         exit;
     }
 }
 
 // --- BUSCAR DADOS ---
+$compId = getCurrentUserCompanyId();
 // Verificar se o PDF atual expirou
-$pdo->exec("UPDATE semanada_uploads SET is_history = 1 WHERE is_history = 0 AND expiry_date IS NOT NULL AND expiry_date < CURDATE()");
+$pdo->prepare("UPDATE semanada_uploads SET is_history = 1 WHERE is_history = 0 AND expiry_date IS NOT NULL AND expiry_date < CURDATE() AND company_id = ?")
+    ->execute([$compId]);
 
-$uploadInfo = $pdo->query("
+$stmt_curr = $pdo->prepare("
     SELECT su.*, u.name as uploader_name, u.avatar_url as uploader_avatar 
     FROM semanada_uploads su 
     LEFT JOIN users u ON BINARY su.uploaded_by = BINARY u.id 
-    WHERE su.is_history = 0
+    WHERE su.is_history = 0 AND su.company_id = ?
     ORDER BY su.uploaded_at DESC LIMIT 1
-")->fetch(PDO::FETCH_ASSOC);
+");
+$stmt_curr->execute([$compId]);
+$uploadInfo = $stmt_curr->fetch(PDO::FETCH_ASSOC);
 
 // Buscar Histórico
-$history = $pdo->query("
+$stmt_hist = $pdo->prepare("
     SELECT su.*, u.name as uploader_name 
     FROM semanada_uploads su 
     LEFT JOIN users u ON BINARY su.uploaded_by = BINARY u.id 
-    WHERE su.is_history = 1 
+    WHERE su.is_history = 1 AND su.company_id = ?
     ORDER BY su.uploaded_at DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+");
+$stmt_hist->execute([$compId]);
+$history = $stmt_hist->fetchAll(PDO::FETCH_ASSOC);
 
 $currentPdf = $uploadInfo ? $uploadInfo['filename'] : null;
 $pdfUrl = $currentPdf ? 'uploads/semanada/' . $currentPdf : null;
 
-// Buscar comentários com dados do usuário
-$comments = $pdo->query("
+// Buscar comentários com dados do usuário - Isolado por empresa
+$stmt_comm = $pdo->prepare("
     SELECT c.*, u.name as user_name, u.avatar_url as user_avatar
     FROM semanada_comments c
     LEFT JOIN users u ON BINARY c.user_id = BINARY u.id
+    WHERE c.company_id = ?
     ORDER BY c.created_at ASC
-")->fetchAll(PDO::FETCH_ASSOC);
+");
+$stmt_comm->execute([$compId]);
+$comments = $stmt_comm->fetchAll(PDO::FETCH_ASSOC);
 
 // Organizar comentários em árvore (pais e respostas)
 $rootComments = [];

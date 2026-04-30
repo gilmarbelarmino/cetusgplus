@@ -58,16 +58,19 @@ $user_menus = getUserMenus($user);
 
 // --- Birthday Logic ---
 $birthdayPeople = [];
+$compId = getCurrentUserCompanyId();
 if (!isset($_SESSION['bd_shown_v3'])) {
     try {
-        $bdStmt = $pdo->query("
+        $bdStmt = $pdo->prepare("
             SELECT u.id, u.name, u.avatar_url, rh.birth_date 
             FROM users u 
             JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id 
             WHERE MONTH(rh.birth_date) = MONTH(CURDATE()) 
             AND DAY(rh.birth_date) = DAY(CURDATE())
             AND u.status = 'Ativo'
+            AND u.company_id = ?
         ");
+        $bdStmt->execute([$compId]);
         $birthdayPeople = $bdStmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
     }
@@ -80,7 +83,9 @@ if (!empty($birthdayPeople) && !empty($company['birthday_message_self'])) {
     // Buscar ID de um admin para ser o remetente da mensagem
     $adminSender = null;
     try {
-        $adminSender = $pdo->query("SELECT id FROM users WHERE role = 'Administrador' AND status = 'Ativo' LIMIT 1")->fetchColumn();
+        $stmt_admin = $pdo->prepare("SELECT id FROM users WHERE role = 'Administrador' AND status = 'Ativo' AND company_id = ? LIMIT 1");
+        $stmt_admin->execute([$compId]);
+        $adminSender = $stmt_admin->fetchColumn();
     } catch(Exception $e) {}
     
     foreach ($birthdayPeople as $bdPerson) {
@@ -113,8 +118,16 @@ if (!in_array($page, $user_menus) && $page !== 'dashboard') {
 
 // Contagem de tickets abertos para o badge da sidebar
 try {
-    $openTickets = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status = 'Aberto'")->fetchColumn() ?: 0;
-} catch (Exception $e) {}
+    $compId = getCurrentUserCompanyId();
+    if ($user['login_name'] === 'superadmin') {
+        // Superadmin vê total de todas as empresas
+        $stmt_open = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status = 'Aberto'");
+    } else {
+        $stmt_open = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE status = 'Aberto' AND company_id = ?");
+        $stmt_open->execute([$compId]);
+    }
+    $openTickets = $stmt_open->fetchColumn() ?: 0;
+} catch (Exception $e) { $openTickets = 0; }
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">

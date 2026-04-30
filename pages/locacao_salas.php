@@ -1,24 +1,29 @@
 <?php
 // Acesso protegido via index.php
 
+// Migrações SaaS
+try { $pdo->exec("ALTER TABLE rooms ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE room_bookings ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+
 // Handlers de Salas (Apenas Admin)
 if ($user['role'] === 'Administrador') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+        $compId = getCurrentUserCompanyId();
         if ($_POST['action'] === 'add_room') {
-            $stmt = $pdo->prepare("INSERT INTO rooms (id, name, description) VALUES (?, ?, ?)");
-            $stmt->execute(['R' . time(), $_POST['name'], $_POST['description']]);
+            $stmt = $pdo->prepare("INSERT INTO rooms (id, name, description, company_id) VALUES (?, ?, ?, ?)");
+            $stmt->execute(['R' . time(), $_POST['name'], $_POST['description'], $compId]);
             header('Location: ?page=locacao_salas&success=1');
             exit;
         }
         if ($_POST['action'] === 'edit_room') {
-            $stmt = $pdo->prepare("UPDATE rooms SET name = ?, description = ? WHERE id = ?");
-            $stmt->execute([$_POST['name'], $_POST['description'], $_POST['room_id']]);
+            $stmt = $pdo->prepare("UPDATE rooms SET name = ?, description = ? WHERE id = ? AND company_id = ?");
+            $stmt->execute([$_POST['name'], $_POST['description'], $_POST['room_id'], $compId]);
             header('Location: ?page=locacao_salas&success=2');
             exit;
         }
         if ($_POST['action'] === 'delete_room') {
-            $stmt = $pdo->prepare("DELETE FROM rooms WHERE id = ?");
-            $stmt->execute([$_POST['room_id']]);
+            $stmt = $pdo->prepare("DELETE FROM rooms WHERE id = ? AND company_id = ?");
+            $stmt->execute([$_POST['room_id'], $compId]);
             header('Location: ?page=locacao_salas&success=3');
             exit;
         }
@@ -27,11 +32,12 @@ if ($user['role'] === 'Administrador') {
 
 // Handlers de Reservas (Todos)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $compId = getCurrentUserCompanyId();
     if ($_POST['action'] === 'add_booking') {
         $check = $pdo->prepare("SELECT COUNT(*) FROM room_bookings 
                                WHERE room_id = ? AND booking_date = ? 
-                               AND start_time < ? AND end_time > ? AND status = 'Aprovado'");
-        $check->execute([$_POST['room_id'], $_POST['booking_date'], $_POST['end_time'], $_POST['start_time']]);
+                               AND start_time < ? AND end_time > ? AND status = 'Aprovado' AND company_id = ?");
+        $check->execute([$_POST['room_id'], $_POST['booking_date'], $_POST['end_time'], $_POST['start_time'], $compId]);
         
         if ($check->fetchColumn() > 0) {
             $params = http_build_query([
@@ -47,15 +53,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit;
         }
 
-        $stmt = $pdo->prepare("INSERT INTO room_bookings (id, room_id, user_id, booking_date, start_time, end_time, observations, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'Aprovado')");
-        $stmt->execute(['B' . time(), $_POST['room_id'], $user['id'], $_POST['booking_date'], $_POST['start_time'], $_POST['end_time'], $_POST['observations']]);
+        $stmt = $pdo->prepare("INSERT INTO room_bookings (id, room_id, user_id, booking_date, start_time, end_time, observations, status, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, 'Aprovado', ?)");
+        $stmt->execute(['B' . time(), $_POST['room_id'], $user['id'], $_POST['booking_date'], $_POST['start_time'], $_POST['end_time'], $_POST['observations'], $compId]);
         header('Location: ?page=locacao_salas&success=4');
         exit;
     }
 
     if ($_POST['action'] === 'waitlist_booking') {
-        $stmt = $pdo->prepare("INSERT INTO room_bookings (id, room_id, user_id, booking_date, start_time, end_time, observations, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'Fila de Espera')");
-        $stmt->execute(['B' . time(), $_POST['room_id'], $user['id'], $_POST['booking_date'], $_POST['start_time'], $_POST['end_time'], $_POST['observations']]);
+        $stmt = $pdo->prepare("INSERT INTO room_bookings (id, room_id, user_id, booking_date, start_time, end_time, observations, status, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, 'Fila de Espera', ?)");
+        $stmt->execute(['B' . time(), $_POST['room_id'], $user['id'], $_POST['booking_date'], $_POST['start_time'], $_POST['end_time'], $_POST['observations'], $compId]);
         header('Location: ?page=locacao_salas&success=7');
         exit;
     }
@@ -63,45 +69,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'edit_booking') {
         $check = $pdo->prepare("SELECT COUNT(*) FROM room_bookings 
                                WHERE room_id = ? AND booking_date = ? AND id != ?
-                               AND start_time < ? AND end_time > ? AND status = 'Aprovado'");
-        $check->execute([$_POST['room_id'], $_POST['booking_date'], $_POST['booking_id'], $_POST['end_time'], $_POST['start_time']]);
+                               AND start_time < ? AND end_time > ? AND status = 'Aprovado' AND company_id = ?");
+        $check->execute([$_POST['room_id'], $_POST['booking_date'], $_POST['booking_id'], $_POST['end_time'], $_POST['start_time'], $compId]);
         
         if ($check->fetchColumn() > 0) {
             header('Location: ?page=locacao_salas&error=conflito');
             exit;
         }
 
-        $stmt = $pdo->prepare("UPDATE room_bookings SET room_id = ?, booking_date = ?, start_time = ?, end_time = ?, observations = ?, last_edited_by = ?, last_edited_at = NOW() WHERE id = ?");
-        $stmt->execute([$_POST['room_id'], $_POST['booking_date'], $_POST['start_time'], $_POST['end_time'], $_POST['observations'], $user['id'], $_POST['booking_id']]);
+        $stmt = $pdo->prepare("UPDATE room_bookings SET room_id = ?, booking_date = ?, start_time = ?, end_time = ?, observations = ?, last_edited_by = ?, last_edited_at = NOW() WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['room_id'], $_POST['booking_date'], $_POST['start_time'], $_POST['end_time'], $_POST['observations'], $user['id'], $_POST['booking_id'], $compId]);
         header('Location: ?page=locacao_salas&success=5');
         exit;
     }
 
     if ($_POST['action'] === 'delete_booking') {
-        $stmt = $pdo->prepare("SELECT * FROM room_bookings WHERE id = ?");
-        $stmt->execute([$_POST['booking_id']]);
+        $stmt = $pdo->prepare("SELECT * FROM room_bookings WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['booking_id'], $compId]);
         $deleted = $stmt->fetch();
 
-        $stmt = $pdo->prepare("DELETE FROM room_bookings WHERE id = ?");
-        $stmt->execute([$_POST['booking_id']]);
+        $stmt = $pdo->prepare("DELETE FROM room_bookings WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['booking_id'], $compId]);
         
         // Waitlist logic
         if ($deleted && $deleted['status'] === 'Aprovado') {
-            $checkW = $pdo->prepare("SELECT * FROM room_bookings WHERE room_id = ? AND booking_date = ? AND start_time < ? AND end_time > ? AND status = 'Fila de Espera' ORDER BY start_time ASC LIMIT 1");
-            $checkW->execute([$deleted['room_id'], $deleted['booking_date'], $deleted['end_time'], $deleted['start_time']]);
+            $checkW = $pdo->prepare("SELECT * FROM room_bookings WHERE room_id = ? AND booking_date = ? AND start_time < ? AND end_time > ? AND status = 'Fila de Espera' AND company_id = ? ORDER BY start_time ASC LIMIT 1");
+            $checkW->execute([$deleted['room_id'], $deleted['booking_date'], $deleted['end_time'], $deleted['start_time'], $compId]);
             $waitlist = $checkW->fetch();
             
             if ($waitlist) {
                 // Aprovar
-                $pdo->prepare("UPDATE room_bookings SET status = 'Aprovado' WHERE id = ?")->execute([$waitlist['id']]);
+                $pdo->prepare("UPDATE room_bookings SET status = 'Aprovado' WHERE id = ? AND company_id = ?")->execute([$waitlist['id'], $compId]);
                 
                 // Mensagem Peixinho
-                $roomName = $pdo->prepare("SELECT name FROM rooms WHERE id = ?");
-                $roomName->execute([$waitlist['room_id']]);
+                $roomName = $pdo->prepare("SELECT name FROM rooms WHERE id = ? AND company_id = ?");
+                $roomName->execute([$waitlist['room_id'], $compId]);
                 $rName = $roomName->fetchColumn();
 
                 $msg = "Olá! A sala **{$rName}** que você estava na fila de espera no dia " . date('d/m/Y', strtotime($waitlist['booking_date'])) . " foi liberada e sua reserva foi **APROVADA** automaticamente! 🐠";
-                $pdo->prepare("INSERT INTO chat_messages (sender_id, receiver_id, content, type, is_read, read_at) VALUES ('U_PEIXINHO', ?, ?, 'text', 0, NULL)")->execute([$waitlist['user_id'], $msg]);
+                $pdo->prepare("INSERT INTO chat_messages (sender_id, receiver_id, content, type, is_read, read_at, company_id) VALUES ('U_PEIXINHO', ?, ?, 'text', 0, NULL, ?)")->execute([$waitlist['user_id'], $msg, $compId]);
             }
         }
         
@@ -111,14 +117,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // Buscar dados
-$rooms = $pdo->query("SELECT * FROM rooms ORDER BY name")->fetchAll();
-$bookings = $pdo->query("SELECT b.*, r.name as room_name, u.name as user_name, u.avatar_url as user_avatar, 
+$compId = getCurrentUserCompanyId();
+$stmt_r = $pdo->prepare("SELECT * FROM rooms WHERE company_id = ? ORDER BY name");
+$stmt_r->execute([$compId]);
+$rooms = $stmt_r->fetchAll();
+
+$stmt_b = $pdo->prepare("SELECT b.*, r.name as room_name, u.name as user_name, u.avatar_url as user_avatar, 
                         ed.name as editor_name, ed.avatar_url as editor_avatar
                         FROM room_bookings b 
                         JOIN rooms r ON b.room_id = r.id
                         JOIN users u ON b.user_id = u.id
                         LEFT JOIN users ed ON b.last_edited_by = ed.id
-                        ORDER BY b.booking_date DESC, b.start_time ASC")->fetchAll();
+                        WHERE b.company_id = ?
+                        ORDER BY b.booking_date DESC, b.start_time ASC");
+$stmt_b->execute([$compId]);
+$bookings = $stmt_b->fetchAll();
 ?>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">

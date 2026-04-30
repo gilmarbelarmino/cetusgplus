@@ -1,7 +1,12 @@
 <?php
+// Migrações SaaS
+try { $pdo->exec("ALTER TABLE tickets ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE ticket_responses ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_ticket') {
-    $stmt = $pdo->prepare("INSERT INTO tickets (id, asset_id, title, description, priority, requester_id, sector, unit_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Aberto', NOW())");
-    $stmt->execute(['T' . time(), $_POST['asset_id'] ?: null, $_POST['title'], $_POST['description'], $_POST['priority'], $_POST['requester_id'], $_POST['sector'], $_POST['unit_id']]);
+    $compId = getCurrentUserCompanyId();
+    $stmt = $pdo->prepare("INSERT INTO tickets (id, asset_id, title, description, priority, requester_id, sector, unit_id, status, company_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Aberto', ?, NOW())");
+    $stmt->execute(['T' . time(), $_POST['asset_id'] ?: null, $_POST['title'], $_POST['description'], $_POST['priority'], $_POST['requester_id'], $_POST['sector'], $_POST['unit_id'], $compId]);
     header('Location: ?page=chamados&success=1');
     exit;
 }
@@ -11,9 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $resolution = $_POST['resolution']; // 'solucionado', 'pendente', 'sem_solucao'
     $technician_name = $_POST['technician_name'] ?? '';
 
+    $compId = getCurrentUserCompanyId();
     // Buscar asset_id
-    $t = $pdo->prepare("SELECT asset_id FROM tickets WHERE id = ?");
-    $t->execute([$ticket_id]);
+    $t = $pdo->prepare("SELECT asset_id FROM tickets WHERE id = ? AND company_id = ?");
+    $t->execute([$ticket_id, $compId]);
     $ticket_data = $t->fetch();
 
     $new_status = 'Concluído';
@@ -32,11 +38,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     $final_closer = !empty($technician_name) ? trim($technician_name) : $user['name'];
 
-    $stmt = $pdo->prepare("UPDATE tickets SET status = ?, closed_by = ?, closed_at = NOW() WHERE id = ?");
-    $stmt->execute([$new_status, $final_closer, $ticket_id]);
+    $stmt = $pdo->prepare("UPDATE tickets SET status = ?, closed_by = ?, closed_at = NOW() WHERE id = ? AND company_id = ?");
+    $stmt->execute([$new_status, $final_closer, $ticket_id, $compId]);
 
     if ($release_asset && $ticket_data && $ticket_data['asset_id']) {
-        $pdo->prepare("UPDATE assets SET status = 'Ativo' WHERE id = ?")->execute([$ticket_data['asset_id']]);
+        $pdo->prepare("UPDATE assets SET status = 'Ativo' WHERE id = ? AND company_id = ?")->execute([$ticket_data['asset_id'], $compId]);
     }
 
     header('Location: ?page=chamados&success=' . ($new_status == 'Pendente' ? '3' : '2'));
@@ -50,8 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $priority = $_POST['priority'];
     $asset_id = $_POST['asset_id'] ?: null;
 
-    $stmt = $pdo->prepare("UPDATE tickets SET title = ?, description = ?, priority = ?, asset_id = ? WHERE id = ?");
-    $stmt->execute([$title, $description, $priority, $asset_id, $ticket_id]);
+    $compId = getCurrentUserCompanyId();
+    $stmt = $pdo->prepare("UPDATE tickets SET title = ?, description = ?, priority = ?, asset_id = ? WHERE id = ? AND company_id = ?");
+    $stmt->execute([$title, $description, $priority, $asset_id, $ticket_id, $compId]);
     
     header('Location: ?page=chamados&success=4');
     exit;
@@ -59,26 +66,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // ─ Pendenciar chamado (pausa o SLA)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'pendenciar_ticket') {
+    $compId = getCurrentUserCompanyId();
     $ticket_id = $_POST['ticket_id'];
     $reason    = trim($_POST['reason'] ?? 'Aguardando peça/informação');
-    $pdo->prepare("UPDATE tickets SET status = 'Pendente' WHERE id = ?")->execute([$ticket_id]);
-    $pdo->prepare("INSERT INTO ticket_pauses (ticket_id, paused_at, reason, paused_by) VALUES (?, NOW(), ?, ?)")
-        ->execute([$ticket_id, $reason, $user['name']]);
+    $pdo->prepare("UPDATE tickets SET status = 'Pendente' WHERE id = ? AND company_id = ?")->execute([$ticket_id, $compId]);
+    $pdo->prepare("INSERT INTO ticket_pauses (ticket_id, paused_at, reason, paused_by, company_id) VALUES (?, NOW(), ?, ?, ?)")
+        ->execute([$ticket_id, $reason, $user['name'], $compId]);
     header('Location: ?page=chamados&success=5'); exit;
 }
 
 // ─ Reativar da pendência (retoma o SLA)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reativar_ticket') {
+    $compId = getCurrentUserCompanyId();
     $ticket_id = $_POST['ticket_id'];
-    $pdo->prepare("UPDATE tickets SET status = 'Aberto' WHERE id = ?")->execute([$ticket_id]);
-    $pdo->prepare("UPDATE ticket_pauses SET resumed_at = NOW(), resumed_by = ? WHERE ticket_id = ? AND resumed_at IS NULL")
-        ->execute([$user['name'], $ticket_id]);
+    $pdo->prepare("UPDATE tickets SET status = 'Aberto' WHERE id = ? AND company_id = ?")->execute([$ticket_id, $compId]);
+    $pdo->prepare("UPDATE ticket_pauses SET resumed_at = NOW(), resumed_by = ? WHERE ticket_id = ? AND resumed_at IS NULL AND company_id = ?")
+        ->execute([$user['name'], $ticket_id, $compId]);
     header('Location: ?page=chamados&success=6'); exit;
 }
 
+$compId = getCurrentUserCompanyId();
+
 // Filtro baseado no perfil do usuário e status - Agora livre se tiver acesso ao menu
-$conditions = ["1=1"];
-$params = [];
+$conditions = ["t.company_id = ?"];
+$params = [$compId];
 
 $show_all = isset($_GET['all']) && $_GET['all'] == '1';
 if (!$show_all) {
@@ -109,10 +120,22 @@ $query = "SELECT t.*,
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $tickets = $stmt->fetchAll();
-$users = $pdo->query("SELECT u.id, u.name, u.sector, u.role, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id ORDER BY u.name")->fetchAll();
-$units = $pdo->query("SELECT * FROM units ORDER BY name")->fetchAll();
-$sectors = $pdo->query("SELECT s.id, s.name, s.unit_id FROM sectors s ORDER BY s.name")->fetchAll();
-$assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")->fetchAll();
+
+$users_stmt = $pdo->prepare("SELECT u.id, u.name, u.sector, u.role, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+$users_stmt->execute([$compId]);
+$users = $users_stmt->fetchAll();
+
+$units_stmt = $pdo->prepare("SELECT * FROM units WHERE company_id = ? ORDER BY name");
+$units_stmt->execute([$compId]);
+$units = $units_stmt->fetchAll();
+
+$sectors_stmt = $pdo->prepare("SELECT s.id, s.name, s.unit_id FROM sectors s WHERE s.company_id = ? ORDER BY s.name");
+$sectors_stmt->execute([$compId]);
+$sectors = $sectors_stmt->fetchAll();
+
+$assets_stmt = $pdo->prepare("SELECT id, name, patrimony_id FROM assets WHERE company_id = ? ORDER BY name");
+$assets_stmt->execute([$compId]);
+$assets = $assets_stmt->fetchAll();
 ?>
 
 <style>

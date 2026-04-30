@@ -92,12 +92,15 @@ if (!function_exists('getUserMenus')) {
 
 if (!function_exists('getCurrentUserCompanyId')) {
     function getCurrentUserCompanyId() {
-        global $pdo;
-        if (!isset($_SESSION['user_id'])) return 1;
+        if (isset($_SESSION['company_id'])) return (int)$_SESSION['company_id'];
+        if (!isset($_SESSION['user_id'])) return 0;
         
+        global $pdo;
         $stmt = $pdo->prepare("SELECT company_id FROM users WHERE id = ?");
         $stmt->execute([$_SESSION['user_id']]);
-        return $stmt->fetchColumn() ?: 1;
+        $compId = $stmt->fetchColumn();
+        $_SESSION['company_id'] = ($compId !== false && $compId !== null) ? (int)$compId : 0;
+        return $_SESSION['company_id'];
     }
 }
 

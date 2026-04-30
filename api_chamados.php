@@ -79,8 +79,9 @@ try {
 
     // POST/PUT: Editar Chamado
     if ($method === 'POST' && $action === 'edit_ticket') {
-        $stmt = $pdo->prepare("UPDATE tickets SET title = ?, description = ?, priority = ?, asset_id = ? WHERE id = ?");
-        $stmt->execute([$data['title'], $data['description'], $data['priority'], $data['asset_id'] ?: null, $data['ticket_id']]);
+        $compId = getCurrentUserCompanyId();
+        $stmt = $pdo->prepare("UPDATE tickets SET title = ?, description = ?, priority = ?, asset_id = ? WHERE id = ? AND company_id = ?");
+        $stmt->execute([$data['title'], $data['description'], $data['priority'], $data['asset_id'] ?: null, $data['ticket_id'], $compId]);
         
         triggerSocketUpdate('data_updated', ['module' => 'chamados', 'action' => 'edit']);
         echo json_encode(['success' => true, 'message' => 'Chamado atualizado']);
@@ -89,12 +90,13 @@ try {
 
     // POST/PUT: Fechar/Resolver Chamado
     if ($method === 'POST' && $action === 'close_ticket') {
+        $compId = getCurrentUserCompanyId();
         $ticket_id = $data['ticket_id'];
         $resolution = $data['resolution']; // 'solucionado', 'pendente', 'sem_solucao'
         $user_name = $data['closed_by']; // Nome do usuario fechando (enviado pelo React)
 
-        $t = $pdo->prepare("SELECT asset_id FROM tickets WHERE id = ?");
-        $t->execute([$ticket_id]);
+        $t = $pdo->prepare("SELECT asset_id FROM tickets WHERE id = ? AND company_id = ?");
+        $t->execute([$ticket_id, $compId]);
         $ticket_data = $t->fetch(PDO::FETCH_ASSOC);
 
         $new_status = 'Concluído';

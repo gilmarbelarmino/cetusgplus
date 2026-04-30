@@ -24,12 +24,27 @@ try {
         $_POST = $json_data;
     }
 
+    $compId = getCurrentUserCompanyId();
     if ($method === 'GET' && empty($action)) {
-        $units = $pdo->query("SELECT * FROM units ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
-        $sectors = $pdo->query("SELECT s.*, u.name as unit_name FROM sectors s LEFT JOIN units u ON BINARY s.unit_id = BINARY u.id ORDER BY s.name")->fetchAll(PDO::FETCH_ASSOC);
-        $positions = $pdo->query("SELECT * FROM rh_positions ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
-        $company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
-        $logs = $pdo->query("SELECT * FROM login_logs ORDER BY login_at DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
+        $units = $pdo->prepare("SELECT * FROM units WHERE company_id = ? ORDER BY name");
+        $units->execute([$compId]);
+        $units = $units->fetchAll(PDO::FETCH_ASSOC);
+
+        $sectors = $pdo->prepare("SELECT s.*, u.name as unit_name FROM sectors s LEFT JOIN units u ON BINARY s.unit_id = BINARY u.id WHERE s.company_id = ? ORDER BY s.name");
+        $sectors->execute([$compId]);
+        $sectors = $sectors->fetchAll(PDO::FETCH_ASSOC);
+
+        $positions = $pdo->prepare("SELECT * FROM rh_positions WHERE company_id = ? ORDER BY name ASC");
+        $positions->execute([$compId]);
+        $positions = $positions->fetchAll(PDO::FETCH_ASSOC);
+
+        $company = $pdo->prepare("SELECT * FROM company_settings WHERE id = ?");
+        $company->execute([$compId]);
+        $company = $company->fetch(PDO::FETCH_ASSOC);
+
+        $logs = $pdo->prepare("SELECT * FROM login_logs WHERE company_id = ? ORDER BY login_at DESC LIMIT 100");
+        $logs->execute([$compId]);
+        $logs = $logs->fetchAll(PDO::FETCH_ASSOC);
         
         echo json_encode(['success' => true, 'data' => ['units' => $units, 'sectors' => $sectors, 'positions' => $positions, 'company' => $company, 'logs' => $logs]]);
         exit;
@@ -69,8 +84,8 @@ try {
             $sig_name = $_POST['certificate_signature_name'] ?? $json_data['certificate_signature_name'] ?? '';
             $announcement = $_POST['login_announcement'] ?? $json_data['login_announcement'] ?? '';
 
-            $pdo->prepare("UPDATE company_settings SET company_name = ?, logo_url = ?, certificate_signature_url = ?, certificate_signature_name = ?, login_announcement = ?, announcement_image_url = ? WHERE id = 1")
-                ->execute([$company_name, $logo_url, $sig_url, $sig_name, $announcement, $announcement_image_url]);
+            $pdo->prepare("UPDATE company_settings SET company_name = ?, logo_url = ?, certificate_signature_url = ?, certificate_signature_name = ?, login_announcement = ?, announcement_image_url = ? WHERE id = ?")
+                ->execute([$company_name, $logo_url, $sig_url, $sig_name, $announcement, $announcement_image_url, $compId]);
             
             triggerSocketUpdate('config_updated', ['type' => 'company']);
             echo json_encode(['success' => true, 'message' => 'Configurações atualizadas']);
@@ -78,46 +93,46 @@ try {
         }
 
         if ($action === 'update_tech_password') {
-            $pdo->prepare("UPDATE company_settings SET tech_password = ? WHERE id = 1")->execute([$json_data['tech_password'] ?? $_POST['tech_password']]);
+            $pdo->prepare("UPDATE company_settings SET tech_password = ? WHERE id = ?")->execute([$json_data['tech_password'] ?? $_POST['tech_password'], $compId]);
             echo json_encode(['success' => true, 'message' => 'Senha da tecnologia atualizada']);
             exit;
         }
 
         if ($action === 'add_unit') {
             $data = $json_data ?? $_POST;
-            $stmt = $pdo->prepare("INSERT INTO units (id, name, address, cnpj, responsible_name, contact) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute(['U' . time(), $data['name'], $data['address'], $data['cnpj'], $data['responsible_name'], $data['contact']]);
+            $stmt = $pdo->prepare("INSERT INTO units (id, name, address, cnpj, responsible_name, contact, company_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute(['U' . time(), $data['name'], $data['address'], $data['cnpj'], $data['responsible_name'], $data['contact'], $compId]);
             echo json_encode(['success' => true]); exit;
         }
 
         if ($action === 'edit_unit') {
             $data = $json_data ?? $_POST;
-            $stmt = $pdo->prepare("UPDATE units SET name = ?, address = ?, cnpj = ?, responsible_name = ?, contact = ? WHERE id = ?");
-            $stmt->execute([$data['name'], $data['address'], $data['cnpj'], $data['responsible_name'], $data['contact'], $data['unit_id']]);
+            $stmt = $pdo->prepare("UPDATE units SET name = ?, address = ?, cnpj = ?, responsible_name = ?, contact = ? WHERE id = ? AND company_id = ?");
+            $stmt->execute([$data['name'], $data['address'], $data['cnpj'], $data['responsible_name'], $data['contact'], $data['unit_id'], $compId]);
             echo json_encode(['success' => true]); exit;
         }
 
         if ($action === 'delete_unit') {
-            $pdo->prepare("DELETE FROM units WHERE id = ?")->execute([$_POST['unit_id'] ?? $json_data['unit_id']]);
+            $pdo->prepare("DELETE FROM units WHERE id = ? AND company_id = ?")->execute([$_POST['unit_id'] ?? $json_data['unit_id'], $compId]);
             echo json_encode(['success' => true]); exit;
         }
 
         if ($action === 'add_sector') {
             $data = $json_data ?? $_POST;
-            $stmt = $pdo->prepare("INSERT INTO sectors (id, name, unit_id) VALUES (?, ?, ?)");
-            $stmt->execute(['S' . time(), $data['sector_name'], $data['unit_id']]);
+            $stmt = $pdo->prepare("INSERT INTO sectors (id, name, unit_id, company_id) VALUES (?, ?, ?, ?)");
+            $stmt->execute(['S' . time(), $data['sector_name'], $data['unit_id'], $compId]);
             echo json_encode(['success' => true]); exit;
         }
 
         if ($action === 'add_position') {
             $data = $json_data ?? $_POST;
-            $stmt = $pdo->prepare("INSERT IGNORE INTO rh_positions (name) VALUES (?)");
-            $stmt->execute([$data['position_name']]);
+            $stmt = $pdo->prepare("INSERT INTO rh_positions (name, company_id) VALUES (?, ?)");
+            $stmt->execute([$data['position_name'], $compId]);
             echo json_encode(['success' => true]); exit;
         }
 
         if ($action === 'delete_position') {
-            $pdo->prepare("DELETE FROM rh_positions WHERE id = ?")->execute([$_POST['position_id'] ?? $json_data['position_id']]);
+            $pdo->prepare("DELETE FROM rh_positions WHERE id = ? AND company_id = ?")->execute([$_POST['position_id'] ?? $json_data['position_id'], $compId]);
             echo json_encode(['success' => true]); exit;
         }
     }

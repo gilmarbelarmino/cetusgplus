@@ -1,13 +1,16 @@
 <?php
 $pdo = \App\Core\Model::getConnection();
-$company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch();
+$compId = \App\Core\Auth::companyId();
+$company_stmt = $pdo->prepare("SELECT * FROM company_settings WHERE id = ?");
+$company_stmt->execute([$compId]);
+$company = $company_stmt->fetch();
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($company['name'] ?? 'Cetusg Plus') ?> - SaaS Management</title>
+    <title><?= htmlspecialchars($company['company_name'] ?? 'Cetusg Plus') ?> - SaaS Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?= URL_BASE ?>/public/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -49,11 +52,11 @@ $company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch();
                 <?php if (!empty($company['logo_url'])): ?>
                     <img src="<?= htmlspecialchars($company['logo_url']) ?>" alt="Logo">
                 <?php else: ?>
-                    <?= substr($company['name'] ?? 'C', 0, 1) ?>
+                    <?= substr($company['company_name'] ?? 'C', 0, 1) ?>
                 <?php endif; ?>
             </div>
             <div style="font-weight: 800; font-size: 1.1rem; color: #1e293b; line-height: 1.2;">
-                <?= htmlspecialchars($company['name'] ?? 'Cetusg Plus') ?>
+                <?= htmlspecialchars($company['company_name'] ?? 'Cetusg Plus') ?>
             </div>
         </div>
         
@@ -161,7 +164,7 @@ $company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch();
                     <?php if (!empty($company['logo_url'])): ?>
                         <img src="<?= htmlspecialchars($company['logo_url']) ?>" style="width: 32px; height: 32px; border-radius: 50%; object-fit: contain; background: white; padding: 2px;">
                     <?php endif; ?>
-                    <div style="font-weight: 800; font-size: 1rem; letter-spacing: -0.5px;"><?= htmlspecialchars($company['name'] ?? 'Mensagens') ?></div>
+                    <div style="font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px;"><?= htmlspecialchars($company['company_name'] ?? 'Mensagens') ?></div>
                 </div>
                 <i class="fa-solid fa-xmark" onclick="ChatCore.toggle()" style="cursor: pointer; opacity: 0.8;"></i>
             </div>

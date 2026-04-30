@@ -6,15 +6,24 @@ if (!isset($_GET['id'])) {
     die('ID do orçamento não fornecido');
 }
 
+$compId = getCurrentUserCompanyId();
+
 // Restaurado BINARY para evitar erro de collation (mix of utf8mb4_general_ci and utf8mb4_unicode_ci)
-$budget = $pdo->query("SELECT br.*, u.name as unit_name, us.name as requester_name, ap.name as approver_name FROM budget_requests br LEFT JOIN units u ON BINARY br.unit_id = BINARY u.id LEFT JOIN users us ON BINARY br.requester_id = BINARY us.id LEFT JOIN users ap ON BINARY br.approved_by = BINARY ap.id WHERE br.id = '{$_GET['id']}'")->fetch();
+$budget_stmt = $pdo->prepare("SELECT br.*, u.name as unit_name, us.name as requester_name, ap.name as approver_name FROM budget_requests br LEFT JOIN units u ON BINARY br.unit_id = BINARY u.id LEFT JOIN users us ON BINARY br.requester_id = BINARY us.id LEFT JOIN users ap ON BINARY br.approved_by = BINARY ap.id WHERE br.id = ? AND br.company_id = ?");
+$budget_stmt->execute([$_GET['id'], $compId]);
+$budget = $budget_stmt->fetch();
 
 if (!$budget) {
-    die('Orçamento não encontrado');
+    die('Orçamento não encontrado ou acesso negado');
 }
 
-$quotes = $pdo->query("SELECT * FROM budget_quotes WHERE budget_id = '{$_GET['id']}' ORDER BY total ASC")->fetchAll();
-$company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch() ?: ['company_name' => 'Cetusg Plus', 'logo_url' => ''];
+$quotes_stmt = $pdo->prepare("SELECT * FROM budget_quotes WHERE budget_id = ? AND company_id = ? ORDER BY total ASC");
+$quotes_stmt->execute([$_GET['id'], $compId]);
+$quotes = $quotes_stmt->fetchAll();
+
+$company_stmt = $pdo->prepare("SELECT * FROM company_settings WHERE id = ?");
+$company_stmt->execute([$compId]);
+$company = $company_stmt->fetch() ?: ['company_name' => 'Cetusg Plus', 'logo_url' => ''];
 
 header('Content-Type: text/html; charset=utf-8');
 ?>

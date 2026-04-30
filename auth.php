@@ -100,6 +100,7 @@ function login($loginName, $password) {
         }
 
         $_SESSION['user_id'] = $user['id'];
+        $_SESSION['company_id'] = $user['company_id'] ?? 0;
         $_SESSION['is_super_admin'] = $user['is_super_admin'] ?? 0;
         
         // Registrar Log de Acesso
@@ -117,9 +118,14 @@ function login($loginName, $password) {
                 }
             }
         }
+        
+        // Garantir que a coluna company_id existe na tabela de logs (Migração Automática SaaS)
+        try {
+            $pdo->exec("ALTER TABLE login_logs ADD COLUMN IF NOT EXISTS company_id INT DEFAULT 0");
+        } catch(Exception $e) {}
 
-        $stmt_log = $pdo->prepare("INSERT INTO login_logs (user_id, user_name, ip_address, mac_address) VALUES (?, ?, ?, ?)");
-        $stmt_log->execute([$user['id'], $user['name'], $ip, $mac]);
+        $stmt_log = $pdo->prepare("INSERT INTO login_logs (user_id, user_name, ip_address, mac_address, company_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt_log->execute([$user['id'], $user['name'], $ip, $mac, $user['company_id']]);
         
         return true;
     }

@@ -82,20 +82,22 @@ class RHController extends Controller {
 
         $certVol = null;
         if (isset($_GET['id'])) {
-            $s = $pdo->prepare("SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON v.unit_id COLLATE utf8mb4_unicode_ci = u.id COLLATE utf8mb4_unicode_ci WHERE v.id = ?");
-            $s->execute([$_GET['id']]);
+            $s = $pdo->prepare("SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON v.unit_id COLLATE utf8mb4_unicode_ci = u.id COLLATE utf8mb4_unicode_ci WHERE v.id = ? AND v.company_id = ?");
+            $s->execute([$_GET['id'], $companyId]);
             $certVol = $s->fetch();
         }
 
-        $volunteers = $pdo->prepare("SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON v.unit_id COLLATE utf8mb4_unicode_ci = u.id COLLATE utf8mb4_unicode_ci ORDER BY v.created_at DESC");
-        $volunteers->execute();
+        $volunteers = $pdo->prepare("SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON v.unit_id COLLATE utf8mb4_unicode_ci = u.id COLLATE utf8mb4_unicode_ci WHERE v.company_id = ? ORDER BY v.created_at DESC");
+        $volunteers->execute([$companyId]);
         $volunteers = $volunteers->fetchAll();
 
         $users = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON u.unit_id COLLATE utf8mb4_unicode_ci = un.id COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? ORDER BY u.name");
         $users->execute([$companyId]);
         $users = $users->fetchAll();
 
-        $units = $pdo->query("SELECT * FROM units WHERE company_id = $companyId ORDER BY name")->fetchAll();
+        $units = $pdo->prepare("SELECT * FROM units WHERE company_id = ? ORDER BY name");
+        $units->execute([$companyId]);
+        $units = $units->fetchAll();
 
         return $this->view('voluntariado', [
             'volunteers' => $volunteers,
@@ -122,7 +124,7 @@ class RHController extends Controller {
                 $avatar_url = Uploader::upload($_FILES['avatar'], 'volunteers');
             }
 
-            $stmt = $pdo->prepare("INSERT INTO volunteers (id, name, cpf, avatar_url, gender, email, phone, unit_id, sector_id, volunteering_sector, location, profession, hourly_rate, start_date, work_area, hours_jan, hours_feb, hours_mar, hours_apr, hours_may, hours_jun, hours_jul, hours_aug, hours_sep, hours_oct, hours_nov, hours_dec, total_hours, points, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', NOW())");
+            $stmt = $pdo->prepare("INSERT INTO volunteers (id, name, cpf, avatar_url, gender, email, phone, unit_id, sector_id, volunteering_sector, location, profession, hourly_rate, start_date, work_area, hours_jan, hours_feb, hours_mar, hours_apr, hours_may, hours_jun, hours_jul, hours_aug, hours_sep, hours_oct, hours_nov, hours_dec, total_hours, points, status, company_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?, NOW())");
             $stmt->execute([
                 $vid, $_POST['name'], $_POST['cpf'], $avatar_url, $_POST['gender'] ?? 'Outro', 
                 $_POST['email'], $_POST['phone'], $_POST['unit_id'], $_POST['sector_id'], 
@@ -131,7 +133,7 @@ class RHController extends Controller {
                 floatval($_POST['hours_jan']??0), floatval($_POST['hours_feb']??0), floatval($_POST['hours_mar']??0), floatval($_POST['hours_apr']??0),
                 floatval($_POST['hours_may']??0), floatval($_POST['hours_jun']??0), floatval($_POST['hours_jul']??0), floatval($_POST['hours_aug']??0),
                 floatval($_POST['hours_sep']??0), floatval($_POST['hours_oct']??0), floatval($_POST['hours_nov']??0), floatval($_POST['hours_dec']??0),
-                $total, floor($total)
+                $total, floor($total), $companyId
             ]);
             
             Logger::audit('add_volunteer', 'rh', 'Voluntário: ' . $_POST['name']);
@@ -140,7 +142,7 @@ class RHController extends Controller {
 
         if ($action === 'inativar') {
             $vid = $_POST['volunteer_id'];
-            $pdo->prepare("UPDATE volunteers SET status = 'Inativo', end_date = CURDATE() WHERE id = ?")->execute([$vid]);
+            $pdo->prepare("UPDATE volunteers SET status = 'Inativo', end_date = CURDATE() WHERE id = ? AND company_id = ?")->execute([$vid, $companyId]);
             Logger::audit('inativar_volunteer', 'rh', 'ID: ' . $vid);
             return $this->redirect('/rh/voluntariado?success=inactivated');
         }

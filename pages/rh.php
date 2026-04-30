@@ -5,6 +5,7 @@ require_once 'access_control.php';
 try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS rh_employee_details (
         user_id VARCHAR(50) PRIMARY KEY,
+        company_id INT NOT NULL DEFAULT 1,
         contract_type VARCHAR(100) DEFAULT '',
         work_days VARCHAR(100) DEFAULT '',
         work_hours VARCHAR(100) DEFAULT '',
@@ -23,6 +24,7 @@ try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS rh_vacations (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id VARCHAR(50) NOT NULL,
+        company_id INT NOT NULL DEFAULT 1,
         reference_year INT NOT NULL,
         start_date DATE NOT NULL,
         end_date DATE NOT NULL,
@@ -33,6 +35,7 @@ try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS rh_certificates (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id VARCHAR(50) NOT NULL,
+        company_id INT NOT NULL DEFAULT 1,
         issue_date DATE NOT NULL,
         days_off INT NOT NULL,
         reason VARCHAR(255),
@@ -43,16 +46,26 @@ try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS rh_notes (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id VARCHAR(50) NOT NULL,
+        company_id INT NOT NULL DEFAULT 1,
         note_text TEXT NOT NULL,
         created_by VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    // Garantir colunas company_id existem nas tabelas já criadas
+    try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_vacations ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_certificates ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_notes ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e){}
 } catch (Exception $e) {}
 
 // Garantir tabela de cargos existe
-try { $pdo->exec("CREATE TABLE IF NOT EXISTS rh_positions (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL UNIQUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"); } catch(Exception $e) {}
+$compId = getCurrentUserCompanyId();
 $all_positions = [];
-try { $all_positions = $pdo->query("SELECT * FROM rh_positions ORDER BY name ASC")->fetchAll(); } catch(Exception $e) {}
+try { 
+    $stmt_pos = $pdo->prepare("SELECT * FROM rh_positions WHERE company_id = ? ORDER BY name ASC");
+    $stmt_pos->execute([$compId]);
+    $all_positions = $stmt_pos->fetchAll(); 
+} catch(Exception $e) {}
 
 // Auto-migrate: colunas gender e position na tabela users
 try { $pdo->exec("ALTER TABLE users ADD COLUMN gender VARCHAR(20) DEFAULT ''"); } catch(Exception $e) {}
@@ -64,9 +77,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // 1. Dados Contratais
     if ($action === 'save_contract') {
-        $stmt = $pdo->prepare("REPLACE INTO rh_employee_details (user_id, contract_type, role_name, work_days, work_hours, salary, use_transport, transport_value, gender, birth_date, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $compId = getCurrentUserCompanyId();
+        $stmt = $pdo->prepare("REPLACE INTO rh_employee_details (user_id, company_id, contract_type, role_name, work_days, work_hours, salary, use_transport, transport_value, gender, birth_date, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
-            $_POST['user_id'], 
+            $_POST['user_id'], $compId,
             $_POST['contract_type'], 
             $_POST['role_name'] ?? '', 
             $_POST['work_days'], 
@@ -81,8 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         // Sync bidirecional: atualizar tabela users com gender e position
         try {
-            $pdo->prepare("UPDATE users SET gender = ?, position = ? WHERE id = ?")->execute([
-                $_POST['gender'] ?? '', $_POST['role_name'] ?? '', $_POST['user_id']
+            $pdo->prepare("UPDATE users SET gender = ?, position = ? WHERE id = ? AND company_id = ?")->execute([
+                $_POST['gender'] ?? '', $_POST['role_name'] ?? '', $_POST['user_id'], $compId
             ]);
         } catch(Exception $e) {}
         header('Location: ?page=rh&success=contract'); exit;
@@ -90,20 +104,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // 2. Férias
     if ($action === 'add_vacation') {
-        $stmt = $pdo->prepare("INSERT INTO rh_vacations (user_id, reference_year, start_date, end_date, limit_date, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $compId = getCurrentUserCompanyId();
+        $stmt = $pdo->prepare("INSERT INTO rh_vacations (user_id, company_id, reference_year, start_date, end_date, limit_date, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
-            $_POST['user_id'], $_POST['reference_year'], $_POST['start_date'], $_POST['end_date'], $_POST['limit_date'], $_POST['status']
+            $_POST['user_id'], $compId, $_POST['reference_year'], $_POST['start_date'], $_POST['end_date'], $_POST['limit_date'], $_POST['status']
         ]);
         header('Location: ?page=rh&success=vacation_added'); exit;
     }
     if ($action === 'delete_vacation') {
-        $stmt = $pdo->prepare("DELETE FROM rh_vacations WHERE id=?");
-        $stmt->execute([$_POST['vacation_id']]);
+        $compId = getCurrentUserCompanyId();
+        $stmt = $pdo->prepare("DELETE FROM rh_vacations WHERE id=? AND company_id=?");
+        $stmt->execute([$_POST['vacation_id'], $compId]);
         header('Location: ?page=rh&success=vacation_deleted'); exit;
     }
 
     // 3. Atestados
     if ($action === 'add_certificate') {
+        $compId = getCurrentUserCompanyId();
         $file_url = null;
         if (!empty($_FILES['certificate_file']['name'])) {
             $ext = pathinfo($_FILES['certificate_file']['name'], PATHINFO_EXTENSION);
@@ -113,38 +130,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $file_url = 'uploads/' . $filename;
             }
         }
-        $stmt = $pdo->prepare("INSERT INTO rh_certificates (user_id, issue_date, days_off, reason, file_url) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['user_id'], $_POST['issue_date'], $_POST['days_off'], $_POST['reason'], $file_url]);
+        $stmt = $pdo->prepare("INSERT INTO rh_certificates (user_id, company_id, issue_date, days_off, reason, file_url) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$_POST['user_id'], $compId, $_POST['issue_date'], $_POST['days_off'], $_POST['reason'], $file_url]);
         header('Location: ?page=rh&success=certificate_added'); exit;
     }
     if ($action === 'delete_certificate') {
-        $stmt = $pdo->prepare("DELETE FROM rh_certificates WHERE id=?");
-        $stmt->execute([$_POST['certificate_id']]);
+        $compId = getCurrentUserCompanyId();
+        $stmt = $pdo->prepare("DELETE FROM rh_certificates WHERE id=? AND company_id=?");
+        $stmt->execute([$_POST['certificate_id'], $compId]);
         header('Location: ?page=rh&success=certificate_deleted'); exit;
     }
 
     // 4. Anotações Gerais do RH
     if ($action === 'add_note') {
-        $stmt = $pdo->prepare("INSERT INTO rh_notes (user_id, note_text, created_by) VALUES (?, ?, ?)");
-        $stmt->execute([$_POST['user_id'], $_POST['note_text'], $user['name']]);
+        $compId = getCurrentUserCompanyId();
+        $stmt = $pdo->prepare("INSERT INTO rh_notes (user_id, company_id, note_text, created_by) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$_POST['user_id'], $compId, $_POST['note_text'], $user['name']]);
         header('Location: ?page=rh&success=note_added'); exit;
     }
     if ($action === 'delete_note') {
-        $stmt = $pdo->prepare("DELETE FROM rh_notes WHERE id=?");
-        $stmt->execute([$_POST['note_id']]);
+        $compId = getCurrentUserCompanyId();
+        $stmt = $pdo->prepare("DELETE FROM rh_notes WHERE id=? AND company_id=?");
+        $stmt->execute([$_POST['note_id'], $compId]);
         header('Location: ?page=rh&success=note_deleted'); exit;
     }
 
     // 5. Reativar Usuário
     if ($action === 'reactivate_user') {
+        $compId = getCurrentUserCompanyId();
         $uid = $_POST['user_id'];
-        $pdo->prepare("UPDATE rh_employee_details SET end_date = NULL WHERE user_id = ?")->execute([$uid]);
-        $pdo->prepare("UPDATE users SET status = 'Ativo' WHERE id = ?")->execute([$uid]);
+        $pdo->prepare("UPDATE rh_employee_details SET end_date = NULL WHERE user_id = ? AND company_id = ?")->execute([$uid, $compId]);
+        $pdo->prepare("UPDATE users SET status = 'Ativo' WHERE id = ? AND company_id = ?")->execute([$uid, $compId]);
         header('Location: ?page=rh&success=reactivated'); exit;
     }
 
     // 6. Recados Geral
     if ($action === 'add_announcement') {
+        $compId = getCurrentUserCompanyId();
         $image_url = null;
         if (!empty($_FILES['announcement_image']['name'])) {
             $ext = pathinfo($_FILES['announcement_image']['name'], PATHINFO_EXTENSION);
@@ -154,16 +176,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $image_url = 'uploads/' . $filename;
             }
         }
-        $stmt = $pdo->prepare("INSERT INTO announcements (message, image_url, created_by) VALUES (?, ?, ?)");
-        $stmt->execute([$_POST['message'], $image_url, $user['name']]);
+        $stmt = $pdo->prepare("INSERT INTO announcements (message, image_url, created_by, company_id) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$_POST['message'], $image_url, $user['name'], $compId]);
         header('Location: ?page=rh&success=announcement_added&tab=recados'); exit;
     }
     if ($action === 'delete_announcement') {
-        $stmt = $pdo->prepare("DELETE FROM announcements WHERE id=?");
-        $stmt->execute([$_POST['announcement_id']]);
+        $compId = getCurrentUserCompanyId();
+        $stmt = $pdo->prepare("DELETE FROM announcements WHERE id=? AND company_id=?");
+        $stmt->execute([$_POST['announcement_id'], $compId]);
         header('Location: ?page=rh&success=announcement_deleted&tab=recados'); exit;
     }
     if ($action === 'edit_announcement') {
+        $compId = getCurrentUserCompanyId();
         $id = $_POST['announcement_id'];
         $msg = $_POST['message'];
         $image_url = $_POST['current_image'];
@@ -176,8 +200,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $image_url = 'uploads/' . $filename;
             }
         }
-        $stmt = $pdo->prepare("UPDATE announcements SET message = ?, image_url = ? WHERE id = ?");
-        $stmt->execute([$msg, $image_url, $id]);
+        $stmt = $pdo->prepare("UPDATE announcements SET message = ?, image_url = ? WHERE id = ? AND company_id = ?");
+        $stmt->execute([$msg, $image_url, $id, $compId]);
         header('Location: ?page=rh&success=announcement_updated&tab=recados'); exit;
     }
 }
@@ -192,9 +216,10 @@ $query = "
     FROM users u
     LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id
     LEFT JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id
-    WHERE 1=1
+    WHERE u.company_id = ?
 ";
-$params = [];
+$compId = getCurrentUserCompanyId();
+$params = [$compId];
 if ($search) {
     $query .= " AND (u.name LIKE ? OR u.sector LIKE ?)";
     $params[] = "%$search%"; $params[] = "%$search%";
@@ -209,20 +234,31 @@ foreach ($users_data as $usr) {
     $sectors_list[$usr['sector'] ?? 'Sem Setor'][] = $usr;
 }
 
-$all_vacations = $pdo->query("SELECT * FROM rh_vacations ORDER BY start_date DESC")->fetchAll(PDO::FETCH_ASSOC);
-$all_certificates = $pdo->query("SELECT * FROM rh_certificates ORDER BY issue_date DESC")->fetchAll(PDO::FETCH_ASSOC);
+$stmt_vac = $pdo->prepare("SELECT * FROM rh_vacations WHERE company_id = ? ORDER BY start_date DESC");
+$stmt_vac->execute([$compId]);
+$all_vacations = $stmt_vac->fetchAll(PDO::FETCH_ASSOC);
+
+$stmt_cert = $pdo->prepare("SELECT * FROM rh_certificates WHERE company_id = ? ORDER BY issue_date DESC");
+$stmt_cert->execute([$compId]);
+$all_certificates = $stmt_cert->fetchAll(PDO::FETCH_ASSOC);
+
 try {
-    $all_notes = $pdo->query("SELECT * FROM rh_notes ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $stmt_notes = $pdo->prepare("SELECT * FROM rh_notes WHERE company_id = ? ORDER BY created_at DESC");
+    $stmt_notes->execute([$compId]);
+    $all_notes = $stmt_notes->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $all_notes = [];
 }
 
 // Resgate de Recados
-$all_announcements = $pdo->query("
+$stmt_ann = $pdo->prepare("
     SELECT a.*, (SELECT COUNT(*) FROM announcement_views v WHERE v.announcement_id = a.id) as views 
     FROM announcements a 
+    WHERE a.company_id = ?
     ORDER BY a.created_at DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+");
+$stmt_ann->execute([$compId]);
+$all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <script>

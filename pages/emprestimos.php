@@ -7,18 +7,19 @@ try { $pdo->exec("ALTER TABLE loans ADD COLUMN loaned_by_id VARCHAR(50) DEFAULT 
 try { $pdo->exec("ALTER TABLE loans MODIFY COLUMN loan_date DATETIME"); } catch(Exception $e) {}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'return_loan') {
-    // Buscar asset_id antes de devolver
-    $l = $pdo->prepare("SELECT asset_id FROM loans WHERE id = ?");
-    $l->execute([$_POST['loan_id']]);
+    $compId = getCurrentUserCompanyId();
+    // Buscar asset_id antes de devolver - filtrado por empresa
+    $l = $pdo->prepare("SELECT asset_id FROM loans WHERE id = ? AND company_id = ?");
+    $l->execute([$_POST['loan_id'], $compId]);
     $loan_data = $l->fetch();
 
-    $stmt = $pdo->prepare("UPDATE loans SET status = 'Devolvido', return_date = NOW(), received_by = ?, received_by_id = ? WHERE id = ?");
-    $stmt->execute([$user['name'], $user['id'], $_POST['loan_id']]);
+    $stmt = $pdo->prepare("UPDATE loans SET status = 'Devolvido', return_date = NOW(), received_by = ?, received_by_id = ? WHERE id = ? AND company_id = ?");
+    $stmt->execute([$user['name'], $user['id'], $_POST['loan_id'], $compId]);
 
     // Atualizar status do patrimônio para Ativo (disponível)
     if ($loan_data && $loan_data['asset_id']) {
-        $stmt_asset = $pdo->prepare("UPDATE assets SET status = 'Ativo' WHERE id = ?");
-        $stmt_asset->execute([$loan_data['asset_id']]);
+        $stmt_asset = $pdo->prepare("UPDATE assets SET status = 'Ativo' WHERE id = ? AND company_id = ?");
+        $stmt_asset->execute([$loan_data['asset_id'], $compId]);
     }
 
     header('Location: ?page=emprestimos&success=2');
@@ -26,12 +27,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_loan') {
-    $asset_stmt = $pdo->prepare("SELECT name FROM assets WHERE id = ?");
-    $asset_stmt->execute([$_POST['asset_id']]);
+    $compId = getCurrentUserCompanyId();
+    $asset_stmt = $pdo->prepare("SELECT name FROM assets WHERE id = ? AND company_id = ?");
+    $asset_stmt->execute([$_POST['asset_id'], $compId]);
     $asset = $asset_stmt->fetch();
     
-    $borrower_stmt = $pdo->prepare("SELECT name FROM users WHERE id = ?");
-    $borrower_stmt->execute([$_POST['borrower_id']]);
+    $borrower_stmt = $pdo->prepare("SELECT name FROM users WHERE id = ? AND company_id = ?");
+    $borrower_stmt->execute([$_POST['borrower_id'], $compId]);
     $borrower = $borrower_stmt->fetch();
     
     if (!$asset || !$borrower) {
@@ -43,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $loan_date = !empty($_POST['loan_date']) ? date('Y-m-d H:i:s', strtotime($_POST['loan_date'])) : date('Y-m-d H:i:s');
     $expected_date = !empty($_POST['expected_return_date']) ? date('Y-m-d H:i:s', strtotime($_POST['expected_return_date'])) : date('Y-m-d 23:59:59');
     
-    $stmt = $pdo->prepare("INSERT INTO loans (id, asset_id, borrower_id, asset_name, borrower_name, sector, unit_id, loan_date, expected_return_date, observations, status, loaned_by_name, loaned_by_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO loans (id, asset_id, borrower_id, asset_name, borrower_name, sector, unit_id, loan_date, expected_return_date, observations, status, loaned_by_name, loaned_by_id, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?)");
     $stmt->execute([
         'L' . time(), 
         $_POST['asset_id'], 
@@ -56,19 +58,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $expected_date,
         $_POST['observations'],
         $user['name'], // Quem realizou o empréstimo (logado)
-        $user['id']
+        $user['id'],
+        $compId
     ]);
 
     // Marcar item do patrimônio como Emprestado para não aparecer mais na lista de disponíveis
-    $pdo->prepare("UPDATE assets SET status = 'Emprestado' WHERE id = ?")->execute([$_POST['asset_id']]);
+    $pdo->prepare("UPDATE assets SET status = 'Emprestado' WHERE id = ? AND company_id = ?")->execute([$_POST['asset_id'], $compId]);
 
     header('Location: ?page=emprestimos&success=1');
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_loan') {
-    $borrower_stmt = $pdo->prepare("SELECT name FROM users WHERE id = ?");
-    $borrower_stmt->execute([$_POST['borrower_id']]);
+    $compId = getCurrentUserCompanyId();
+    $borrower_stmt = $pdo->prepare("SELECT name FROM users WHERE id = ? AND company_id = ?");
+    $borrower_stmt->execute([$_POST['borrower_id'], $compId]);
     $borrower = $borrower_stmt->fetch();
 
     if (!$borrower) {
@@ -80,8 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $return_date = !empty($_POST['return_date']) ? date('Y-m-d H:i:s', strtotime($_POST['return_date'])) : null;
 
     // Buscar dados atuais para verificar transição de status
-    $current = $pdo->prepare("SELECT status, asset_id FROM loans WHERE id = ?");
-    $current->execute([$_POST['loan_id']]);
+    $current = $pdo->prepare("SELECT status, asset_id FROM loans WHERE id = ? AND company_id = ?");
+    $current->execute([$_POST['loan_id'], $compId]);
     $loan_info = $current->fetch();
 
     $new_status = $loan_info['status'];
@@ -96,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         // Liberar o patrimônio
         if ($loan_info['asset_id']) {
-            $pdo->prepare("UPDATE assets SET status = 'Ativo' WHERE id = ?")->execute([$loan_info['asset_id']]);
+            $pdo->prepare("UPDATE assets SET status = 'Ativo' WHERE id = ? AND company_id = ?")->execute([$loan_info['asset_id'], $compId]);
         }
     } 
     // Se removeu a data de devolução e estava devolvido, volta para Ativo (caso o usuário queira desfazer)
@@ -107,12 +111,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         // Bloquear o patrimônio novamente
         if ($loan_info['asset_id']) {
-            $pdo->prepare("UPDATE assets SET status = 'Emprestado' WHERE id = ?")->execute([$loan_info['asset_id']]);
+            $pdo->prepare("UPDATE assets SET status = 'Emprestado' WHERE id = ? AND company_id = ?")->execute([$loan_info['asset_id'], $compId]);
         }
     }
 
-    $sql_update .= " WHERE id = ?";
-    array_push($params, $_POST['loan_id']);
+    $sql_update .= " WHERE id = ? AND company_id = ?";
+    array_push($params, $_POST['loan_id'], $compId);
 
     $stmt = $pdo->prepare($sql_update);
     $stmt->execute($params);
@@ -123,6 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Filtro para os estados dos empréstimos
 $view = $_GET['view'] ?? 'ativos';
+$compId = getCurrentUserCompanyId();
 $query = "SELECT l.*, u.name as unit_name, 
           rec.name as receiver_name, rec.avatar_url as receiver_avatar,
           bor.avatar_url as borrower_avatar,
@@ -131,22 +136,36 @@ $query = "SELECT l.*, u.name as unit_name,
           LEFT JOIN units u ON BINARY l.unit_id = BINARY u.id
           LEFT JOIN users rec ON (BINARY l.received_by_id = BINARY rec.id OR (l.received_by_id = '' AND BINARY l.received_by = BINARY rec.name))
           LEFT JOIN users bor ON (BINARY l.borrower_id = BINARY bor.id OR (l.borrower_id = '' AND BINARY l.borrower_name = BINARY bor.name))
-          LEFT JOIN users len ON (BINARY l.loaned_by_id = BINARY len.id OR (l.loaned_by_id = '' AND BINARY l.loaned_by_name = BINARY len.name))";
+          LEFT JOIN users len ON (BINARY l.loaned_by_id = BINARY len.id OR (l.loaned_by_id = '' AND BINARY l.loaned_by_name = BINARY len.name))
+          WHERE l.company_id = ?";
+
+$params = [$compId];
 
 if ($view === 'ativos') {
-    $query .= " WHERE l.status = 'Ativo'";
+    $query .= " AND l.status = 'Ativo'";
 } elseif ($view === 'fechados') {
-    $query .= " WHERE l.status = 'Devolvido'";
+    $query .= " AND l.status = 'Devolvido'";
 } elseif ($view === 'ocorrencias') {
-    $query .= " WHERE (l.status = 'Ativo' AND l.expected_return_date < NOW()) OR (l.status = 'Devolvido' AND l.return_date > l.expected_return_date)";
+    $query .= " AND ((l.status = 'Ativo' AND l.expected_return_date < NOW()) OR (l.status = 'Devolvido' AND l.return_date > l.expected_return_date))";
 }
-// Se view for 'historico', não aplica filtro de status
+// Se view for 'historico', não aplica filtro extra de status
 
 $query .= " ORDER BY l.created_at DESC";
-$loans = $pdo->query($query)->fetchAll();
-$assets = $pdo->query("SELECT * FROM assets WHERE status = 'Ativo'")->fetchAll();
-$units = $pdo->query("SELECT * FROM units")->fetchAll();
-$users = $pdo->query("SELECT u.id, u.name, u.sector, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id ORDER BY u.name")->fetchAll();
+$stmt_loans = $pdo->prepare($query);
+$stmt_loans->execute($params);
+$loans = $stmt_loans->fetchAll();
+
+$stmt_assets = $pdo->prepare("SELECT * FROM assets WHERE status = 'Ativo' AND company_id = ?");
+$stmt_assets->execute([$compId]);
+$assets = $stmt_assets->fetchAll();
+
+$stmt_units = $pdo->prepare("SELECT * FROM units WHERE company_id = ?");
+$stmt_units->execute([$compId]);
+$units = $stmt_units->fetchAll();
+
+$stmt_users = $pdo->prepare("SELECT u.id, u.name, u.sector, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+$stmt_users->execute([$compId]);
+$users = $stmt_users->fetchAll();
 ?>
 
 <div class="page-header">
