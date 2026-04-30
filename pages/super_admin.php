@@ -142,8 +142,8 @@ try {
 // Buscar Tenants (incluindo excluídos para o admin ver)
 $stmt = $pdo->query("SELECT t.*, 
     (SELECT COUNT(*) FROM users WHERE company_id = t.id) as user_count,
-    (SELECT login_name FROM users WHERE company_id = t.id AND (role = 'Administrador' OR is_super_admin = 1) LIMIT 1) as admin_login,
-    (SELECT id FROM users WHERE company_id = t.id AND (role = 'Administrador' OR is_super_admin = 1) LIMIT 1) as admin_user_id
+    (SELECT login_name FROM users WHERE company_id = t.id ORDER BY (role = 'Administrador' OR is_super_admin = 1) DESC, id ASC LIMIT 1) as admin_login,
+    (SELECT id FROM users WHERE company_id = t.id ORDER BY (role = 'Administrador' OR is_super_admin = 1) DESC, id ASC LIMIT 1) as admin_user_id
     FROM tenants t ORDER BY t.deleted_at IS NOT NULL, t.id DESC");
 $tenants = $stmt->fetchAll();
 ?>
