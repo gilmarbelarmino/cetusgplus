@@ -54,47 +54,49 @@ $sectors = [];
 $history_loans = [];
 $history_tickets = [];
 
-try {
     $compId = getCurrentUserCompanyId();
-    // Buscar todas as contas de e-mail extras de uma vez para otimizar
-    $stmt_acc = $pdo->prepare("SELECT ua.* FROM user_accounts ua JOIN users u ON ua.user_id = u.id WHERE u.company_id = ?");
-    $stmt_acc->execute([$compId]);
-    $accounts_raw = $stmt_acc->fetchAll();
-    $user_accounts_map = [];
-    foreach ($accounts_raw as $acc) {
-        $user_accounts_map[$acc['user_id']][] = $acc;
-    }
-
     $isSuperAdmin = ($user['is_super_admin'] ?? 0) == 1 || ($user['login_name'] ?? '') === 'superadmin';
     
-    // Simplificando a consulta para evitar que JOINS quebrem o resultado
-    $query = "SELECT u.* FROM users u WHERE 1=1";
-              
-    $params = [];
-    if (!$isSuperAdmin) {
-        $query .= " AND (u.company_id = ? OR u.company_id IS NULL OR u.company_id = 0)";
-        $params[] = ($compId ?: 1);
+    // 1. BUSCA PRINCIPAL DE USUÁRIOS
+    try {
+        $query = "SELECT u.* FROM users u WHERE 1=1";
+        $params = [];
+        if (!$isSuperAdmin) {
+            $query .= " AND (u.company_id = ? OR u.company_id IS NULL OR u.company_id = 0)";
+            $params[] = ($compId ?: 1);
+        }
+        $query .= " ORDER BY u.name ASC";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $all_users = $stmt->fetchAll();
+    } catch(Exception $e) {
+        $all_users = [];
+        echo "<!-- Erro Query Principal: " . $e->getMessage() . " -->";
     }
-    
-    if ($search) {
-        $query .= " AND (u.name LIKE ? OR u.email LIKE ? OR u.sector LIKE ?)";
-        $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%";
+
+    // 2. BUSCA DE CONTAS EXTRAS
+    $user_accounts_map = [];
+    try {
+        $stmt_acc = $pdo->prepare("SELECT ua.* FROM user_accounts ua JOIN users u ON ua.user_id = u.id WHERE u.company_id = ?");
+        $stmt_acc->execute([$compId ?: 1]);
+        $accounts_raw = $stmt_acc->fetchAll();
+        foreach ($accounts_raw as $acc) {
+            $user_accounts_map[$acc['user_id']][] = $acc;
+        }
+    } catch(Exception $e) {
+        echo "<!-- Erro Query Contas: " . $e->getMessage() . " -->";
     }
-    
-    $query .= " ORDER BY u.name ASC";
-    $stmt = $pdo->prepare($query);
-    $stmt->execute($params);
-    
-    while ($usr = $stmt->fetch()) {
-        $usr['unit_name'] = ''; // Placeholder para simplificação
+
+    // 3. PROCESSAMENTO FINAL
+    foreach ($all_users as $usr) {
+        $usr['unit_name'] = ''; 
         $usr['tenant_name'] = '';
         $usr['menus'] = getUserMenus($pdo, $usr['id'] ?? null);
         $usr['accounts'] = $user_accounts_map[$usr['id']] ?? [];
         $sectors_list[$usr['sector'] ?? 'Sem Setor'][] = $usr;
-        $all_users[] = $usr;
     }
-    echo "<!-- DEBUG: Encontrados " . count($all_users) . " usuários para compId $compId -->";
-} catch(Exception $e) { echo "<!-- Erro users: " . $e->getMessage() . " -->"; }
+    echo "<!-- DEBUG: Total processado: " . count($all_users) . " usuários -->";
+} catch(Exception $e) { echo "<!-- Erro Geral: " . $e->getMessage() . " -->"; }
 
 try { 
     $stmt_units = $pdo->prepare("SELECT * FROM units WHERE company_id = ?");
