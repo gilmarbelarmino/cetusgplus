@@ -12,35 +12,39 @@ if (!$user || $user['login_name'] !== 'superadmin') {
 // Processar Ações
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'add_tenant') {
-        $name = $_POST['name'];
-        $expires = $_POST['expires_at'];
-        $type = $_POST['license_type'];
-        $value = $_POST['subscription_value'] ?: 0;
-        $admin_login = $_POST['admin_login'];
-        $admin_password = $_POST['admin_password'];
-        $admin_name = $_POST['admin_name'];
-        
-        // 1. Criar a empresa
-        $stmt = $pdo->prepare("INSERT INTO tenants (name, expires_at, license_type, status, subscription_value, last_amount_paid, created_at, access_liberation_date) VALUES (?, ?, ?, 'active', ?, ?, NOW(), NOW())");
-        $stmt->execute([$name, $expires, $type, $value, $value]);
-        $newCompanyId = $pdo->lastInsertId();
-        
-        // 2. Criar company_settings para a nova empresa
-        $pdo->prepare("INSERT IGNORE INTO company_settings (id, company_name) VALUES (?, ?)")->execute([$newCompanyId, $name]);
-        
-        // 3. Criar o usuário administrador da empresa
-        $hashedPass = password_hash($admin_password, PASSWORD_DEFAULT);
-        $userId = 'U' . time() . rand(100,999);
-        $stmtUser = $pdo->prepare("INSERT INTO users (id, login_name, name, password, company_id, status, is_super_admin) VALUES (?, ?, ?, ?, ?, 'Ativo', 0)");
-        $stmtUser->execute([$userId, $admin_login, $admin_name, $hashedPass, $newCompanyId]);
-        
-        // 4. Liberar todos os menus para o admin da empresa
-        $allMenus = ['rh','voluntariado','semanada','patrimonio','emprestimos','chamados','orcamentos','locacao_salas','relatorios','tecnologia','informacoes','usuarios','configuracoes'];
-        foreach ($allMenus as $menu) {
-            $pdo->prepare("INSERT IGNORE INTO user_menus (user_id, menu) VALUES (?, ?)")->execute([$userId, $menu]);
+        try {
+            $name = $_POST['name'];
+            $expires = $_POST['expires_at'];
+            $type = $_POST['license_type'];
+            $value = $_POST['subscription_value'] ?: 0;
+            $admin_login = $_POST['admin_login'];
+            $admin_password = $_POST['admin_password'];
+            $admin_name = $_POST['admin_name'];
+            
+            // 1. Criar a empresa
+            $stmt = $pdo->prepare("INSERT INTO tenants (name, expires_at, license_type, status, subscription_value, last_amount_paid, created_at, access_liberation_date) VALUES (?, ?, ?, 'active', ?, ?, NOW(), NOW())");
+            $stmt->execute([$name, $expires, $type, $value, $value]);
+            $newCompanyId = $pdo->lastInsertId();
+            
+            // 2. Criar company_settings para a nova empresa
+            $pdo->prepare("INSERT IGNORE INTO company_settings (id, company_name) VALUES (?, ?)")->execute([$newCompanyId, $name]);
+            
+            // 3. Criar o usuário administrador da empresa
+            $hashedPass = password_hash($admin_password, PASSWORD_DEFAULT);
+            $userId = 'U' . time() . rand(100,999);
+            $stmtUser = $pdo->prepare("INSERT INTO users (id, login_name, name, password, company_id, status, is_super_admin) VALUES (?, ?, ?, ?, ?, 'Ativo', 0)");
+            $stmtUser->execute([$userId, $admin_login, $admin_name, $hashedPass, $newCompanyId]);
+            
+            // 4. Liberar todos os menus para o admin da empresa
+            $allMenus = ['rh','voluntariado','semanada','patrimonio','emprestimos','chamados','orcamentos','locacao_salas','relatorios','tecnologia','informacoes','usuarios','configuracoes'];
+            foreach ($allMenus as $menu) {
+                $pdo->prepare("INSERT IGNORE INTO user_menus (user_id, menu) VALUES (?, ?)")->execute([$userId, $menu]);
+            }
+            
+            $success = "Empresa '$name' cadastrada! Admin: $admin_login";
+        } catch (Exception $e) {
+            $error = "Erro ao cadastrar: " . $e->getMessage();
         }
-        
-        $success = "Empresa '$name' cadastrada! Admin: $admin_login";
     }
     
     if ($_POST['action'] === 'renew') {
@@ -86,6 +90,11 @@ $tenants = $stmt->fetchAll();
 <?php if (isset($success)): ?>
     <div style="background: rgba(16,185,129,0.1); color: #10B981; padding: 1.2rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid rgba(16,185,129,0.2); display: flex; align-items: center; gap: 10px;">
         <i class="fa-solid fa-circle-check" style="font-size: 1.5rem;"></i> <?= $success ?>
+    </div>
+<?php endif; ?>
+<?php if (isset($error)): ?>
+    <div style="background: rgba(239,68,68,0.1); color: #EF4444; padding: 1.2rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid rgba(239,68,68,0.2); display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-circle-xmark" style="font-size: 1.5rem;"></i> <?= $error ?>
     </div>
 <?php endif; ?>
 
