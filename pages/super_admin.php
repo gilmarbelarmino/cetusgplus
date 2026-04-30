@@ -35,8 +35,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $stmtUser = $pdo->prepare("INSERT INTO users (id, login_name, name, password, company_id, status, is_super_admin, role) VALUES (?, ?, ?, ?, ?, 'Ativo', 0, 'Administrador')");
             $stmtUser->execute([$userId, $admin_login, $admin_name, $hashedPass, $newCompanyId]);
             
-            // 4. Liberar todos os menus para o admin da empresa
-            $allMenus = ['rh','voluntariado','semanada','patrimonio','emprestimos','chamados','orcamentos','locacao_salas','relatorios','tecnologia','informacoes','usuarios','configuracoes'];
+            // 4. Liberar todos os menus para o admin da empresa (Pacote Completo Cetusg Plus)
+            $allMenus = [
+                'dashboard', 'rh', 'voluntariado', 'semanada', 'patrimonio', 
+                'emprestimos', 'chamados', 'orcamentos', 'locacao_salas', 
+                'relatorios', 'tecnologia', 'informacoes', 'usuarios', 
+                'configuracoes', 'peixinho'
+            ];
             foreach ($allMenus as $menu) {
                 $pdo->prepare("INSERT IGNORE INTO user_menus (user_id, menu) VALUES (?, ?)")->execute([$userId, $menu]);
             }
