@@ -67,37 +67,33 @@ try {
 
     $isSuperAdmin = ($user['is_super_admin'] ?? 0) == 1 || ($user['login_name'] ?? '') === 'superadmin';
     
-    $query = "SELECT u.*, un.name as unit_name, rh.role_name as rh_role_name, rh.gender as rh_gender, t.name as tenant_name 
-              FROM users u 
-              LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id 
-              LEFT JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id 
-              LEFT JOIN tenants t ON u.company_id = t.id
-              WHERE 1=1";
+    // Simplificando a consulta para evitar que JOINS quebrem o resultado
+    $query = "SELECT u.* FROM users u WHERE 1=1";
               
     $params = [];
     if (!$isSuperAdmin) {
-        // Se for 0 ou null, assume 1 (Projeto Arrastão) para garantir visibilidade
         $query .= " AND (u.company_id = ? OR u.company_id IS NULL OR u.company_id = 0)";
         $params[] = ($compId ?: 1);
     }
     
     if ($search) {
-        $query .= " AND (u.name LIKE ? OR u.email LIKE ? OR u.sector LIKE ? OR u.access_number LIKE ?)";
-        $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%";
+        $query .= " AND (u.name LIKE ? OR u.email LIKE ? OR u.sector LIKE ?)";
+        $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%";
     }
-    if ($unit_filter) {
-        $query .= " AND u.unit_id = ?";
-        $params[] = $unit_filter;
-    }
-    $query .= " ORDER BY u.company_id ASC, u.name ASC";
+    
+    $query .= " ORDER BY u.name ASC";
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
+    
     while ($usr = $stmt->fetch()) {
+        $usr['unit_name'] = ''; // Placeholder para simplificação
+        $usr['tenant_name'] = '';
         $usr['menus'] = getUserMenus($pdo, $usr['id'] ?? null);
         $usr['accounts'] = $user_accounts_map[$usr['id']] ?? [];
         $sectors_list[$usr['sector'] ?? 'Sem Setor'][] = $usr;
         $all_users[] = $usr;
     }
+    echo "<!-- DEBUG: Encontrados " . count($all_users) . " usuários para compId $compId -->";
 } catch(Exception $e) { echo "<!-- Erro users: " . $e->getMessage() . " -->"; }
 
 try { 
