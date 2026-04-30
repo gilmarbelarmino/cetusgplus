@@ -75,7 +75,12 @@ if (!function_exists('getUserMenus')) {
             $menus = array_column($stmt->fetchAll(), 'menu') ?: [];
             
             // Logica SaaS: Se for super admin, adicionar menu de gestão
-            if (is_array($user) && isset($user['is_super_admin']) && $user['is_super_admin'] == 1) {
+            // Forçamos a verificação do banco de dados para evitar erros de cache de sessão
+            $checkAdmin = $target_pdo->prepare("SELECT is_super_admin FROM users WHERE id = ?");
+            $checkAdmin->execute([$target_user_id]);
+            $isAdmin = $checkAdmin->fetchColumn();
+
+            if ($isAdmin == 1) {
                 if (!in_array('super_admin', $menus)) {
                     $menus[] = 'super_admin';
                 }

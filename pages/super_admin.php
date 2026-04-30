@@ -4,7 +4,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Segurança: Apenas Super Admin pode acessar esta página
-if (!isset($_SESSION['user_id']) || $_SESSION['is_super_admin'] != 1) {
+if (!$user || $user['is_super_admin'] != 1) {
     header("Location: index.php?page=dashboard");
     exit();
 }
