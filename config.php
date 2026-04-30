@@ -1,7 +1,7 @@
 <?php
 // Detecção Inteligente de Ambiente (Local vs Produção)
 $httpHost = $_SERVER['HTTP_HOST'] ?? '';
-$isLocal = (strpos($httpHost, 'localhost') !== false || strpos($httpHost, '127.0.0.1') !== false || strpos($httpHost, '192.168.') !== false);
+$isLocal = (strpos($httpHost, 'localhost') !== false || strpos($httpHost, '127.0.0.1') !== false || strpos($httpHost, '192.168.') !== false || PHP_SAPI === 'cli');
 
 if ($isLocal) {
     define('DB_HOST', 'localhost');
