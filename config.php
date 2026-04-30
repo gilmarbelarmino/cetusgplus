@@ -1,4 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 // Detecção Inteligente de Ambiente (Local vs Produção)
 $httpHost = $_SERVER['HTTP_HOST'] ?? '';
 $isLocal = (strpos($httpHost, 'localhost') !== false || strpos($httpHost, '127.0.0.1') !== false || strpos($httpHost, '192.168.') !== false || PHP_SAPI === 'cli');
