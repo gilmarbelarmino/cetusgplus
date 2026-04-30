@@ -96,7 +96,6 @@ $history_tickets = [];
         $sectors_list[$usr['sector'] ?? 'Sem Setor'][] = $usr;
     }
     echo "<!-- DEBUG: Total processado: " . count($all_users) . " usuários -->";
-} catch(Exception $e) { echo "<!-- Erro Geral: " . $e->getMessage() . " -->"; }
 
 try { 
     $stmt_units = $pdo->prepare("SELECT * FROM units WHERE company_id = ?");
