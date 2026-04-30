@@ -91,6 +91,17 @@ if (!function_exists('getUserMenus')) {
     }
 }
 
+if (!function_exists('getCurrentUserCompanyId')) {
+    function getCurrentUserCompanyId() {
+        global $pdo;
+        if (!isset($_SESSION['user_id'])) return 1;
+        
+        $stmt = $pdo->prepare("SELECT company_id FROM users WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        return $stmt->fetchColumn() ?: 1;
+    }
+}
+
 if (!function_exists('triggerSocketUpdate')) {
     function triggerSocketUpdate($event, $data = []) {
         $url = 'http://localhost:3001/notify';

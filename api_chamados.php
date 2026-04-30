@@ -20,8 +20,11 @@ try {
 
     // GET: Listagem e dependências (Autocomplete)
     if ($method === 'GET' && empty($action)) {
+        $compId = getCurrentUserCompanyId();
         $show_all = isset($_GET['all']) && $_GET['all'] == '1';
-        $conditions = ["1=1"];
+        $conditions = ["t.company_id = ?"];
+        $params = [$compId];
+
         if (!$show_all) {
             $conditions[] = "(t.status = 'Aberto' OR t.status = 'Pendente')";
         }
@@ -35,10 +38,21 @@ try {
                   WHERE " . implode(" AND ", $conditions) . " 
                   ORDER BY t.created_at DESC";
 
-        $tickets = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
-        $users = $pdo->query("SELECT u.id, u.name, u.sector, u.role, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id ORDER BY u.name")->fetchAll(PDO::FETCH_ASSOC);
-        $assets = $pdo->query("SELECT id, name, patrimony_id FROM assets ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
-        $units = $pdo->query("SELECT * FROM units ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $tickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $users = $pdo->prepare("SELECT u.id, u.name, u.sector, u.role, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+        $users->execute([$compId]);
+        $users = $users->fetchAll(PDO::FETCH_ASSOC);
+
+        $assets = $pdo->prepare("SELECT id, name, patrimony_id FROM assets WHERE company_id = ? ORDER BY name");
+        $assets->execute([$compId]);
+        $assets = $assets->fetchAll(PDO::FETCH_ASSOC);
+
+        $units = $pdo->prepare("SELECT * FROM units WHERE company_id = ? ORDER BY name");
+        $units->execute([$compId]);
+        $units = $units->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode([
             'success' => true, 
@@ -54,8 +68,9 @@ try {
 
     // POST: Criar Chamado
     if ($method === 'POST' && $action === 'add_ticket') {
-        $stmt = $pdo->prepare("INSERT INTO tickets (id, asset_id, title, description, priority, requester_id, sector, unit_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Aberto', NOW())");
-        $stmt->execute(['T' . time(), $data['asset_id'] ?: null, $data['title'], $data['description'], $data['priority'], $data['requester_id'], $data['sector'], $data['unit_id']]);
+        $compId = getCurrentUserCompanyId();
+        $stmt = $pdo->prepare("INSERT INTO tickets (id, asset_id, title, description, priority, requester_id, sector, unit_id, status, created_at, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Aberto', NOW(), ?)");
+        $stmt->execute(['T' . time(), $data['asset_id'] ?: null, $data['title'], $data['description'], $data['priority'], $data['requester_id'], $data['sector'], $data['unit_id'], $compId]);
         
         triggerSocketUpdate('data_updated', ['module' => 'chamados', 'action' => 'add']);
         echo json_encode(['success' => true, 'message' => 'Chamado criado com sucesso']);

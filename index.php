@@ -48,7 +48,12 @@ if (!$is_license_active && $user['is_super_admin'] != 1) {
     exit;
 }
 
-$company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch();
+// Buscar configurações da empresa do usuário logado
+$user_company_id = $user['company_id'] ?: 1;
+$company_stmt = $pdo->prepare("SELECT * FROM company_settings WHERE id = ?");
+$company_stmt->execute([$user_company_id]);
+$company = $company_stmt->fetch();
+
 $user_menus = getUserMenus($user);
 
 // --- Birthday Logic ---
@@ -255,7 +260,7 @@ try {
                 </div>
 
                 <div class="sidebar-group">
-                    <span class="sidebar-category">Sistema</span>
+                    <span class="sidebar-category">Sistemas</span>
                     <?php if (in_array('relatorios', $user_menus)): ?>
                         <a href="index.php?page=relatorios" class="sidebar-item <?= $page === 'relatorios' ? 'sidebar-active' : '' ?>">
                             <i class="fa-solid fa-chart-line"></i>

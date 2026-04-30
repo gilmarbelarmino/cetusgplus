@@ -23,13 +23,27 @@ try {
 
     if ($method === 'GET' && empty($action)) {
         // Listagem
-        $query = "SELECT a.*, u.name as unit_name FROM assets a LEFT JOIN units u ON BINARY a.unit_id = BINARY u.id ORDER BY a.created_at DESC";
-        $assets = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
+        $compId = getCurrentUserCompanyId();
+        $query = "SELECT a.*, u.name as unit_name FROM assets a LEFT JOIN units u ON BINARY a.unit_id = BINARY u.id WHERE a.company_id = ? ORDER BY a.created_at DESC";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([$compId]);
+        $assets = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        $units = $pdo->query("SELECT * FROM units")->fetchAll(PDO::FETCH_ASSOC);
-        $categories = $pdo->query("SELECT DISTINCT category FROM assets WHERE category IS NOT NULL AND category != '' ORDER BY category")->fetchAll(PDO::FETCH_ASSOC);
-        $sectors = $pdo->query("SELECT DISTINCT sector FROM assets WHERE sector IS NOT NULL AND sector != '' ORDER BY sector")->fetchAll(PDO::FETCH_ASSOC);
-        $all_users = $pdo->query("SELECT u.id, u.name, u.email, u.phone, u.sector, u.role, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id ORDER BY u.name")->fetchAll(PDO::FETCH_ASSOC);
+        $units = $pdo->prepare("SELECT * FROM units WHERE company_id = ?");
+        $units->execute([$compId]);
+        $units = $units->fetchAll(PDO::FETCH_ASSOC);
+
+        $categories = $pdo->prepare("SELECT DISTINCT category FROM assets WHERE category IS NOT NULL AND category != '' AND company_id = ? ORDER BY category");
+        $categories->execute([$compId]);
+        $categories = $categories->fetchAll(PDO::FETCH_ASSOC);
+
+        $sectors = $pdo->prepare("SELECT DISTINCT sector FROM assets WHERE sector IS NOT NULL AND sector != '' AND company_id = ? ORDER BY sector");
+        $sectors->execute([$compId]);
+        $sectors = $sectors->fetchAll(PDO::FETCH_ASSOC);
+
+        $all_users = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.role, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+        $all_users->execute([$compId]);
+        $all_users = $all_users->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode([
             'success' => true,
@@ -72,11 +86,12 @@ try {
             move_uploaded_file($_FILES['product_image']['tmp_name'], __DIR__ . '/../uploads/' . $image_name);
         }
         
-        $stmt = $pdo->prepare("INSERT INTO assets (id, name, category, patrimony_id, sector, unit_id, status, responsible_name, estimated_value, image_url) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO assets (id, name, category, patrimony_id, sector, unit_id, status, responsible_name, estimated_value, image_url, company_id) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)");
         $estimated = floatval(str_replace(['.', ','], ['', '.'], $_POST['estimated_value'] ?? '0'));
         $patrimony_id = !empty($_POST['patrimony_id']) ? $_POST['patrimony_id'] : null;
+        $compId = getCurrentUserCompanyId();
         
-        $stmt->execute(['A' . time(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['responsible_name'], $estimated, $image_name]);
+        $stmt->execute(['A' . time(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['responsible_name'], $estimated, $image_name, $compId]);
         
         triggerSocketUpdate('data_updated', ['module' => 'patrimonio', 'action' => 'add']);
         echo json_encode(['success' => true, 'message' => 'Ativo criado com sucesso']);
