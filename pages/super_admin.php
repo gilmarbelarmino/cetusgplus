@@ -107,6 +107,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $error = "Erro ao atualizar: " . $e->getMessage();
         }
     }
+
+    if ($_POST['action'] === 'reset_admin_password') {
+        try {
+            $userId = $_POST['user_id'];
+            $newPass = $_POST['new_password'];
+            $hashed = password_hash($newPass, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+            $stmt->execute([$hashed, $userId]);
+            $success = "Senha do administrador atualizada com sucesso!";
+        } catch (Exception $e) {
+            $error = "Erro ao resetar senha: " . $e->getMessage();
+        }
+    }
 }
 
 // Purga automática: apagar dados de empresas com mais de 3 meses de exclusão
@@ -122,7 +135,11 @@ try {
 } catch(Exception $e) {}
 
 // Buscar Tenants (incluindo excluídos para o admin ver)
-$stmt = $pdo->query("SELECT t.*, (SELECT COUNT(*) FROM users WHERE company_id = t.id) as user_count FROM tenants t ORDER BY t.deleted_at IS NOT NULL, t.id DESC");
+$stmt = $pdo->query("SELECT t.*, 
+    (SELECT COUNT(*) FROM users WHERE company_id = t.id) as user_count,
+    (SELECT login_name FROM users WHERE company_id = t.id AND role = 'Administrador' LIMIT 1) as admin_login,
+    (SELECT id FROM users WHERE company_id = t.id AND role = 'Administrador' LIMIT 1) as admin_user_id
+    FROM tenants t ORDER BY t.deleted_at IS NOT NULL, t.id DESC");
 $tenants = $stmt->fetchAll();
 ?>
 
@@ -169,6 +186,11 @@ $tenants = $stmt->fetchAll();
                     <td style="padding: 1.5rem;">
                         <div style="font-weight: 800; color: var(--text-main); font-size: 1rem;"><?= htmlspecialchars($tenant['name']) ?></div>
                         <div style="font-size: 0.75rem; color: var(--text-soft);">#<?= $tenant['id'] ?> • <?= $tenant['user_count'] ?> usuários</div>
+                        <?php if ($tenant['admin_login']): ?>
+                            <div style="font-size: 0.7rem; color: #3B82F6; font-weight: 700; margin-top: 4px;">
+                                <i class="fa-solid fa-user-shield"></i> Admin: <?= htmlspecialchars($tenant['admin_login']) ?>
+                            </div>
+                        <?php endif; ?>
                     </td>
                     <td style="padding: 1.5rem;">
                         <div style="font-size: 0.85rem; color: var(--text-main);"><i class="fa-solid fa-calendar-plus" style="color: #10B981; width: 20px;"></i> <?= date('d/m/Y', strtotime($tenant['created_at'])) ?></div>
@@ -212,6 +234,12 @@ $tenants = $stmt->fetchAll();
                                 <button onclick="openEditModal(<?= $tenant['id'] ?>, '<?= htmlspecialchars(addslashes($tenant['name'])) ?>', '<?= $tenant['expires_at'] ?>', '<?= $tenant['license_type'] ?>', <?= $tenant['subscription_value'] ?>)" class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #3B82F6; border: none; cursor: pointer; border-radius: 6px;" title="Editar Cadastro">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </button>
+                                <!-- Reset de Senha do Admin -->
+                                <?php if ($tenant['admin_user_id']): ?>
+                                    <button onclick="openResetModal('<?= $tenant['admin_user_id'] ?>', '<?= htmlspecialchars(addslashes($tenant['admin_login'])) ?>')" class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: rgba(239, 68, 68, 0.05); color: #EF4444; border: none; cursor: pointer; border-radius: 6px;" title="Resetar Senha do Admin">
+                                        <i class="fa-solid fa-key"></i>
+                                    </button>
+                                <?php endif; ?>
                                 <!-- Bloquear/Desbloquear -->
                                 <form method="POST" style="display: inline;"><input type="hidden" name="action" value="toggle_status"><input type="hidden" name="tenant_id" value="<?= $tenant['id'] ?>"><input type="hidden" name="status" value="<?= $tenant['status'] ?>">
                                     <button type="submit" class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: rgba(255,255,255,0.05);" title="<?= $tenant['status'] === 'active' ? 'Bloquear' : 'Desbloquear' ?>">
@@ -346,6 +374,26 @@ $tenants = $stmt->fetchAll();
     </div>
 </div>
 
+<!-- Modal Reset Senha -->
+<div id="resetModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 3000; align-items: center; justify-content: center; padding: 2rem;">
+    <div class="glass-panel" style="max-width: 400px; width: 100%; padding: 2.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 900; color: #EF4444; margin-bottom: 1rem;"><i class="fa-solid fa-key"></i> Resetar Senha Admin</h3>
+        <p id="resetModalText" style="color: var(--text-soft); font-size: 0.85rem; margin-bottom: 2rem;"></p>
+        <form method="POST">
+            <input type="hidden" name="action" value="reset_admin_password">
+            <input type="hidden" name="user_id" id="resetUserId">
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Nova Senha</label>
+                <input type="text" name="new_password" required class="form-input" placeholder="Digite a nova senha">
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" onclick="document.getElementById('resetModal').style.display='none'" class="btn-secondary" style="flex: 1;">Cancelar</button>
+                <button type="submit" class="btn-primary" style="flex: 1; background: #EF4444; color: white;">Resetar Agora</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function openRenewModal(id, name, value) {
     document.getElementById('renewTenantId').value = id;
@@ -362,5 +410,11 @@ function openEditModal(id, name, expires, type, value) {
     document.getElementById('editTenantExpires').value = expires.split(' ')[0];
     document.getElementById('editModalTitle').innerText = 'Editar: ' + name;
     document.getElementById('editTenantModal').style.display = 'flex';
+}
+
+function openResetModal(userId, login) {
+    document.getElementById('resetUserId').value = userId;
+    document.getElementById('resetModalText').innerText = 'Você está resetando a senha do usuário: ' + login;
+    document.getElementById('resetModal').style.display = 'flex';
 }
 </script>
