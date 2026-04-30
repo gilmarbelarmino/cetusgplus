@@ -1,8 +1,5 @@
 <?php
 function isLoggedIn() {
-    if (!isset($_SESSION['user_id'])) {
-        $_SESSION['user_id'] = '1'; // AUTO-LOGIN PARA TESTES (DEV MODE)
-    }
     return isset($_SESSION['user_id']);
 }
 
