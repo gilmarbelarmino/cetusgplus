@@ -9,7 +9,7 @@ $openTickets = 0;
 // Verificar login
 $user = getCurrentUser();
 if (!$user) {
-    header('Location: login.php');
+    include 'landing.php';
     exit;
 }
 
