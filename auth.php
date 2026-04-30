@@ -103,6 +103,7 @@ function login($loginName, $password) {
         }
 
         $_SESSION['user_id'] = $user['id'];
+        $_SESSION['is_super_admin'] = $user['is_super_admin'] ?? 0;
         
         // Registrar Log de Acesso
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'Desconhecido';

@@ -13,6 +13,41 @@ if (!$user) {
     exit;
 }
 
+// --- LOGICA SAAS: Verificar Licença da Empresa ---
+$tenant_id = $user['company_id'] ?: 1;
+$stmt_tenant = $pdo->prepare("SELECT * FROM tenants WHERE id = ?");
+$stmt_tenant->execute([$tenant_id]);
+$tenant = $stmt_tenant->fetch();
+
+$is_license_active = true;
+$license_error_msg = "";
+
+if (!$tenant) {
+    $is_license_active = false;
+    $license_error_msg = "Empresa não vinculada a uma licença válida.";
+} elseif ($tenant['status'] !== 'active') {
+    $is_license_active = false;
+    $license_error_msg = "A licença desta empresa foi bloqueada pelo administrador.";
+} elseif ($tenant['license_type'] !== 'lifetime' && strtotime($tenant['expires_at']) < time()) {
+    $is_license_active = false;
+    $license_error_msg = "Sua licença expirou em " . date('d/m/Y', strtotime($tenant['expires_at'])) . ".";
+}
+
+// Bloquear acesso se não for Super Admin e a licença estiver inválida
+if (!$is_license_active && $user['is_super_admin'] != 1) {
+    session_destroy();
+    echo "<div style='height:100vh; display:flex; align-items:center; justify-content:center; font-family:Arial; background:#020617; color:white; text-align:center; padding:2rem;'>
+            <div style='max-width:500px;'>
+                <i class='fa-solid fa-lock' style='font-size:4rem; color:#EF4444; margin-bottom:2rem;'></i>
+                <h1 style='font-size:2rem; margin-bottom:1rem;'>Acesso Bloqueado</h1>
+                <p style='font-size:1.2rem; color:#94A3B8; margin-bottom:2rem;'>$license_error_msg</p>
+                <p style='background:rgba(255,255,255,0.05); padding:1rem; border-radius:1rem; border:1px solid rgba(255,255,255,0.1);'>Entre em contato com o suporte para renovar sua assinatura.</p>
+                <br><a href='login.php' style='color:#FBBF24; text-decoration:none; font-weight:bold;'>Voltar ao Login</a>
+            </div>
+          </div>";
+    exit;
+}
+
 $company = $pdo->query("SELECT * FROM company_settings WHERE id = 1")->fetch();
 $user_menus = getUserMenus($user);
 
@@ -256,6 +291,16 @@ try {
                         </a>
                     <?php endif; ?>
                 </div>
+
+                <?php if ($user['is_super_admin'] == 1): ?>
+                <div class="sidebar-group">
+                    <span class="sidebar-category">Administrador Master</span>
+                    <a href="index.php?page=super_admin" class="sidebar-item <?= $page === 'super_admin' ? 'sidebar-active' : '' ?>" style="color: #FBBF24;">
+                        <i class="fa-solid fa-crown" style="color: #FBBF24;"></i>
+                        <span>Gestão SaaS</span>
+                    </a>
+                </div>
+                <?php endif; ?>
             </nav>
             <div class="sidebar-footer">
                 <a href="logout.php" class="sidebar-item">
