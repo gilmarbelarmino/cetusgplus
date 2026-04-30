@@ -16,10 +16,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $expires = $_POST['expires_at'];
         $type = $_POST['license_type'];
         $value = $_POST['subscription_value'] ?: 0;
+        $admin_login = $_POST['admin_login'];
+        $admin_password = $_POST['admin_password'];
+        $admin_name = $_POST['admin_name'];
         
+        // 1. Criar a empresa
         $stmt = $pdo->prepare("INSERT INTO tenants (name, expires_at, license_type, status, subscription_value, last_amount_paid, created_at, access_liberation_date) VALUES (?, ?, ?, 'active', ?, ?, NOW(), NOW())");
         $stmt->execute([$name, $expires, $type, $value, $value]);
-        $success = "Empresa cadastrada e acesso liberado hoje!";
+        $newCompanyId = $pdo->lastInsertId();
+        
+        // 2. Criar company_settings para a nova empresa
+        $pdo->prepare("INSERT IGNORE INTO company_settings (id, company_name) VALUES (?, ?)")->execute([$newCompanyId, $name]);
+        
+        // 3. Criar o usuário administrador da empresa
+        $hashedPass = password_hash($admin_password, PASSWORD_DEFAULT);
+        $userId = 'U' . time() . rand(100,999);
+        $stmtUser = $pdo->prepare("INSERT INTO users (id, login_name, name, password, company_id, status, is_super_admin) VALUES (?, ?, ?, ?, ?, 'Ativo', 0)");
+        $stmtUser->execute([$userId, $admin_login, $admin_name, $hashedPass, $newCompanyId]);
+        
+        // 4. Liberar todos os menus para o admin da empresa
+        $allMenus = ['rh','voluntariado','semanada','patrimonio','emprestimos','chamados','orcamentos','locacao_salas','relatorios','tecnologia','informacoes','usuarios','configuracoes'];
+        foreach ($allMenus as $menu) {
+            $pdo->prepare("INSERT IGNORE INTO user_menus (user_id, menu) VALUES (?, ?)")->execute([$userId, $menu]);
+        }
+        
+        $success = "Empresa '$name' cadastrada! Admin: $admin_login";
     }
     
     if ($_POST['action'] === 'renew') {
@@ -161,14 +182,33 @@ $tenants = $stmt->fetchAll();
 
 <!-- Modal Novo Cliente -->
 <div id="addTenantModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 3000; align-items: center; justify-content: center; padding: 2rem;">
-    <div class="glass-panel" style="max-width: 500px; width: 100%; padding: 2.5rem;">
+    <div class="glass-panel" style="max-width: 500px; width: 100%; padding: 2.5rem; max-height: 90vh; overflow-y: auto;">
         <h3 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin-bottom: 2rem;">Novo Cliente SaaS</h3>
         <form method="POST">
             <input type="hidden" name="action" value="add_tenant">
             <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Nome da Empresa</label>
-                <input type="text" name="name" required class="form-input" placeholder="Ex: Arrastão Tech">
+                <input type="text" name="name" required class="form-input" placeholder="Ex: Projeto Arrastão">
             </div>
+            
+            <div style="background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.15); border-radius: 12px; padding: 1.2rem; margin-bottom: 1.5rem;">
+                <p style="font-size: 0.8rem; font-weight: 800; color: #FBBF24; margin-bottom: 1rem;"><i class="fa-solid fa-user-shield"></i> Administrador da Empresa</p>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Nome Completo</label>
+                    <input type="text" name="admin_name" required class="form-input" placeholder="Nome do responsável">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Login</label>
+                        <input type="text" name="admin_login" required class="form-input" placeholder="usuario">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Senha</label>
+                        <input type="text" name="admin_password" required class="form-input" placeholder="senha">
+                    </div>
+                </div>
+            </div>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                 <div>
                     <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Valor do Plano (R$)</label>
