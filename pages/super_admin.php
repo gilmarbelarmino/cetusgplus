@@ -116,13 +116,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'reset_admin_password') {
         try {
             $userId = $_POST['user_id'];
+            $newLogin = $_POST['new_login'];
             $newPass = $_POST['new_password'];
             $hashed = password_hash($newPass, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
-            $stmt->execute([$hashed, $userId]);
-            $success = "Senha do administrador atualizada com sucesso!";
+            $stmt = $pdo->prepare("UPDATE users SET login_name = ?, password = ? WHERE id = ?");
+            $stmt->execute([$newLogin, $hashed, $userId]);
+            $success = "Acesso do administrador atualizado! Novo Login: $newLogin";
         } catch (Exception $e) {
-            $error = "Erro ao resetar senha: " . $e->getMessage();
+            $error = "Erro ao resetar: " . $e->getMessage();
         }
     }
 }
@@ -387,9 +388,13 @@ $tenants = $stmt->fetchAll();
         <form method="POST">
             <input type="hidden" name="action" value="reset_admin_password">
             <input type="hidden" name="user_id" id="resetUserId">
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Novo Login</label>
+                <input type="text" name="new_login" id="resetLoginInput" required class="form-input" placeholder="Novo nome de usuário">
+            </div>
             <div style="margin-bottom: 2rem;">
                 <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Nova Senha</label>
-                <input type="text" name="new_password" required class="form-input" placeholder="Digite a nova senha">
+                <input type="text" name="new_password" required class="form-input" placeholder="Nova senha">
             </div>
             <div style="display: flex; gap: 1rem;">
                 <button type="button" onclick="document.getElementById('resetModal').style.display='none'" class="btn-secondary" style="flex: 1;">Cancelar</button>
@@ -419,7 +424,8 @@ function openEditModal(id, name, expires, type, value) {
 
 function openResetModal(userId, login) {
     document.getElementById('resetUserId').value = userId;
-    document.getElementById('resetModalText').innerText = 'Você está resetando a senha do usuário: ' + login;
+    document.getElementById('resetLoginInput').value = login;
+    document.getElementById('resetModalText').innerText = 'Você está alterando as credenciais de: ' + login;
     document.getElementById('resetModal').style.display = 'flex';
 }
 </script>
