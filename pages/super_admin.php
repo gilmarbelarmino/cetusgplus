@@ -9,7 +9,8 @@ if (!$user || $user['is_super_admin'] != 1) {
     exit();
 }
 
-require_once 'includes/db.php';
+// Conexão já fornecida pelo index.php
+
 
 // Processar Ações (Ativar, Bloquear, Adicionar Tenant)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
