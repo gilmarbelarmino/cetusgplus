@@ -431,6 +431,10 @@ $users = $stmt_users->fetchAll();
             <input type="hidden" name="action" value="edit_loan">
             <input type="hidden" name="loan_id" id="edit_loan_id">
             <div class="form-group">
+                <label class="form-label" style="color: var(--text-main); font-weight: 700;">Equipamento</label>
+                <input type="text" id="edit_asset_name" class="form-input" readonly style="background: var(--bg-main); color: var(--text-main); opacity: 0.8; border: 1px solid var(--border-color);">
+            </div>
+            <div class="form-group">
                 <label class="form-label" style="color: var(--text-main); font-weight: 700;">Unidade</label>
                 <input type="text" id="unit_name" class="form-input" readonly style="background: var(--bg-main); color: var(--text-main); opacity: 0.8; border: 1px solid var(--border-color);">
             </div>
@@ -630,6 +634,8 @@ $users = $stmt_users->fetchAll();
     function openEditModal(loan) {
         document.getElementById('edit_loan_id').value = loan.id;
         document.getElementById('edit_asset_name').value = loan.asset_name;
+        document.getElementById('unit_name').value = loan.unit_name || '';
+        document.getElementById('sector_name').value = loan.sector || '';
         document.getElementById('edit_borrower_select').value = loan.borrower_id;
         
         // Helper function for date formatting
