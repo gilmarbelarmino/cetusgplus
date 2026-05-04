@@ -1,10 +1,6 @@
-<?php
-// Acesso controlado via index.php (tabela user_menus)
-
-// Auto-migrate: Colunas de Auditoria no Empréstimo (quem realizou o empréstimo)
-try { $pdo->exec("ALTER TABLE loans ADD COLUMN loaned_by_name VARCHAR(100) DEFAULT ''"); } catch(Exception $e) {}
-try { $pdo->exec("ALTER TABLE loans ADD COLUMN loaned_by_id VARCHAR(50) DEFAULT ''"); } catch(Exception $e) {}
-try { $pdo->exec("ALTER TABLE loans MODIFY COLUMN loan_date DATETIME"); } catch(Exception $e) {}
+// Filtro para os estados dos empréstimos
+$view = $_GET['view'] ?? 'ativos';
+$compId = getCurrentUserCompanyId();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'return_loan') {
     $compId = getCurrentUserCompanyId();
@@ -89,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $loan_info = $current->fetch();
 
     $new_status = $loan_info['status'];
-    $sql_update = "UPDATE loans SET borrower_id = ?, borrower_name = ?, expected_return_date = ?, return_date = ?";
-    $params = [$_POST['borrower_id'], $borrower['name'], $expected_date, $return_date];
+    $sql_update = "UPDATE loans SET borrower_id = ?, borrower_name = ?, expected_return_date = ?, return_date = ?, observations = ?";
+    $params = [$_POST['borrower_id'], $borrower['name'], $expected_date, $return_date, $_POST['observations']];
 
     // Se inseriu data de devolução e estava ativo, muda para Devolvido
     if ($return_date && $loan_info['status'] === 'Ativo') {
@@ -121,13 +117,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stmt = $pdo->prepare($sql_update);
     $stmt->execute($params);
 
-    header('Location: ?page=emprestimos&success=3');
+    $redirect_view = $_POST['view'] ?? 'ativos';
+    header('Location: ?page=emprestimos&view=' . $redirect_view . '&success=3');
     exit;
 }
 
-// Filtro para os estados dos empréstimos
-$view = $_GET['view'] ?? 'ativos';
-$compId = getCurrentUserCompanyId();
+// Filtro para os estados dos empréstimos (Já definido no topo)
 $query = "SELECT l.*, u.name as unit_name, 
           rec.name as receiver_name, rec.avatar_url as receiver_avatar,
           bor.avatar_url as borrower_avatar,
@@ -430,6 +425,7 @@ $users = $stmt_users->fetchAll();
         <form method="POST">
             <input type="hidden" name="action" value="edit_loan">
             <input type="hidden" name="loan_id" id="edit_loan_id">
+            <input type="hidden" name="view" value="<?= htmlspecialchars($view) ?>">
             <div class="form-group">
                 <label class="form-label" style="color: var(--text-main); font-weight: 700;">Equipamento</label>
                 <input type="text" id="edit_asset_name" class="form-input" readonly style="background: var(--bg-main); color: var(--text-main); opacity: 0.8; border: 1px solid var(--border-color);">
@@ -458,6 +454,10 @@ $users = $stmt_users->fetchAll();
                 <label class="form-label">Data de Devolução Real (Deixe vazio para manter aberto)</label>
                 <input type="datetime-local" name="return_date" id="edit_return_date" class="form-input">
                 <small style="color: #64748b;">Ao preencher este campo, o empréstimo será marcado como <b>Devolvido</b>.</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Observações</label>
+                <textarea name="observations" id="edit_observations" class="form-textarea" rows="3"></textarea>
             </div>
             <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
                 <button type="button" onclick="document.getElementById('editLoanModal').style.display='none'" class="btn-secondary">Cancelar</button>
@@ -637,6 +637,7 @@ $users = $stmt_users->fetchAll();
         document.getElementById('unit_name').value = loan.unit_name || '';
         document.getElementById('sector_name').value = loan.sector || '';
         document.getElementById('edit_borrower_select').value = loan.borrower_id;
+        document.getElementById('edit_observations').value = loan.observations || '';
         
         // Helper function for date formatting
         const formatForInput = (dateStr) => {
