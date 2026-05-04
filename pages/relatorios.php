@@ -1065,6 +1065,16 @@ function printCurrentTab() {
             <div class="stat-label">Setor mais Ativo</div>
             <div class="stat-value" style="font-size: 1.25rem;"><?= $loansBySector[0]['sector'] ?? 'N/A' ?></div>
         </div>
+        <div class="stat-card" style="border: 2px solid rgba(239,68,68,0.25); background: linear-gradient(135deg, rgba(239,68,68,0.07), rgba(239,68,68,0.01));">
+            <div class="stat-icon" style="background: rgba(239,68,68,0.1); color: #EF4444;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="stat-label">Ocorrências Abertas</div>
+            <div class="stat-value" style="color: #EF4444;"><?php
+                $openOcc = $pdo->prepare("SELECT COUNT(*) FROM loans WHERE company_id = ? AND status = 'Ativo' AND expected_return_date < NOW()");
+                $openOcc->execute([$compId]);
+                echo $openOcc->fetchColumn();
+            ?></div>
+            <div style="font-size:0.7rem; color:#EF4444; font-weight:700; margin-top:0.25rem; opacity:0.8;">equipamentos em atraso</div>
+        </div>
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-bottom: 2rem;">
@@ -1145,10 +1155,12 @@ function printCurrentTab() {
 
     <!-- Acordeão de Ocorrências (Atrasos) por Usuário -->
     <div class="glass-panel" style="margin-bottom: 2rem;">
-        <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
             <i class="fa-solid fa-triangle-exclamation" style="color: #EF4444;"></i>
             Ocorrências de Atraso por Usuário
+            <span style="margin-left: auto; font-size: 0.8rem; font-weight: 700; background: rgba(239,68,68,0.1); color: #EF4444; padding: 0.2rem 0.75rem; border-radius: 999px;"><?= count($occurrencesByUser) ?> usuário(s)</span>
         </h3>
+        <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 1.5rem;">Inclui empréstimos ativos em atraso e devolvidos com atraso. <a href="?page=emprestimos&view=ocorrencias" style="color:#EF4444; font-weight:700;">Ver pendências abertas →</a></p>
         
         <?php if (empty($occurrencesByUser)): ?>
             <div style="text-align: center; padding: 2rem; color: var(--text-soft); background: rgba(239, 68, 68, 0.05); border-radius: 0.75rem;">Nenhuma ocorrência de atraso computada no sistema. Todos estão em dia!</div>
