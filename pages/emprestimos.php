@@ -151,7 +151,7 @@ if ($view === 'ativos') {
 } elseif ($view === 'fechados') {
     $query .= " AND l.status = 'Devolvido'";
 } elseif ($view === 'ocorrencias') {
-    $query .= " AND ((l.status = 'Ativo' AND l.expected_return_date < NOW()) OR (l.status = 'Devolvido' AND l.return_date > l.expected_return_date))";
+    $query .= " AND l.status = 'Ativo' AND l.expected_return_date < NOW()";
 }
 // Se view for 'historico', não aplica filtro extra de status
 
