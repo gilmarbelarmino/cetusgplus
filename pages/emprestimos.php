@@ -18,7 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt_asset->execute([$loan_data['asset_id'], $compId]);
     }
 
-    header('Location: ?page=emprestimos&success=2');
+    $redirect_view = $_POST['view'] ?? 'ativos';
+    header('Location: ?page=emprestimos&view=' . $redirect_view . '&success=2');
     exit;
 }
 
@@ -61,7 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     // Marcar item do patrimônio como Emprestado para não aparecer mais na lista de disponíveis
     $pdo->prepare("UPDATE assets SET status = 'Emprestado' WHERE id = ? AND company_id = ?")->execute([$_POST['asset_id'], $compId]);
 
-    header('Location: ?page=emprestimos&success=1');
+    $redirect_view = $_POST['view'] ?? 'ativos';
+    header('Location: ?page=emprestimos&view=' . $redirect_view . '&success=1');
     exit;
 }
 
@@ -320,6 +322,7 @@ $users = $stmt_users->fetchAll();
                     <form method="POST" style="display: inline;">
                         <input type="hidden" name="action" value="return_loan">
                         <input type="hidden" name="loan_id" value="<?= $loan['id'] ?>">
+                        <input type="hidden" name="view" value="<?= htmlspecialchars($view) ?>">
                         <button type="submit" class="btn-icon" title="Registrar Devolução" onclick="return confirm('Confirmar devolução do equipamento?')">
                             <i class="fa-solid fa-box"></i>
                         </button>
@@ -348,6 +351,7 @@ $users = $stmt_users->fetchAll();
         </div>
         <form method="POST">
             <input type="hidden" name="action" value="add_loan">
+            <input type="hidden" name="view" value="<?= htmlspecialchars($view) ?>">
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
                 <div class="form-group">
                     <label class="form-label" style="font-weight: 800; color: var(--text-main);">Equipamento *</label>
