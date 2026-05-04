@@ -1,3 +1,11 @@
+<?php
+// Acesso controlado via index.php (tabela user_menus)
+
+// Auto-migrate: Colunas de Auditoria no Empréstimo (quem realizou o empréstimo)
+try { $pdo->exec("ALTER TABLE loans ADD COLUMN loaned_by_name VARCHAR(100) DEFAULT ''"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE loans ADD COLUMN loaned_by_id VARCHAR(50) DEFAULT ''"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE loans MODIFY COLUMN loan_date DATETIME"); } catch(Exception $e) {}
+
 // Filtro para os estados dos empréstimos
 $view = $_GET['view'] ?? 'ativos';
 $compId = getCurrentUserCompanyId();
