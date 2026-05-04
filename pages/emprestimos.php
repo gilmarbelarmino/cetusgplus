@@ -329,7 +329,7 @@ $users = $stmt_users->fetchAll();
                     </form>
                     <?php endif; ?>
                     <?php if ($view === 'ocorrencias'): ?>
-                    <button class="btn-icon" onclick='openEditModal(<?= json_encode($loan) ?>)' title="Editar Ocorrência">
+                    <button class="btn-icon" onclick="openEditModal(<?= htmlspecialchars(json_encode($loan), ENT_QUOTES, 'UTF-8') ?>)" title="Editar Ocorrência">
                         <i class="fa-solid fa-pen-to-square"></i>
                     </button>
                     <?php endif; ?>
