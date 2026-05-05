@@ -24,42 +24,186 @@ $company = $company_stmt->fetch();
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--crm-bg); margin: 0; display: flex; }
         .sidebar { width: var(--sidebar-width); height: 100vh; background: white; border-right: 1px solid #e2e8f0; position: fixed; left: 0; top: 0; display: flex; flex-direction: column; z-index: 1000; }
         .main-content { margin-left: var(--sidebar-width); flex: 1; padding: 2rem; min-height: 100vh; }
-        
-        .sidebar-header { padding: 1.5rem 2rem; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid #f1f5f9; }
-        .logo-box { width: 40px; height: 40px; background: var(--crm-purple); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; overflow: hidden; }
-        .logo-box img { width: 100%; height: 100%; object-fit: contain; background: white; }
-        
+
+        /* ── SIDEBAR HEADER ── */
+        .sidebar-header {
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            border-bottom: 1px solid #f1f5f9;
+            background: linear-gradient(135deg, #fafbff 0%, #f8fafc 100%);
+            min-height: 80px;
+        }
+        .logo-box {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            background: linear-gradient(135deg, var(--crm-purple), var(--crm-purple-dark));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            overflow: hidden;
+            font-size: 1.4rem;
+            font-weight: 900;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.25);
+            flex-shrink: 0;
+        }
+        .logo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 4px;
+        }
+        .company-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .company-name {
+            font-weight: 800;
+            font-size: 0.975rem;
+            color: #1e293b;
+            line-height: 1.25;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .company-badge {
+            display: inline-block;
+            margin-top: 0.2rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--crm-purple);
+            background: rgba(99,102,241,0.1);
+            padding: 1px 7px;
+            border-radius: 99px;
+            letter-spacing: 0.03em;
+        }
+
         .nav-links { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; gap: 0.25rem; overflow-y: auto; }
         .nav-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; color: #64748b; text-decoration: none; border-radius: 0.75rem; font-weight: 600; transition: all 0.2s; font-size: 0.9rem; }
         .nav-link:hover { background: #f1f5f9; color: var(--crm-purple); }
         .nav-link.active { background: #e0e7ff; color: var(--crm-purple); }
-        
-        .user-footer { padding: 1.5rem; border-top: 1px solid #f1f5f9; display: flex; align-items: center; gap: 0.75rem; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #64748b; }
-        
+
+        .user-footer { padding: 1.25rem 1.5rem; border-top: 1px solid #f1f5f9; display: flex; align-items: center; gap: 0.75rem; }
+        .avatar { width: 40px; height: 40px; min-width: 40px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #64748b; }
+
+        /* ── MOBILE TOPBAR ── */
+        .mobile-topbar {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 64px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            align-items: center;
+            padding: 0 1.25rem;
+            gap: 0.875rem;
+            z-index: 999;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+        }
+        .mobile-logo-box {
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+            background: linear-gradient(135deg, var(--crm-purple), var(--crm-purple-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            overflow: hidden;
+            font-size: 1.1rem;
+            font-weight: 900;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.25);
+        }
+        .mobile-logo-box img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+        .mobile-company-name {
+            flex: 1;
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: #1e293b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .hamburger-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            color: #64748b;
+            font-size: 1.1rem;
+            transition: background 0.2s;
+        }
+        .hamburger-btn:hover { background: #f1f5f9; }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            z-index: 999;
+            backdrop-filter: blur(2px);
+        }
+        .sidebar-overlay.active { display: block; }
+
         @media (max-width: 1024px) {
-            .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
-            .sidebar.active { transform: translateX(0); }
-            .main-content { margin-left: 0; padding: 1rem; }
+            .mobile-topbar { display: flex; }
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+                top: 0;
+                z-index: 1001;
+            }
+            .sidebar.active { transform: translateX(0); box-shadow: 8px 0 32px rgba(0,0,0,0.15); }
+            .main-content { margin-left: 0; padding: 1rem; padding-top: calc(64px + 1rem); }
+        }
+        @media (max-width: 480px) {
+            .main-content { padding: 0.75rem; padding-top: calc(64px + 0.75rem); }
         }
     </style>
     <link rel="stylesheet" href="<?= URL_BASE ?>/assets/css/widget_assistant.css">
 </head>
 <body>
-    <aside class="sidebar">
+
+    <!-- Mobile Topbar -->
+    <div class="mobile-topbar">
+        <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Abrir menu">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="mobile-logo-box">
+            <?php if (!empty($company['logo_url'])): ?>
+                <img src="<?= htmlspecialchars($company['logo_url']) ?>" alt="Logo">
+            <?php else: ?>
+                <?= strtoupper(substr($company['company_name'] ?? 'C', 0, 1)) ?>
+            <?php endif; ?>
+        </div>
+        <span class="mobile-company-name"><?= htmlspecialchars($company['company_name'] ?? 'Cetusg Plus') ?></span>
+    </div>
+
+    <!-- Overlay para fechar sidebar no mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <aside class="sidebar" id="mainSidebar">
         <div class="sidebar-header">
             <div class="logo-box">
                 <?php if (!empty($company['logo_url'])): ?>
                     <img src="<?= htmlspecialchars($company['logo_url']) ?>" alt="Logo">
                 <?php else: ?>
-                    <?= substr($company['company_name'] ?? 'C', 0, 1) ?>
+                    <?= strtoupper(substr($company['company_name'] ?? 'C', 0, 1)) ?>
                 <?php endif; ?>
             </div>
-            <div style="font-weight: 800; font-size: 1.1rem; color: #1e293b; line-height: 1.2;">
-                <?= htmlspecialchars($company['company_name'] ?? 'Cetusg Plus') ?>
+            <div class="company-info">
+                <div class="company-name" title="<?= htmlspecialchars($company['company_name'] ?? 'Cetusg Plus') ?>">
+                    <?= htmlspecialchars($company['company_name'] ?? 'Cetusg Plus') ?>
+                </div>
+                <span class="company-badge">Gestão Integrada</span>
             </div>
         </div>
-        
+
         <nav class="nav-links">
             <a href="<?= URL_BASE ?>/dashboard" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'dashboard') !== false ? 'active' : '' ?>">
                 <i class="fa-solid fa-chart-pie"></i> Dashboard
@@ -97,7 +241,7 @@ $company = $company_stmt->fetch();
             <a href="<?= URL_BASE ?>/tecnologia" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'tecnologia') !== false ? 'active' : '' ?>">
                 <i class="fa-solid fa-microchip"></i> Tecnologia
             </a>
-            
+
             <div style="margin-top: 1rem; font-size: 0.7rem; font-weight: 800; color: #cbd5e1; text-transform: uppercase; padding-left: 1rem;">Administração</div>
             <a href="<?= URL_BASE ?>/usuarios" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'usuarios') !== false ? 'active' : '' ?>">
                 <i class="fa-solid fa-users"></i> Usuários
@@ -109,20 +253,35 @@ $company = $company_stmt->fetch();
                 <i class="fa-solid fa-shield-halved"></i> Permissões
             </a>
         </nav>
-        
+
         <div class="user-footer">
             <div class="avatar"><?= strtoupper(substr($_SESSION['user_name'] ?? 'U', 0, 1)) ?></div>
-            <div style="flex: 1;">
-                <div style="font-weight: 700; font-size: 0.85rem; color: #1e293b;"><?= htmlspecialchars($_SESSION['user_name'] ?? 'Usuário') ?></div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 700; font-size: 0.85rem; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?= htmlspecialchars($_SESSION['user_name'] ?? 'Usuário') ?></div>
                 <div style="font-size: 0.7rem; color: #64748b;"><?= \App\Core\Auth::roleName() ?></div>
             </div>
-            <a href="<?= URL_BASE ?>/logout" style="color: #94a3b8;"><i class="fa-solid fa-right-from-bracket"></i></a>
+            <a href="<?= URL_BASE ?>/logout" style="color: #94a3b8; flex-shrink: 0;"><i class="fa-solid fa-right-from-bracket"></i></a>
         </div>
     </aside>
 
     <main class="main-content">
         <?php require $viewContent; ?>
     </main>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('mainSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+        // Fechar sidebar ao clicar em link (mobile)
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 1024) toggleSidebar();
+            });
+        });
+    </script>
 
     <!-- Widget Assistente Cetusg (Bottom Left) -->
     <div id="widget-launcher" title="Assistente Cetusg">
