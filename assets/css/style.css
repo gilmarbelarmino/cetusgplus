@@ -218,11 +218,12 @@ h1, h2, h3, h4, h5, h6, .logo {
 }
 
 .sidebar-header {
-    height: 100px;
-    padding: 0 2rem;
+    height: auto;
+    min-height: 80px;
+    padding: 1rem 1.25rem;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.875rem;
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 1rem;
     background: var(--bg-sidebar);

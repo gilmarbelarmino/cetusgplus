@@ -206,7 +206,80 @@ try {
             background: white; display: flex; align-items: center; justify-content: center;
             font-size: 3rem; font-weight: 900; color: var(--brand-primary); overflow: hidden;
         }
-        .profile-body { padding: 2rem; }
+.sidebar-header {
+    height: auto;
+    min-height: 80px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+    background: var(--bg-sidebar);
+}
+
+.sidebar-logo-box {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(79,70,229,0.22);
+    flex-shrink: 0;
+}
+
+.sidebar-logo-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 4px;
+}
+
+.logo-initial {
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: white;
+}
+
+.sidebar-company-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sidebar-company-name {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.sidebar-company-badge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--brand-primary);
+    background: var(--brand-primary-soft);
+    padding: 1px 6px;
+    border-radius: 99px;
+    display: inline-block;
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+}
+
+.sidebar-header .logo {
+    color: var(--md-sys-color-primary);
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+}
+
         .profile-field { margin-bottom: 1.5rem; }
         .profile-field label { display: block; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; }
         .profile-field input { width: 100%; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; background: #f8fafc; font-weight: 600; color: #1e293b; }
@@ -221,11 +294,19 @@ try {
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <?php if (!empty($company['logo_url'])): ?>
-                    <img src="<?= htmlspecialchars($company['logo_url']) ?>" alt="Logo" style="max-height: 40px;">
-                <?php else: ?>
-                    <div class="logo">CETUSG<span style="color: var(--brand-primary);">+</span></div>
-                <?php endif; ?>
+                <div class="sidebar-logo-box">
+                    <?php if (!empty($company['logo_url'])): ?>
+                        <img src="<?= htmlspecialchars($company['logo_url']) ?>" alt="Logo">
+                    <?php else: ?>
+                        <span class="logo-initial"><?= strtoupper(substr($company['company_name'] ?? 'C', 0, 1)) ?></span>
+                    <?php endif; ?>
+                </div>
+                <div class="sidebar-company-info">
+                    <div class="sidebar-company-name" title="<?= htmlspecialchars($company['company_name'] ?? 'Cetusg') ?>">
+                        <?= htmlspecialchars($company['company_name'] ?? 'Cetusg') ?>
+                    </div>
+                    <div class="sidebar-company-badge">Gestão Integrada</div>
+                </div>
             </div>
             
             <nav class="sidebar-nav">
