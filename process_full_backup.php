@@ -1,6 +1,7 @@
 <?php
 require_once 'config.php';
 require_once 'auth.php';
+require_once 'SimpleXLSXGen.php';
 
 $user = getCurrentUser();
 if (!$user || ($user['role'] != 'Administrador' && $user['role'] != 'Suporte Técnico')) {
@@ -128,7 +129,75 @@ function generateSqlDumpViaPdo(PDO $pdo, string $dbName): string
     return $sql;
 }
 
-// ─── 3. CRIAR GUIA DE RESTAURAÇÃO ─────────────────────────────────────────────
+// ─── FUNÇÃO: GERAR PLANILHA EXCEL (NOVO) ──────────────────────────────────────
+function generateExcelBackup($pdo, $filePath) {
+    $tables = [
+        'company_settings'    => 'Config Gerais',
+        'units'               => 'Unidades',
+        'sectors'             => 'Setores',
+        'rh_positions'        => 'Cargos',
+        'users'               => 'Usuários',
+        'user_menus'          => 'Permissões Menus',
+        'rh_employee_details' => 'RH - Detalhes',
+        'rh_vacations'        => 'RH - Férias',
+        'rh_certificates'     => 'RH - Atestados',
+        'rh_notes'            => 'RH - Observações',
+        'assets'              => 'Patrimônio',
+        'loans'               => 'Empréstimos',
+        'tickets'             => 'Chamados',
+        'budget_requests'     => 'Orçamentos',
+        'budget_quotes'       => 'Cotações',
+        'volunteers'          => 'Voluntários',
+        'volunteer_hours'     => 'Voluntariado - Horas',
+        'volunteer_history'   => 'Voluntariado - Histórico',
+        'rooms'               => 'Salas',
+        'room_bookings'       => 'Reservas de Salas',
+        'semanada_uploads'    => 'Semanada - Arquivos',
+        'semanada_comments'   => 'Semanada - Mural',
+        'tech_cameras'        => 'Tec - Câmeras',
+        'tech_emails'         => 'Tec - E-mails',
+        'tech_remote_access'  => 'Tec - Acessos Remotos',
+        'info_messages'       => 'Info - Mensagens',
+        'info_links'          => 'Info - Links',
+        'announcements'       => 'Avisos Gerais',
+        'chat_messages'       => 'Chat - Mensagens',
+        'login_logs'          => 'Logs de Acesso'
+    ];
+
+    $xlsx = new SimpleXLSXGen();
+    $count = 0;
+
+    foreach ($tables as $table => $sheet_name) {
+        try {
+            $checkTable = $pdo->query("SHOW TABLES LIKE '{$table}'");
+            if ($checkTable->rowCount() == 0) continue;
+
+            $stmt = $pdo->query("SELECT * FROM {$table}");
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (empty($data)) {
+                $colsStmt = $pdo->query("DESCRIBE {$table}");
+                $headers = array_column($colsStmt->fetchAll(), 'Field');
+                $sheetData = [$headers];
+            } else {
+                $sheetData = [];
+                $sheetData[] = array_keys($data[0]);
+                foreach ($data as $row) {
+                    $sheetData[] = array_values($row);
+                }
+            }
+            $xlsx->addSheet($sheetData, $sheet_name);
+            $count++;
+        } catch (Exception $e) { continue; }
+    }
+    return $xlsx->saveAs($filePath);
+}
+
+// ─── 3. GERAR ARQUIVOS ADICIONAIS ─────────────────────────────────────────────
+$xlsxFile = "{$backupDir}/{$backupName}_DADOS.xlsx";
+$excelOk = generateExcelBackup($pdo, $xlsxFile);
+
+// ─── 4. CRIAR GUIA DE RESTAURAÇÃO ─────────────────────────────────────────────
 $guide = <<<GUIDE
 =============================================================
   GUIA COMPLETO DE RESTAURAÇÃO DO SISTEMA CETUSG / NETUS
@@ -139,7 +208,8 @@ CONTEÚDO DESTE BACKUP
 ----------------------
 - Todos os arquivos PHP do sistema
 - Pasta uploads/ (fotos, avatares, assinaturas, logos)
-- database_backup.sql (banco de dados COMPLETO)
+- database_backup.sql (banco de dados COMPLETO em formato SQL)
+- dados_sistema_excel.xlsx (Planilha com TODOS os dados organizados em abas)
 
 PRÉ-REQUISITOS NO NOVO COMPUTADOR
 ----------------------------------
@@ -268,6 +338,11 @@ if ($dbDumpOk && file_exists($sqlFile)) {
     $zip->addFile($sqlFile, 'database_backup.sql');
 }
 
+// Adicionar a planilha Excel ao ZIP
+if ($excelOk && file_exists($xlsxFile)) {
+    $zip->addFile($xlsxFile, 'dados_sistema_excel.xlsx');
+}
+
 // Adicionar o guia de restauração
 if (file_exists($guideFile)) {
     $zip->addFile($guideFile, 'COMO_RESTAURAR.txt');
@@ -288,6 +363,7 @@ if ($allBackups && count($allBackups) > 5) {
 
 // Remover arquivos temporários
 @unlink($sqlFile);
+@unlink($xlsxFile);
 @unlink($guideFile);
 
 // ─── 6. RESULTADO ─────────────────────────────────────────────────────────────
@@ -300,7 +376,8 @@ if (!file_exists($zipFile)) {
 }
 
 $sizeMb     = round(filesize($zipFile) / (1024 * 1024), 2);
-$dbStatus   = $dbDumpOk ? "✅ Banco de dados exportado com sucesso" : "⚠️ Banco de dados com problemas: {$dbError}";
+$dbStatus   = $dbDumpOk ? "✅ Banco de dados exportado com sucesso (SQL)" : "⚠️ Banco de dados com problemas: {$dbError}";
+$excelStatus = $excelOk ? "✅ Planilha de dados Excel gerada com sucesso" : "⚠️ Falha ao gerar planilha Excel";
 $backupsLeft = count(glob("{$backupDir}/backup_cetusg_*.zip"));
 
 echo json_encode([
@@ -312,6 +389,7 @@ echo json_encode([
         "📦 Tamanho: {$sizeMb} MB",
         "📄 Arquivos do sistema incluídos: {$fileCount}",
         $dbStatus,
+        $excelStatus,
         "📖 Guia de restauração incluído: COMO_RESTAURAR.txt",
         "",
         "📍 Destino: " . str_replace('/', '\\', $backupDir),
