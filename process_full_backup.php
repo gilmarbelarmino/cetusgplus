@@ -3,41 +3,70 @@ require_once 'config.php';
 require_once 'auth.php';
 require_once 'SimpleXLSXGen.php';
 
-$user = getCurrentUser();
-if (!$user || ($user['role'] != 'Administrador' && $user['role'] != 'Suporte Técnico')) {
-    http_response_code(403);
-    die(json_encode(['success' => false, 'message' => 'Acesso negado.']));
+if (php_sapi_name() !== 'cli') {
+    $user = getCurrentUser();
+    if (!$user || ($user['role'] != 'Administrador' && $user['role'] != 'Suporte Técnico')) {
+        http_response_code(403);
+        die(json_encode(['success' => false, 'message' => 'Acesso negado.']));
+    }
 }
 
+// Iniciar buffer para evitar que qualquer erro/warning quebre o JSON
+ob_start();
+
 header('Content-Type: application/json; charset=utf-8');
-set_time_limit(600); // 10 minutos
-ini_set('memory_limit', '512M');
-error_reporting(0);
+set_time_limit(900); // 15 minutos
+ini_set('memory_limit', '1024M');
+error_reporting(0); // Silenciar avisos para não quebrar o JSON
+ini_set('display_errors', 0);
 
-// ─── CONFIGURAÇÕES ────────────────────────────────────────────────────────────
-// Buscar caminho do banco de dados
-$compId = getCurrentUserCompanyId();
-$stmt = $pdo->prepare("SELECT backup_full_path FROM company_settings WHERE id = ?");
-$stmt->execute([$compId]);
-$dbPath = $stmt->fetchColumn();
+// Verificar extensão ZIP logo no início
+if (!class_exists('ZipArchive')) {
+    echo json_encode([
+        'success' => false,
+        'message' => "ERRO: A extensão 'ZipArchive' não está habilitada no PHP.\nAbra o php.ini e remova o ';' da linha: ;extension=zip"
+    ]);
+    exit;
+}
 
-// Fallback caso não esteja configurado (Forçando para o OneDrive detectado)
-$backupDir   = $dbPath ?: 'D:/OneDrive - Arrastão Movimento de Promoção Humana/BACKUP_SISTEMA_CETUSG';
-$timestamp   = date('Y-m-d_H-i-s');
-$backupName  = "backup_cetusg_{$timestamp}";
-$sqlFile     = "{$backupDir}/{$backupName}.sql";
-$zipFile     = "{$backupDir}/{$backupName}.zip";
-$guideFile   = "{$backupDir}/{$backupName}_COMO_RESTAURAR.txt";
+try {
+    // ─── CONFIGURAÇÕES ────────────────────────────────────────────────────────────
+    // Buscar caminho do banco de dados
+    $compId = getCurrentUserCompanyId();
+    $stmt = $pdo->prepare("SELECT backup_full_path FROM company_settings WHERE id = ?");
+    $stmt->execute([$compId]);
+    $dbPath = $stmt->fetchColumn();
 
-// ─── 1. CRIAR DIRETÓRIO DE DESTINO ────────────────────────────────────────────
-if (!file_exists($backupDir)) {
-    if (!@mkdir($backupDir, 0777, true)) {
-        echo json_encode([
-            'success' => false,
-            'message' => "ERRO: Não foi possível criar a pasta de destino:\n{$backupDir}\n\nVerifique se o OneDrive está ativo e se você tem permissão de escrita."
-        ]);
-        exit;
+    // Fallback caso não esteja configurado (Forçando para o OneDrive detectado)
+    $backupDir   = $dbPath ?: 'D:/OneDrive - Arrastão Movimento de Promoção Humana/BACKUP_SISTEMA_CETUSG';
+    $timestamp   = date('Y-m-d_H-i-s');
+    $backupName  = "backup_cetusg_{$timestamp}";
+    $sqlFile     = "{$backupDir}/{$backupName}.sql";
+    $zipFile     = "{$backupDir}/{$backupName}.zip";
+    $guideFile   = "{$backupDir}/{$backupName}_COMO_RESTAURAR.txt";
+
+    // ─── 1. CRIAR DIRETÓRIO DE DESTINO ────────────────────────────────────────────
+    if (!file_exists($backupDir)) {
+        if (!@mkdir($backupDir, 0777, true)) {
+            if (ob_get_length()) ob_clean();
+            echo json_encode([
+                'success' => false,
+                'message' => "ERRO: Não foi possível criar a pasta de destino:\n{$backupDir}\n\nVerifique se o OneDrive está ativo e se você tem permissão de escrita."
+            ]);
+            exit;
+        }
     }
+
+    // ... (restante do código original) ...
+    // Note: I will only replace the top and bottom to avoid repeating the whole file, 
+    // but since I'm in a tool that needs exact matches, I'll be careful.
+    
+} catch (Exception $e) {
+    if (ob_get_length()) ob_clean();
+    echo json_encode([
+        'success' => false,
+        'message' => "ERRO CRÍTICO NO BACKUP:\n" . $e->getMessage()
+    ]);
 }
 
 // ─── 2. EXPORTAR BANCO DE DADOS ───────────────────────────────────────────────
@@ -284,13 +313,6 @@ GUIDE;
 file_put_contents($guideFile, $guide);
 
 // ─── 4. GERAR O ARQUIVO ZIP ───────────────────────────────────────────────────
-if (!class_exists('ZipArchive')) {
-    echo json_encode([
-        'success' => false,
-        'message' => "ERRO: A extensão 'ZipArchive' não está habilitada no PHP.\nAbra o php.ini e remova o ';' da linha: ;extension=zip"
-    ]);
-    exit;
-}
 
 $zip = new ZipArchive();
 $zipResult = $zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
@@ -380,23 +402,33 @@ $dbStatus   = $dbDumpOk ? "✅ Banco de dados exportado com sucesso (SQL)" : "�
 $excelStatus = $excelOk ? "✅ Planilha de dados Excel gerada com sucesso" : "⚠️ Falha ao gerar planilha Excel";
 $backupsLeft = count(glob("{$backupDir}/backup_cetusg_*.zip"));
 
-echo json_encode([
-    'success' => true,
-    'message' => implode("\n", [
-        "✅ BACKUP COMPLETO REALIZADO COM SUCESSO!",
-        "",
-        "📁 Arquivo: " . basename($zipFile),
-        "📦 Tamanho: {$sizeMb} MB",
-        "📄 Arquivos do sistema incluídos: {$fileCount}",
-        $dbStatus,
-        $excelStatus,
-        "📖 Guia de restauração incluído: COMO_RESTAURAR.txt",
-        "",
-        "📍 Destino: " . str_replace('/', '\\', $backupDir),
-        "🗂️ Backups disponíveis no destino: {$backupsLeft}",
-        "",
-        "💡 Dica: O arquivo ZIP contém o guia completo de",
-        "   restauração em outro computador."
-    ])
-]);
+// Limpar qualquer output residual (avisos, etc) antes do JSON
+if (ob_get_length()) ob_clean();
+
+    echo json_encode([
+        'success' => true,
+        'message' => implode("\n", [
+            "✅ BACKUP COMPLETO REALIZADO COM SUCESSO!",
+            "",
+            "📁 Arquivo: " . basename($zipFile),
+            "📦 Tamanho: {$sizeMb} MB",
+            "📄 Arquivos do sistema incluídos: {$fileCount}",
+            $dbStatus,
+            $excelStatus,
+            "📖 Guia de restauração incluído: COMO_RESTAURAR.txt",
+            "",
+            "📍 Destino: " . str_replace('/', '\\', $backupDir),
+            "🗂️ Backups disponíveis no destino: {$backupsLeft}",
+            "",
+            "💡 Dica: O arquivo ZIP contém o guia completo de",
+            "   restauração em outro computador."
+        ])
+    ]);
+} catch (Exception $e) {
+    if (ob_get_length()) ob_clean();
+    echo json_encode([
+        'success' => false,
+        'message' => "ERRO CRÍTICO NO BACKUP:\n" . $e->getMessage()
+    ]);
+}
 ?>
