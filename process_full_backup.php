@@ -14,7 +14,14 @@ ini_set('memory_limit', '512M');
 error_reporting(0);
 
 // ─── CONFIGURAÇÕES ────────────────────────────────────────────────────────────
-$backupDir   = 'D:/SISTEMA REDE ARRASTAO';
+// Buscar caminho do banco de dados
+$compId = getCurrentUserCompanyId();
+$stmt = $pdo->prepare("SELECT backup_full_path FROM company_settings WHERE id = ?");
+$stmt->execute([$compId]);
+$dbPath = $stmt->fetchColumn();
+
+// Fallback caso não esteja configurado (Forçando para o OneDrive detectado)
+$backupDir   = $dbPath ?: 'D:/OneDrive - Arrastão Movimento de Promoção Humana/BACKUP_SISTEMA_CETUSG';
 $timestamp   = date('Y-m-d_H-i-s');
 $backupName  = "backup_cetusg_{$timestamp}";
 $sqlFile     = "{$backupDir}/{$backupName}.sql";
@@ -23,10 +30,10 @@ $guideFile   = "{$backupDir}/{$backupName}_COMO_RESTAURAR.txt";
 
 // ─── 1. CRIAR DIRETÓRIO DE DESTINO ────────────────────────────────────────────
 if (!file_exists($backupDir)) {
-    if (!mkdir($backupDir, 0777, true)) {
+    if (!@mkdir($backupDir, 0777, true)) {
         echo json_encode([
             'success' => false,
-            'message' => "ERRO: Não foi possível criar a pasta de destino:\n{$backupDir}\n\nVerifique se a unidade D: existe e se você tem permissão de escrita."
+            'message' => "ERRO: Não foi possível criar a pasta de destino:\n{$backupDir}\n\nVerifique se o OneDrive está ativo e se você tem permissão de escrita."
         ]);
         exit;
     }
@@ -307,7 +314,7 @@ echo json_encode([
         $dbStatus,
         "📖 Guia de restauração incluído: COMO_RESTAURAR.txt",
         "",
-        "📍 Destino: D:\\SISTEMA REDE ARRASTAO",
+        "📍 Destino: " . str_replace('/', '\\', $backupDir),
         "🗂️ Backups disponíveis no destino: {$backupsLeft}",
         "",
         "💡 Dica: O arquivo ZIP contém o guia completo de",

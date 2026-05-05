@@ -73,8 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     $compId = getCurrentUserCompanyId();
-    $pdo->prepare("UPDATE company_settings SET company_name = ?, logo_url = ?, certificate_signature_url = ?, certificate_global_text = ?, login_announcement = ?, announcement_image_url = ? WHERE id = ?")
-        ->execute([$_POST['company_name'], $logo_url, $sig_url, $_POST['certificate_global_text'], $_POST['login_announcement'], $announcement_image_url, $compId]);
+    $pdo->prepare("UPDATE company_settings SET company_name = ?, logo_url = ?, certificate_signature_url = ?, certificate_global_text = ?, login_announcement = ?, announcement_image_url = ?, backup_full_path = ? WHERE id = ?")
+        ->execute([$_POST['company_name'], $logo_url, $sig_url, $_POST['certificate_global_text'], $_POST['login_announcement'], $announcement_image_url, $_POST['backup_full_path'], $compId]);
     header('Location: ?page=configuracoes&success=company');
     exit;
 }
@@ -304,6 +304,20 @@ $logs = $logs->fetchAll();
                 </div>
             </div>
 
+            <div style="grid-column: span 2; margin-top: 1rem; background: #fffbeb; padding: 1.5rem; border-radius: 1rem; border: 1px solid #fef3c7;">
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label class="form-label" style="color: #92400e; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        Caminho de Destino do Backup (OneDrive / Local)
+                    </label>
+                    <input type="text" name="backup_full_path" class="form-input" value="<?= htmlspecialchars($company['backup_full_path'] ?? 'D:\OneDrive - Arrastão Movimento de Promoção Humana\BACKUP_SISTEMA_CETUSG') ?>" placeholder="Ex: D:\OneDrive - Empresa\Backup">
+                    <p style="font-size: 0.75rem; color: #b45309; margin-top: 0.5rem;">
+                        O backup será enviado automaticamente para este caminho ao clicar em "Fazer Backup Agora". 
+                        Certifique-se de que o sistema tenha permissão de escrita nesta pasta.
+                    </p>
+                </div>
+            </div>
+
             <div style="grid-column: span 2; margin-top: 1rem;">
                 <button type="submit" class="btn-primary" style="width: fit-content;">
                     <i class="fa-solid fa-floppy-disk"></i> Salvar Identidade e Comunicado
@@ -510,7 +524,7 @@ $logs = $logs->fetchAll();
                     </h4>
                     <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem;">
                         Gera um backup <strong style="color: #f1f5f9;">completo e inteligente</strong> contendo todos os arquivos do sistema, fotos, uploads e o banco de dados completo.
-                        Salvo automaticamente em: <code style="background: #334155; padding: 2px 8px; border-radius: 4px; color: #38bdf8; font-size: 0.8rem;">D:\SISTEMA REDE ARRASTAO</code>
+                        Salvo automaticamente em: <code style="background: #334155; padding: 2px 8px; border-radius: 4px; color: #38bdf8; font-size: 0.8rem;"><?= htmlspecialchars($company['backup_full_path'] ?? 'D:\OneDrive - Arrastão Movimento de Promoção Humana\BACKUP_SISTEMA_CETUSG') ?></code>
                     </p>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
                         <div style="display: flex; align-items: center; gap: 0.5rem; color: #94a3b8; font-size: 0.8rem;"><i class="fa-solid fa-check" style="color: #10b981;"></i> Todos os arquivos PHP</div>
