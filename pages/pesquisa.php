@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Buscar Pesquisas
-$stmt = $pdo->prepare("SELECT s.*, (SELECT COUNT(*) FROM survey_responses r WHERE r.survey_id = s.id AND r.user_id = ?) as responded 
+$stmt = $pdo->prepare("SELECT s.*, (SELECT COUNT(*) FROM survey_responses r WHERE CONVERT(r.survey_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(s.id USING utf8mb4) COLLATE utf8mb4_unicode_ci AND CONVERT(r.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = ?) as responded 
                        FROM surveys s WHERE company_id = ? ORDER BY created_at DESC");
 $stmt->execute([$userId, $compId]);
 $surveys = $stmt->fetchAll();
