@@ -339,7 +339,7 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
                 <thead>
                     <tr style="background: none;">
                         <th style="background: #f8fafc; border-radius: 0.5rem 0 0 0.5rem; padding: 1rem;">USUÁRIO</th>
-                        <th style="background: #f8fafc; padding: 1rem;">LOGIN / PC</th>
+                        <th style="background: #f8fafc; padding: 1rem;">ACESSO REMOTO</th>
                         <th style="background: #f8fafc; padding: 1rem;">NOME SERVIDOR</th>
                         <th style="background: #f8fafc; padding: 1rem;">E-MAIL CORP.</th>
                         <th style="background: #f8fafc; padding: 1rem;">SENHA EMAIL</th>
