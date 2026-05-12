@@ -268,7 +268,7 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
             <div style="display: flex; gap: 1rem; flex: 1; max-width: 600px; justify-content: flex-end;">
                 <div style="flex: 1; max-width: 300px; position: relative;">
                     <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.875rem;"></i>
-                    <input type="text" id="search-cameras" class="form-input" placeholder="Filtrar câmeras..." style="padding-left: 2.5rem; border-radius: 0.75rem; background: #f8fafc;" onkeyup="filterTable('search-cameras', 'table-cameras')">
+                    <input type="text" id="search-cameras" class="form-input" placeholder="Filtrar câmeras..." style="padding-left: 2.5rem; border-radius: 0.75rem; background: #f8fafc;" onkeyup="filterTable('search-cameras', 'table-cameras')" autocomplete="off">
                 </div>
                 <button class="btn-primary" onclick="openCameraModal()" style="border-radius: 0.75rem; padding: 0.6rem 1.25rem; font-weight: 700;">
                     <i class="fa-solid fa-plus"></i> <span class="hide-mobile">Nova Câmera</span>
@@ -326,7 +326,7 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
             <div style="display: flex; gap: 1rem; flex: 1; max-width: 600px; justify-content: flex-end;">
                 <div style="flex: 1; max-width: 300px; position: relative;">
                     <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.875rem;"></i>
-                    <input type="text" id="search-remotos" class="form-input" placeholder="Filtrar acessos..." style="padding-left: 2.5rem; border-radius: 0.75rem; background: #f8fafc;" onkeyup="filterTable('search-remotos', 'table-remotos')">
+                    <input type="text" id="search-remotos" class="form-input" placeholder="Filtrar acessos..." style="padding-left: 2.5rem; border-radius: 0.75rem; background: #f8fafc;" onkeyup="filterTable('search-remotos', 'table-remotos')" autocomplete="off">
                 </div>
                 <button class="btn-primary" onclick="openRemoteModal()" style="border-radius: 0.75rem; padding: 0.6rem 1.25rem; font-weight: 700;">
                     <i class="fa-solid fa-plus"></i> <span class="hide-mobile">Novo Acesso</span>
