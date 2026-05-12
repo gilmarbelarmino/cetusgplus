@@ -339,7 +339,8 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
                 <thead>
                     <tr style="background: none;">
                         <th style="background: #f8fafc; border-radius: 0.5rem 0 0 0.5rem; padding: 1rem;">USUÁRIO</th>
-                        <th style="background: #f8fafc; padding: 1rem;">ACESSO REMOTO</th>
+                        <th style="background: #f8fafc; padding: 1rem;">NOME PC</th>
+                        <th style="background: #f8fafc; padding: 1rem;">SENHA PC</th>
                         <th style="background: #f8fafc; padding: 1rem;">NOME SERVIDOR</th>
                         <th style="background: #f8fafc; padding: 1rem;">E-MAIL CORP.</th>
                         <th style="background: #f8fafc; padding: 1rem;">SENHA EMAIL</th>
@@ -361,9 +362,16 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
                                 <div style="font-weight: 700; color: var(--text-main);"><?= htmlspecialchars((string)($rem['user_name'] ?? '')) ?></div>
                             </div>
                         </td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-weight: 800; color: var(--text-main);">
+                            <?= htmlspecialchars((string)($rem['pc_name'] ?? '-')) ?>
+                        </td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
-                            <div style="font-weight: 800; color: var(--text-main);"><?= htmlspecialchars((string)($rem['pc_name'] ?? '')) ?></div>
-                            <div style="font-size: 0.75rem; color: var(--text-soft);">Senha: <?= htmlspecialchars((string)($rem['pc_password'] ?? '')) ?></div>
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569; font-weight: 600;"><?= htmlspecialchars((string)($rem['pc_password'] ?? '')) ?></code>
+                                <?php if(!empty($rem['pc_password'])): ?>
+                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes((string)$rem['pc_password'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
+                                <?php endif; ?>
+                            </div>
                         </td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: var(--crm-purple);"><?= htmlspecialchars((string)($rem['server_name'] ?? '-')) ?></td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: var(--text-soft);"><?= htmlspecialchars((string)($rem['email_address'] ?? '-')) ?></td>
@@ -388,7 +396,7 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
                     </tr>
                     <?php endforeach; ?>
                     <?php if (empty($remotes)): ?>
-                    <tr><td colspan="6" style="text-align:center;padding:4rem;color:#94a3b8;"><i class="fa-solid fa-user-slash" style="font-size: 3rem; opacity: 0.1; margin-bottom: 1rem; display: block;"></i> Nenhum acesso remoto cadastrado.</td></tr>
+                    <tr><td colspan="7" style="text-align:center;padding:4rem;color:#94a3b8;"><i class="fa-solid fa-user-slash" style="font-size: 3rem; opacity: 0.1; margin-bottom: 1rem; display: block;"></i> Nenhum acesso cadastrado.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
