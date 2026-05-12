@@ -8,8 +8,13 @@ if (!isset($_GET['id'])) {
 
 $compId = getCurrentUserCompanyId();
 
-// Restaurado BINARY para evitar erro de collation (mix of utf8mb4_general_ci and utf8mb4_unicode_ci)
-$budget_stmt = $pdo->prepare("SELECT br.*, u.name as unit_name, us.name as requester_name, ap.name as approver_name FROM budget_requests br LEFT JOIN units u ON BINARY br.unit_id = BINARY u.id LEFT JOIN users us ON BINARY br.requester_id = BINARY us.id LEFT JOIN users ap ON BINARY br.approved_by = BINARY ap.id WHERE br.id = ? AND br.company_id = ?");
+// Padronização de Collation para evitar erro "Illegal mix of collations"
+$budget_stmt = $pdo->prepare("SELECT br.*, u.name as unit_name, us.name as requester_name, ap.name as approver_name 
+                              FROM budget_requests br 
+                              LEFT JOIN units u ON CONVERT(br.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+                              LEFT JOIN users us ON CONVERT(br.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(us.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+                              LEFT JOIN users ap ON CONVERT(br.approved_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(ap.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+                              WHERE br.id = ? AND br.company_id = ?");
 $budget_stmt->execute([$_GET['id'], $compId]);
 $budget = $budget_stmt->fetch();
 

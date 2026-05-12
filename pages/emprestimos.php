@@ -138,10 +138,10 @@ $query = "SELECT l.*, u.name as unit_name,
           bor.avatar_url as borrower_avatar,
           len.name as lender_name, len.avatar_url as lender_avatar
           FROM loans l 
-          LEFT JOIN units u ON BINARY l.unit_id = BINARY u.id
-          LEFT JOIN users rec ON (BINARY l.received_by_id = BINARY rec.id OR (l.received_by_id = '' AND BINARY l.received_by = BINARY rec.name))
-          LEFT JOIN users bor ON (BINARY l.borrower_id = BINARY bor.id OR (l.borrower_id = '' AND BINARY l.borrower_name = BINARY bor.name))
-          LEFT JOIN users len ON (BINARY l.loaned_by_id = BINARY len.id OR (l.loaned_by_id = '' AND BINARY l.loaned_by_name = BINARY len.name))
+          LEFT JOIN units u ON CONVERT(l.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+          LEFT JOIN users rec ON (CONVERT(l.received_by_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(rec.id USING utf8mb4) COLLATE utf8mb4_unicode_ci OR (l.received_by_id = '' AND CONVERT(l.received_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(rec.name USING utf8mb4) COLLATE utf8mb4_unicode_ci))
+          LEFT JOIN users bor ON (CONVERT(l.borrower_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(bor.id USING utf8mb4) COLLATE utf8mb4_unicode_ci OR (l.borrower_id = '' AND CONVERT(l.borrower_name USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(bor.name USING utf8mb4) COLLATE utf8mb4_unicode_ci))
+          LEFT JOIN users len ON (CONVERT(l.loaned_by_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(len.id USING utf8mb4) COLLATE utf8mb4_unicode_ci OR (l.loaned_by_id = '' AND CONVERT(l.loaned_by_name USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(len.name USING utf8mb4) COLLATE utf8mb4_unicode_ci))
           WHERE l.company_id = ?";
 
 $params = [$compId];
@@ -168,7 +168,7 @@ $stmt_units = $pdo->prepare("SELECT * FROM units WHERE company_id = ?");
 $stmt_units->execute([$compId]);
 $units = $stmt_units->fetchAll();
 
-$stmt_users = $pdo->prepare("SELECT u.id, u.name, u.sector, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+$stmt_users = $pdo->prepare("SELECT u.id, u.name, u.sector, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? ORDER BY u.name");
 $stmt_users->execute([$compId]);
 $users = $stmt_users->fetchAll();
 ?>

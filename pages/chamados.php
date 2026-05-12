@@ -110,10 +110,10 @@ $query = "SELECT t.*,
           (SELECT reason FROM ticket_pauses WHERE ticket_id = t.id AND resumed_at IS NULL ORDER BY paused_at DESC LIMIT 1) as pending_reason,
           (SELECT paused_at FROM ticket_pauses WHERE ticket_id = t.id AND resumed_at IS NULL ORDER BY paused_at DESC LIMIT 1) as pending_since
           FROM tickets t 
-          LEFT JOIN users u ON BINARY t.requester_id = BINARY u.id 
-          LEFT JOIN units un ON BINARY t.unit_id = BINARY un.id 
+          LEFT JOIN users u ON CONVERT(t.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+          LEFT JOIN units un ON CONVERT(t.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
           LEFT JOIN assets a ON t.asset_id = a.id
-          LEFT JOIN users c_user ON BINARY t.closed_by = BINARY c_user.name
+          LEFT JOIN users c_user ON CONVERT(t.closed_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(c_user.name USING utf8mb4) COLLATE utf8mb4_unicode_ci
           WHERE " . implode(" AND ", $conditions) . " 
           ORDER BY t.created_at DESC";
 
@@ -121,7 +121,7 @@ $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $tickets = $stmt->fetchAll();
 
-$users_stmt = $pdo->prepare("SELECT u.id, u.name, u.sector, u.role, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+$users_stmt = $pdo->prepare("SELECT u.id, u.name, u.sector, u.role, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? ORDER BY u.name");
 $users_stmt->execute([$compId]);
 $users = $users_stmt->fetchAll();
 

@@ -27,13 +27,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $newCompanyId = $pdo->lastInsertId();
             
             // 2. Criar company_settings para a nova empresa
-            $pdo->prepare("INSERT IGNORE INTO company_settings (id, company_name) VALUES (?, ?)")->execute([$newCompanyId, $name]);
+            $pdo->prepare("INSERT IGNORE INTO company_settings (id, company_name, company_id) VALUES (?, ?, ?)")->execute([$newCompanyId, $name, $newCompanyId]);
+            
+            // 2.1 Criar Unidade e Setor padrão
+            $defaultUnitId = 'UNI' . time() . rand(100,999);
+            $pdo->prepare("INSERT INTO units (id, company_id, name) VALUES (?, ?, 'Matriz')")->execute([$defaultUnitId, $newCompanyId]);
+            
+            $defaultSectorId = 'SEC' . time() . rand(100,999);
+            $pdo->prepare("INSERT INTO sectors (id, company_id, name, unit_id) VALUES (?, ?, 'Geral', ?)")->execute([$defaultSectorId, $newCompanyId, $defaultUnitId]);
+            
+            // 2.2 Copiar Roles e Permissões da Empresa 1
+            $roles = $pdo->query("SELECT * FROM roles WHERE company_id = 1")->fetchAll(PDO::FETCH_ASSOC);
+            $adminRoleId = null;
+            
+            foreach ($roles as $r) {
+                $stmtR = $pdo->prepare("INSERT INTO roles (company_id, name, display_name, description, level) VALUES (?, ?, ?, ?, ?)");
+                $stmtR->execute([$newCompanyId, $r['name'], $r['display_name'], $r['description'], $r['level']]);
+                $newRoleId = $pdo->lastInsertId();
+                
+                if ($r['name'] === 'admin') {
+                    $adminRoleId = $newRoleId;
+                }
+                
+                // Copiar permissões
+                $perms = $pdo->prepare("SELECT permission_id FROM role_permission WHERE role_id = ?");
+                $perms->execute([$r['id']]);
+                while ($p = $perms->fetch(PDO::FETCH_ASSOC)) {
+                    $pdo->prepare("INSERT INTO role_permission (role_id, permission_id) VALUES (?, ?)")->execute([$newRoleId, $p['permission_id']]);
+                }
+            }
             
             // 3. Criar o usuário administrador da empresa
             $hashedPass = password_hash($admin_password, PASSWORD_DEFAULT);
             $userId = 'U' . time() . rand(100,999);
-            $stmtUser = $pdo->prepare("INSERT INTO users (id, login_name, name, password, company_id, status, is_super_admin, role) VALUES (?, ?, ?, ?, ?, 'Ativo', 0, 'Administrador')");
-            $stmtUser->execute([$userId, $admin_login, $admin_name, $hashedPass, $newCompanyId]);
+            $stmtUser = $pdo->prepare("INSERT INTO users (id, login_name, name, password, company_id, status, is_super_admin, role, role_id, unit_id, sector) VALUES (?, ?, ?, ?, ?, 'Ativo', 0, 'Administrador', ?, ?, 'Geral')");
+            $stmtUser->execute([$userId, $admin_login, $admin_name, $hashedPass, $newCompanyId, $adminRoleId, $defaultUnitId]);
             
             // 4. Liberar todos os menus para o admin da empresa (Pacote Completo Cetusg Plus)
             $allMenus = [
@@ -124,6 +152,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $success = "Acesso do administrador atualizado! Novo Login: $newLogin";
         } catch (Exception $e) {
             $error = "Erro ao resetar: " . $e->getMessage();
+        }
+    }
+
+    if ($_POST['action'] === 'add_company_admin') {
+        try {
+            $companyId = $_POST['tenant_id'];
+            $admin_name = $_POST['admin_name'];
+            $admin_login = $_POST['admin_login'];
+            $admin_password = $_POST['admin_password'];
+            
+            $hashedPass = password_hash($admin_password, PASSWORD_DEFAULT);
+            $userId = 'U' . time() . rand(100,999);
+            
+            // Obter role_id e unit_id padrao
+            $stmtRole = $pdo->prepare("SELECT id FROM roles WHERE company_id = ? AND name = 'admin' LIMIT 1");
+            $stmtRole->execute([$companyId]);
+            $adminRoleId = $stmtRole->fetchColumn();
+            
+            $stmtUnit = $pdo->prepare("SELECT id FROM units WHERE company_id = ? LIMIT 1");
+            $stmtUnit->execute([$companyId]);
+            $defaultUnitId = $stmtUnit->fetchColumn();
+            
+            $stmtUser = $pdo->prepare("INSERT INTO users (id, login_name, name, password, company_id, status, is_super_admin, role, role_id, unit_id, sector) VALUES (?, ?, ?, ?, ?, 'Ativo', 0, 'Administrador', ?, ?, 'Geral')");
+            $stmtUser->execute([$userId, $admin_login, $admin_name, $hashedPass, $companyId, $adminRoleId ?: null, $defaultUnitId ?: null]);
+            
+            $allMenus = [
+                'dashboard', 'rh', 'voluntariado', 'semanada', 'patrimonio', 
+                'emprestimos', 'chamados', 'orcamentos', 'locacao_salas', 
+                'relatorios', 'tecnologia', 'informacoes', 'usuarios', 
+                'configuracoes', 'peixinho'
+            ];
+            foreach ($allMenus as $menu) {
+                $pdo->prepare("INSERT IGNORE INTO user_menus (user_id, menu) VALUES (?, ?)")->execute([$userId, $menu]);
+            }
+            
+            $success = "Administrador '$admin_login' cadastrado com sucesso para a empresa!";
+        } catch (Exception $e) {
+            $error = "Erro ao cadastrar administrador: " . $e->getMessage();
         }
     }
 }
@@ -244,6 +310,10 @@ $tenants = $stmt->fetchAll();
                                 <?php if ($tenant['admin_user_id']): ?>
                                     <button onclick="openResetModal('<?= $tenant['admin_user_id'] ?>', '<?= htmlspecialchars(addslashes($tenant['admin_login'])) ?>')" class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: rgba(239, 68, 68, 0.05); color: #EF4444; border: none; cursor: pointer; border-radius: 6px;" title="Resetar Senha do Admin">
                                         <i class="fa-solid fa-key"></i>
+                                    </button>
+                                <?php else: ?>
+                                    <button onclick="openAddAdminModal(<?= $tenant['id'] ?>, '<?= htmlspecialchars(addslashes($tenant['name'])) ?>')" class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.75rem; background: rgba(16, 185, 129, 0.1); color: #10B981; border: none; cursor: pointer; border-radius: 6px;" title="Cadastrar Administrador">
+                                        <i class="fa-solid fa-user-plus"></i>
                                     </button>
                                 <?php endif; ?>
                                 <!-- Bloquear/Desbloquear -->
@@ -404,6 +474,34 @@ $tenants = $stmt->fetchAll();
     </div>
 </div>
 
+<!-- Modal Cadastrar Admin -->
+<div id="addAdminModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 3000; align-items: center; justify-content: center; padding: 2rem;">
+    <div class="glass-panel" style="max-width: 450px; width: 100%; padding: 2.5rem;">
+        <h3 id="addAdminModalTitle" style="font-size: 1.5rem; font-weight: 900; color: #10B981; margin-bottom: 2rem;">Cadastrar Administrador</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="add_company_admin">
+            <input type="hidden" name="tenant_id" id="addAdminTenantId">
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Nome Completo</label>
+                <input type="text" name="admin_name" required class="form-input" placeholder="Nome do administrador">
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Login</label>
+                <input type="text" name="admin_login" required class="form-input" placeholder="usuario_admin">
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); margin-bottom: 0.5rem;">Senha</label>
+                <input type="text" name="admin_password" required class="form-input" placeholder="Senha segura">
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" onclick="document.getElementById('addAdminModal').style.display='none'" class="btn-secondary" style="flex: 1; padding: 1rem; border-radius: 12px;">Cancelar</button>
+                <button type="submit" class="btn-primary" style="flex: 1; padding: 1rem; border-radius: 12px; background: #10B981; color: white;">Cadastrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
 <script>
 function openRenewModal(id, name, value) {
     document.getElementById('renewTenantId').value = id;
@@ -427,5 +525,11 @@ function openResetModal(userId, login) {
     document.getElementById('resetLoginInput').value = login;
     document.getElementById('resetModalText').innerText = 'Você está alterando as credenciais de: ' + login;
     document.getElementById('resetModal').style.display = 'flex';
+}
+
+function openAddAdminModal(id, name) {
+    document.getElementById('addAdminTenantId').value = id;
+    document.getElementById('addAdminModalTitle').innerText = 'Admin para: ' + name;
+    document.getElementById('addAdminModal').style.display = 'flex';
 }
 </script>

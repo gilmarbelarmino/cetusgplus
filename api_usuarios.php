@@ -17,7 +17,7 @@ require_once 'config.php';
     if ($method === 'GET') {
         if ($action === 'get_histories') {
             $user_id = $_GET['user_id'];
-            $loans = $pdo->prepare("SELECT l.*, p.name as patrimony_name FROM loans l LEFT JOIN patrimony p ON BINARY l.patrimony_id = BINARY p.id WHERE l.borrower_id = ? AND l.company_id = ? ORDER BY l.loan_date DESC");
+            $loans = $pdo->prepare("SELECT l.*, p.name as patrimony_name FROM loans l LEFT JOIN assets p ON CONVERT(l.asset_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(p.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE l.borrower_id = ? AND l.company_id = ? ORDER BY l.loan_date DESC");
             $loans->execute([$user_id, $compId]);
             
             $tickets = $pdo->prepare("SELECT * FROM tickets WHERE requester_id = ? AND company_id = ? ORDER BY created_at DESC");
@@ -40,7 +40,7 @@ require_once 'config.php';
         $positions->execute([$compId]);
         $positions = $positions->fetchAll(PDO::FETCH_ASSOC);
 
-        $query = "SELECT u.*, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.status != 'Inativo' AND u.company_id = ? ORDER BY u.name ASC";
+        $query = "SELECT u.*, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.status != 'Inativo' AND u.company_id = ? ORDER BY u.name ASC";
         $stmt = $pdo->prepare($query);
         $stmt->execute([$compId]);
         $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);

@@ -35,7 +35,7 @@ try {
         $totalRooms = $stmt->fetchColumn() ?: 0;
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM room_bookings WHERE company_id = ?"); $stmt->execute([$cid]);
         $totalBookings = $stmt->fetchColumn() ?: 0;
-        $stmt = $pdo->prepare("SELECT r.name, COUNT(b.id) as count FROM room_bookings b JOIN rooms r ON b.room_id = r.id WHERE b.company_id = ? GROUP BY r.id LIMIT 5"); $stmt->execute([$cid]);
+        $stmt = $pdo->prepare("SELECT r.name, COUNT(b.id) as count FROM room_bookings b JOIN rooms r ON CONVERT(b.room_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(r.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE b.company_id = ? GROUP BY r.id LIMIT 5"); $stmt->execute([$cid]);
         $bookingsByRoom = $stmt->fetchAll();
     }
     $occupancyRate = $totalRooms > 0 ? ($totalBookings / ($totalRooms * 10)) * 100 : 0;

@@ -92,7 +92,7 @@ if (!isset($_SESSION['bd_shown_v3'])) {
         $bdStmt = $pdo->prepare("
             SELECT u.id, u.name, u.avatar_url, rh.birth_date 
             FROM users u 
-            JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id 
+            JOIN rh_employee_details rh ON CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(rh.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
             WHERE MONTH(rh.birth_date) = MONTH(CURDATE()) 
             AND DAY(rh.birth_date) = DAY(CURDATE())
             AND u.status = 'Ativo'
@@ -140,7 +140,7 @@ if (!empty($company['login_announcement']) && !isset($_SESSION['announcement_dis
 }
 
 $page = $_GET['page'] ?? 'dashboard';
-if (!in_array($page, $user_menus) && $page !== 'dashboard') {
+if (!in_array($page, $user_menus) && !in_array($page, ['dashboard', 'pesquisa'])) {
     $page = 'dashboard';
 }
 
@@ -170,7 +170,8 @@ try {
         <link rel="icon" type="image/png" href="<?= htmlspecialchars($company['logo_url']) ?>">
         <link rel="shortcut icon" href="<?= htmlspecialchars($company['logo_url']) ?>">
     <?php endif; ?>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.1.0"></script>
     <script src="assets/js/theme_manager.js"></script>
     <script src="assets/js/command_palette.js"></script>
     <style>
@@ -316,6 +317,13 @@ try {
                         <i class="fa-solid fa-house"></i>
                         <span>Dashboard</span>
                     </a>
+                    <?php if (in_array('pesquisa', $user_menus)): ?>
+                    <a href="index.php?page=pesquisa" class="sidebar-item <?= $page === 'pesquisa' ? 'sidebar-active' : '' ?>">
+                        <i class="fa-solid fa-poll"></i>
+                        <span>Pesquisa</span>
+                        <span class="badge" style="background: var(--brand-primary); color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 4px; margin-left: auto;">NOVO</span>
+                    </a>
+                    <?php endif; ?>
                 </div>
 
                 <?php if (in_array('rh', $user_menus) || in_array('voluntariado', $user_menus) || in_array('semanada', $user_menus)): ?>
@@ -369,6 +377,24 @@ try {
                 </div>
                 <?php endif; ?>
 
+                <?php if ($user['login_name'] === 'superadmin' || $user['role'] === 'Administrador' || $user['role'] === 'Suporte Técnico' || in_array('usuarios', $user_menus) || in_array('configuracoes', $user_menus)): ?>
+                <div class="sidebar-group">
+                    <span class="sidebar-category">Ajustes & Estrutura</span>
+                    <?php if ($user['login_name'] === 'superadmin' || $user['role'] === 'Administrador' || $user['role'] === 'Suporte Técnico' || in_array('usuarios', $user_menus)): ?>
+                        <a href="index.php?page=usuarios" class="sidebar-item <?= $page === 'usuarios' ? 'sidebar-active' : '' ?>">
+                            <i class="fa-solid fa-user-gear"></i>
+                            <span>Gerenciar Usuários</span>
+                        </a>
+                    <?php endif; ?>
+                    <?php if ($user['login_name'] === 'superadmin' || $user['role'] === 'Administrador' || $user['role'] === 'Suporte Técnico' || in_array('configuracoes', $user_menus)): ?>
+                        <a href="index.php?page=configuracoes" class="sidebar-item <?= $page === 'configuracoes' ? 'sidebar-active' : '' ?>">
+                            <i class="fa-solid fa-gear"></i>
+                            <span>Configurações</span>
+                        </a>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+
                 <?php if (in_array('orcamentos', $user_menus) || in_array('locacao_salas', $user_menus)): ?>
                 <div class="sidebar-group">
                     <span class="sidebar-category">Infraestrutura</span>
@@ -411,29 +437,6 @@ try {
                 </div>
                 <?php endif; ?>
 
-                <?php if (in_array('usuarios', $user_menus) || in_array('configuracoes', $user_menus)): ?>
-                <div class="sidebar-group">
-                    <span class="sidebar-category">Ajustes & Estrutura</span>
-                    <?php if ($user['role'] === 'Administrador' || $user['login_name'] === 'superadmin'): ?>
-                        <a href="index.php?page=configuracoes" class="sidebar-item <?= $page === 'configuracoes' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-sitemap"></i>
-                            <span>Unidades & Cargos</span>
-                        </a>
-                    <?php endif; ?>
-                    <?php if (in_array('usuarios', $user_menus)): ?>
-                        <a href="index.php?page=usuarios" class="sidebar-item <?= $page === 'usuarios' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-user-gear"></i>
-                            <span>Gerenciar Usuários</span>
-                        </a>
-                    <?php endif; ?>
-                    <?php if (in_array('configuracoes', $user_menus)): ?>
-                        <a href="index.php?page=configuracoes" class="sidebar-item <?= $page === 'configuracoes' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-gear"></i>
-                            <span>Configurações</span>
-                        </a>
-                    <?php endif; ?>
-                </div>
-                <?php endif; ?>
 
                 <?php if (in_array('super_admin', $user_menus)): ?>
                 <div class="sidebar-group">

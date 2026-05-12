@@ -20,8 +20,8 @@ require_once 'config.php';
             un.name as unit_name,
             rh.contract_type, rh.role_name, rh.work_days, rh.work_hours, rh.salary, rh.use_transport, rh.transport_value, rh.gender, rh.birth_date, rh.start_date, rh.end_date 
         FROM users u
-        LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id
-        LEFT JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id
+        LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+        LEFT JOIN rh_employee_details rh ON CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(rh.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
         WHERE u.company_id = ?
         ORDER BY u.sector ASC, u.name ASC
     ";

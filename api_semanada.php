@@ -39,7 +39,7 @@ try {
         $uploadInfo = $pdo->query("
             SELECT su.*, u.name as uploader_name, u.avatar_url as uploader_avatar 
             FROM semanada_uploads su 
-            LEFT JOIN users u ON BINARY su.uploaded_by = BINARY u.id 
+            LEFT JOIN users u ON CONVERT(su.uploaded_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
             WHERE su.is_history = 0
             ORDER BY su.uploaded_at DESC LIMIT 1
         ")->fetch(PDO::FETCH_ASSOC);
@@ -47,7 +47,7 @@ try {
         $history = $pdo->query("
             SELECT su.*, u.name as uploader_name 
             FROM semanada_uploads su 
-            LEFT JOIN users u ON BINARY su.uploaded_by = BINARY u.id 
+            LEFT JOIN users u ON CONVERT(su.uploaded_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
             WHERE su.is_history = 1 
             ORDER BY su.uploaded_at DESC
         ")->fetchAll(PDO::FETCH_ASSOC);
@@ -55,7 +55,7 @@ try {
         $comments = $pdo->query("
             SELECT c.*, u.name as user_name, u.avatar_url as user_avatar
             FROM semanada_comments c
-            LEFT JOIN users u ON BINARY c.user_id = BINARY u.id
+            LEFT JOIN users u ON CONVERT(c.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
             ORDER BY c.created_at ASC
         ")->fetchAll(PDO::FETCH_ASSOC);
 

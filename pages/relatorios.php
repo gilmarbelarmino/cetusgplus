@@ -75,7 +75,7 @@ $chAvgDay = $currentDayOfYear > 0 ? $volThisYear / $currentDayOfYear : 0;
 $chAvgMonth = $currentMonth > 0 ? $volThisYear / $currentMonth : 0;
 $chEstYear = $chAvgMonth * 12;
 
-$chTopUsers_stmt = $pdo->prepare("SELECT u.name, COUNT(*) as count FROM tickets t JOIN users u ON BINARY t.requester_id = BINARY u.id WHERE YEAR(t.created_at) = YEAR(CURDATE()) AND t.company_id = ? AND u.company_id = ? GROUP BY u.name ORDER BY count DESC LIMIT 10");
+$chTopUsers_stmt = $pdo->prepare("SELECT u.name, COUNT(*) as count FROM tickets t JOIN users u ON CONVERT(t.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE YEAR(t.created_at) = YEAR(CURDATE()) AND t.company_id = ? AND u.company_id = ? GROUP BY u.name ORDER BY count DESC LIMIT 10");
 $chTopUsers_stmt->execute([$compId, $compId]);
 $chTopUsers = $chTopUsers_stmt->fetchAll();
 
@@ -194,7 +194,7 @@ $loanOccurrences_stmt = $pdo->prepare("
     SELECT l.borrower_id, l.borrower_name, u.avatar_url, l.asset_name,
         l.loan_date, l.expected_return_date, l.return_date, l.status
     FROM loans l
-    LEFT JOIN users u ON (BINARY l.borrower_id = BINARY u.id OR (l.borrower_id = '' AND BINARY l.borrower_name = BINARY u.name)) AND u.company_id = l.company_id
+    LEFT JOIN users u ON (CONVERT(l.borrower_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci OR (l.borrower_id = '' AND CONVERT(l.borrower_name USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.name USING utf8mb4) COLLATE utf8mb4_unicode_ci)) AND u.company_id = l.company_id
     WHERE l.expected_return_date IS NOT NULL
     AND l.company_id = ?
     AND (
@@ -373,7 +373,7 @@ $rhSectorStats_stmt = $pdo->prepare("
         SUM(CASE WHEN u.status = 'Ativo' THEN 1 ELSE 0 END) as active_users,
         SUM(COALESCE(rh.salary, 0)) as total_salary
     FROM users u
-    LEFT JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id AND rh.company_id = u.company_id
+    LEFT JOIN rh_employee_details rh ON CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(rh.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci AND rh.company_id = u.company_id
     WHERE u.company_id = ?
     GROUP BY u.sector
     ORDER BY total_salary DESC
@@ -417,7 +417,7 @@ $rhNotesTotal = $rhNotesTotal_stmt->fetchColumn();
 $rhBirthdaysMonth_stmt = $pdo->prepare("
     SELECT u.name, rh.birth_date, u.sector 
     FROM users u 
-    JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id AND rh.company_id = u.company_id
+    JOIN rh_employee_details rh ON CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(rh.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci AND rh.company_id = u.company_id
     WHERE MONTH(rh.birth_date) = MONTH(CURDATE()) AND u.company_id = ?
     ORDER BY DAY(rh.birth_date) ASC
 ");
@@ -428,7 +428,7 @@ $rhBirthdaysMonth = $rhBirthdaysMonth_stmt->fetchAll();
 $rhAvgSalarySector_stmt = $pdo->prepare("
     SELECT u.sector, AVG(rh.salary) as avg_salary 
     FROM users u 
-    JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id AND rh.company_id = u.company_id
+    JOIN rh_employee_details rh ON CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(rh.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci AND rh.company_id = u.company_id
     WHERE rh.salary > 0 AND u.company_id = ?
     GROUP BY u.sector 
     ORDER BY avg_salary DESC
@@ -1534,9 +1534,42 @@ function printCurrentTab() {
         document.getElementById('tab-' + tab).classList.add('active');
     }
 
+    document.addEventListener('DOMContentLoaded', () => {
+        // Registrar Plugin de Labels de forma segura
+        if (typeof ChartDataLabels !== 'undefined') {
+            Chart.register(ChartDataLabels);
+        }
+
     const chartOptions = {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom' } }
+        responsive: true, 
+        maintainAspectRatio: false,
+        plugins: { 
+            legend: { position: 'bottom' },
+            tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                padding: 12,
+                titleFont: { size: 14, weight: 'bold' },
+                bodyFont: { size: 13 },
+                cornerRadius: 8,
+                displayColors: true
+            },
+            datalabels: {
+                color: '#fff',
+                font: { weight: 'bold', size: 11 },
+                formatter: (value, ctx) => {
+                    let sum = 0;
+                    let dataArr = ctx.chart.data.datasets[0].data;
+                    dataArr.map(data => { sum += data; });
+                    let percentage = (value * 100 / sum).toFixed(0);
+                    // Mostrar apenas se for maior que 5% para não poluir
+                    if (percentage < 5 && ctx.chart.config.type !== 'bar') return null;
+                    return ctx.chart.config.type === 'bar' ? value : percentage + "%";
+                },
+                anchor: 'center',
+                align: 'center',
+                display: 'auto'
+            }
+        }
     };
 
     // ===== GRÁFICOS CHAMADOS =====
@@ -1549,7 +1582,20 @@ function printCurrentTab() {
                 backgroundColor: ['#10B981', '#F59E0B', '#3B82F6', '#EF4444'] 
             }]
         },
-        options: { ...chartOptions, plugins: { legend: { position: 'right' } } }
+        options: { 
+            ...chartOptions, 
+            plugins: { 
+                ...chartOptions.plugins,
+                legend: { position: 'right' },
+                datalabels: {
+                    ...chartOptions.plugins.datalabels,
+                    formatter: (value, ctx) => {
+                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        return ((value * 100 / sum)).toFixed(1) + "%";
+                    }
+                }
+            } 
+        }
     });
 
     if(document.getElementById('chamadosSectorChart')) new Chart(document.getElementById('chamadosSectorChart'), {
@@ -1563,7 +1609,22 @@ function printCurrentTab() {
                 borderRadius: 4
             }]
         },
-        options: { ...chartOptions, indexAxis: 'y', plugins: { legend: { display: false } } }
+        options: { 
+            ...chartOptions, 
+            indexAxis: 'y', 
+            plugins: { 
+                ...chartOptions.plugins,
+                legend: { display: false },
+                datalabels: {
+                    ...chartOptions.plugins.datalabels,
+                    anchor: 'end',
+                    align: 'right',
+                    offset: 4,
+                    color: '#6366F1',
+                    formatter: (v) => v
+                }
+            } 
+        }
     });
 
     if(document.getElementById('chamadosUsersChart')) new Chart(document.getElementById('chamadosUsersChart'), {
@@ -1577,7 +1638,22 @@ function printCurrentTab() {
                 borderRadius: 4
             }]
         },
-        options: { ...chartOptions, indexAxis: 'y', plugins: { legend: { display: false } } }
+        options: { 
+            ...chartOptions, 
+            indexAxis: 'y', 
+            plugins: { 
+                ...chartOptions.plugins,
+                legend: { display: false },
+                datalabels: {
+                    ...chartOptions.plugins.datalabels,
+                    anchor: 'end',
+                    align: 'right',
+                    offset: 4,
+                    color: '#8B5CF6',
+                    formatter: (v) => v
+                }
+            } 
+        }
     });
 
     if(document.getElementById('chamadosTrendChart')) new Chart(document.getElementById('chamadosTrendChart'), {
@@ -1589,7 +1665,13 @@ function printCurrentTab() {
                 { label: 'Ano Anterior (<?= date('Y')-1 ?>)', data: <?= json_encode(array_values($chLastYear)) ?>, borderColor: '#94a3b8', borderDash: [5, 5], fill: false, tension: 0.4 }
             ]
         },
-        options: chartOptions
+        options: {
+            ...chartOptions,
+            plugins: {
+                ...chartOptions.plugins,
+                datalabels: { display: false }
+            }
+        }
     });
 
     // ===== GRÁFICOS PATRIMÔNIO =====
@@ -1602,14 +1684,13 @@ function printCurrentTab() {
         options: {
             ...chartOptions,
             plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let value = context.parsed;
-                            let total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            let percentage = ((value / total) * 100).toFixed(1);
-                            return context.label + ': ' + value + ' (' + percentage + '%)';
-                        }
+                ...chartOptions.plugins,
+                datalabels: {
+                    ...chartOptions.plugins.datalabels,
+                    formatter: (value, ctx) => {
+                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        let percentage = (value * 100 / sum).toFixed(1) + "%";
+                        return percentage;
                     }
                 }
             }
@@ -1625,14 +1706,13 @@ function printCurrentTab() {
         options: {
             ...chartOptions,
             plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let value = context.parsed;
-                            let total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            let percentage = ((value / total) * 100).toFixed(1);
-                            return context.label + ': ' + value + ' (' + percentage + '%)';
-                        }
+                ...chartOptions.plugins,
+                datalabels: {
+                    ...chartOptions.plugins.datalabels,
+                    formatter: (value, ctx) => {
+                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        let percentage = (value * 100 / sum).toFixed(1) + "%";
+                        return percentage;
                     }
                 }
             }
@@ -1655,26 +1735,72 @@ function printCurrentTab() {
             ...chartOptions, 
             indexAxis: 'y', 
             plugins: { 
+                ...chartOptions.plugins,
                 legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            let value = context.parsed.x;
-                            let total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            let percentage = ((value / total) * 100).toFixed(1);
-                            return label + ': ' + value + ' (' + percentage + '%)';
-                        }
-                    }
+                datalabels: {
+                    ...chartOptions.plugins.datalabels,
+                    anchor: 'end',
+                    align: 'right',
+                    offset: 4,
+                    color: (ctx) => ctx.dataset.backgroundColor[ctx.dataIndex],
+                    formatter: (v) => v
                 }
             } 
         }
     });
 
     // ===== GRÁFICOS VOLUNTARIADO =====
-    if(document.getElementById('sexChart')) new Chart(document.getElementById('sexChart'), { type: 'pie', data: { labels: <?= json_encode($sexLabels) ?>, datasets: [{ data: <?= json_encode($sexData) ?>, backgroundColor: ['#3B82F6', '#EC4899', '#94A3B8'] }] }, options: chartOptions });
-    if(document.getElementById('workTypeChart')) new Chart(document.getElementById('workTypeChart'), { type: 'pie', data: { labels: <?= json_encode($typeLabels) ?>, datasets: [{ data: <?= json_encode($typeData) ?>, backgroundColor: ['#5B21B6', '#10B981', '#F59E0B'] }] }, options: chartOptions });
-    if(document.getElementById('volStatusChart')) new Chart(document.getElementById('volStatusChart'), { type: 'doughnut', data: { labels: <?= json_encode($statusLabels) ?>, datasets: [{ data: <?= json_encode($statusData) ?>, backgroundColor: ['#10B981', '#EF4444'] }] }, options: chartOptions });
+    if(document.getElementById('sexChart')) new Chart(document.getElementById('sexChart'), { 
+        type: 'pie', 
+        data: { labels: <?= json_encode($sexLabels) ?>, datasets: [{ data: <?= json_encode($sexData) ?>, backgroundColor: ['#3B82F6', '#EC4899', '#94A3B8'] }] }, 
+        options: {
+            ...chartOptions,
+            plugins: {
+                ...chartOptions.plugins,
+                datalabels: {
+                    ...chartOptions.plugins.datalabels,
+                    formatter: (value, ctx) => {
+                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        return ((value * 100 / sum)).toFixed(1) + "%";
+                    }
+                }
+            }
+        }
+    });
+    if(document.getElementById('workTypeChart')) new Chart(document.getElementById('workTypeChart'), { 
+        type: 'pie', 
+        data: { labels: <?= json_encode($typeLabels) ?>, datasets: [{ data: <?= json_encode($typeData) ?>, backgroundColor: ['#5B21B6', '#10B981', '#F59E0B'] }] }, 
+        options: {
+            ...chartOptions,
+            plugins: {
+                ...chartOptions.plugins,
+                datalabels: {
+                    ...chartOptions.plugins.datalabels,
+                    formatter: (value, ctx) => {
+                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        return ((value * 100 / sum)).toFixed(1) + "%";
+                    }
+                }
+            }
+        }
+    });
+    if(document.getElementById('volStatusChart')) new Chart(document.getElementById('volStatusChart'), { 
+        type: 'doughnut', 
+        data: { labels: <?= json_encode($statusLabels) ?>, datasets: [{ data: <?= json_encode($statusData) ?>, backgroundColor: ['#10B981', '#EF4444'] }] }, 
+        options: {
+            ...chartOptions,
+            plugins: {
+                ...chartOptions.plugins,
+                datalabels: {
+                    ...chartOptions.plugins.datalabels,
+                    formatter: (value, ctx) => {
+                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        return ((value * 100 / sum)).toFixed(1) + "%";
+                    }
+                }
+            }
+        }
+    });
 
     // ===== GRÁFICO FINANCEIRO =====
     if(document.getElementById('financeChart')) new Chart(document.getElementById('financeChart'), {
@@ -1703,15 +1829,15 @@ function printCurrentTab() {
             ...chartOptions, 
             indexAxis: 'y',
             plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let value = context.parsed.x;
-                            let total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            let percentage = ((value / total) * 100).toFixed(1);
-                            return 'Quantidade: ' + value + ' (' + percentage + '%)';
-                        }
-                    }
+                ...chartOptions.plugins,
+                legend: { display: false },
+                datalabels: {
+                    ...chartOptions.plugins.datalabels,
+                    anchor: 'end',
+                    align: 'right',
+                    offset: 4,
+                    color: '#6366F1',
+                    formatter: (v) => v
                 }
             }
         }
@@ -1726,14 +1852,12 @@ function printCurrentTab() {
         options: {
             ...chartOptions,
             plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let value = context.parsed;
-                            let total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            let percentage = ((value / total) * 100).toFixed(1);
-                            return context.label + ': ' + value + ' (' + percentage + '%)';
-                        }
+                ...chartOptions.plugins,
+                datalabels: {
+                    ...chartOptions.plugins.datalabels,
+                    formatter: (value, ctx) => {
+                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        return ((value * 100 / sum)).toFixed(1) + "%";
                     }
                 }
             }
@@ -1749,7 +1873,13 @@ function printCurrentTab() {
                 { label: 'Ano Anterior (<?= date('Y')-1 ?>)', data: <?= json_encode(array_values($loansLastYear)) ?>, borderColor: '#94a3b8', borderDash: [5, 5], fill: false, tension: 0.4 }
             ]
         },
-        options: chartOptions
+        options: {
+            ...chartOptions,
+            plugins: {
+                ...chartOptions.plugins,
+                datalabels: { display: false }
+            }
+        }
     });
 
     // ===== CHART USUÁRIOS POR EMPRÉSTIMO =====
@@ -1864,7 +1994,19 @@ function printCurrentTab() {
                     { label: 'Demissões', data: <?= json_encode($rhTermSeries) ?>, backgroundColor: '#EF4444', borderRadius: 4 }
                 ]
             },
-            options: { ...chartOptions, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+            options: { 
+                ...chartOptions, 
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                plugins: {
+                    ...chartOptions.plugins,
+                    datalabels: {
+                        ...chartOptions.plugins.datalabels,
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: (v) => v
+                    }
+                }
+            }
         });
 
         if(document.getElementById('rhAvgSalaryChart')) new Chart(document.getElementById('rhAvgSalaryChart'), {
@@ -1873,13 +2015,35 @@ function printCurrentTab() {
                 labels: <?= json_encode(array_column($rhAvgSalarySector, 'sector')) ?>,
                 datasets: [{ label: 'Média Salarial (R$)', data: <?= json_encode(array_column($rhAvgSalarySector, 'avg_salary')) ?>, backgroundColor: '#5B21B6', borderRadius: 6 }]
             },
-            options: { ...chartOptions, indexAxis: 'y', scales: { x: { ticks: { callback: (v) => 'R$ ' + v } } } }
+            options: { 
+                ...chartOptions, 
+                indexAxis: 'y', 
+                scales: { x: { ticks: { callback: (v) => 'R$ ' + v } } },
+                plugins: {
+                    ...chartOptions.plugins,
+                    legend: { display: false },
+                    datalabels: {
+                        ...chartOptions.plugins.datalabels,
+                        anchor: 'end',
+                        align: 'right',
+                        offset: 4,
+                        color: '#5B21B6',
+                        formatter: (v) => 'R$ ' + v.toLocaleString('pt-BR')
+                    }
+                }
+            }
         });
 
         if(document.getElementById('rhCertTrendChart')) new Chart(document.getElementById('rhCertTrendChart'), {
             type: 'line',
             data: { labels: <?= json_encode($rhCertLabels) ?>, datasets: [{ label: 'Atestados', data: <?= json_encode($rhCertData) ?>, borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.4 }] },
-            options: chartOptions
+            options: {
+                ...chartOptions,
+                plugins: {
+                    ...chartOptions.plugins,
+                    datalabels: { display: false }
+                }
+            }
         });
 
         // ===== GRÁFICOS SLA CHAMADOS =====
@@ -1906,12 +2070,14 @@ function printCurrentTab() {
             options: {
                 ...chartOptions,
                 plugins: {
+                    ...chartOptions.plugins,
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
                             label: ctx => ctx.raw !== null ? `SLA: ${ctx.raw}h` : 'Sem dados'
                         }
-                    }
+                    },
+                    datalabels: { display: false }
                 },
                 scales: {
                     y: { beginAtZero: true, ticks: { callback: v => v + 'h' }, grid: { color: 'rgba(0,0,0,0.05)' } },
@@ -1940,8 +2106,17 @@ function printCurrentTab() {
                 ...chartOptions,
                 indexAxis: 'y',
                 plugins: {
+                    ...chartOptions.plugins,
                     legend: { display: false },
-                    tooltip: { callbacks: { label: ctx => `SLA: ${ctx.raw}h` } }
+                    tooltip: { callbacks: { label: ctx => `SLA: ${ctx.raw}h` } },
+                    datalabels: {
+                        ...chartOptions.plugins.datalabels,
+                        anchor: 'end',
+                        align: 'right',
+                        offset: 4,
+                        color: (ctx) => slaSectorColors[ctx.dataIndex],
+                        formatter: (v) => v + 'h'
+                    }
                 },
                 scales: {
                     x: { beginAtZero: true, ticks: { callback: v => v + 'h' }, grid: { color: 'rgba(0,0,0,0.05)' } },
@@ -1951,5 +2126,4 @@ function printCurrentTab() {
         });
 
     });
-
 </script>

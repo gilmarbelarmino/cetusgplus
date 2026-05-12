@@ -25,10 +25,10 @@ try {
     if ($method === 'GET') {
         $query = "SELECT l.*, un.name as unit_name, Rec.name as receiver_name, Bor.name as borrower_name, Bor.avatar_url as borrower_avatar, Ast.name as asset_name
                   FROM loans l 
-                  LEFT JOIN units un ON BINARY l.unit_id = BINARY un.id
-                  LEFT JOIN users Rec ON BINARY l.received_by_id = BINARY Rec.id
-                  LEFT JOIN users Bor ON BINARY l.borrower_id = BINARY Bor.id
-                  LEFT JOIN assets Ast ON BINARY l.asset_id = BINARY Ast.id
+                  LEFT JOIN units un ON CONVERT(l.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                  LEFT JOIN users Rec ON CONVERT(l.received_by_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(Rec.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                  LEFT JOIN users Bor ON CONVERT(l.borrower_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(Bor.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                  LEFT JOIN assets Ast ON CONVERT(l.asset_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(Ast.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
                   WHERE l.company_id = ?
                   ORDER BY l.loan_date DESC";
         $stmt = $pdo->prepare($query);
@@ -39,7 +39,7 @@ try {
         $stmt->execute([$compId]);
         $assets = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $stmt = $pdo->prepare("SELECT u.id, u.name, u.sector, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.status = 'Ativo' AND u.company_id = ? ORDER BY u.name");
+        $stmt = $pdo->prepare("SELECT u.id, u.name, u.sector, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.status = 'Ativo' AND u.company_id = ? ORDER BY u.name");
         $stmt->execute([$compId]);
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

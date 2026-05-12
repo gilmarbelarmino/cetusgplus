@@ -128,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
 
 // ─── CARREGAR DADOS ───────────────────────────────────────────────────────────
 $compId = getCurrentUserCompanyId();
-$query = "SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON BINARY v.unit_id = BINARY u.id WHERE v.company_id = ?";
+$query = "SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON CONVERT(v.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE v.company_id = ?";
 $params = [$compId];
 $query .= " ORDER BY v.created_at DESC";
 $stmt = $pdo->prepare($query); $stmt->execute($params);
@@ -138,7 +138,7 @@ $units_stmt = $pdo->prepare("SELECT * FROM units WHERE company_id = ?");
 $units_stmt->execute([$compId]);
 $units = $units_stmt->fetchAll();
 
-$users_stmt = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+$users_stmt = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? ORDER BY u.name");
 $users_stmt->execute([$compId]);
 $users = $users_stmt->fetchAll();
 
@@ -157,7 +157,7 @@ if (isset($_GET['edit'])) {
 // Voluntário para certificado
 $certVol = null;
 if (isset($_GET['cert'])) {
-    $s = $pdo->prepare("SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON BINARY v.unit_id = BINARY u.id WHERE v.id = ? AND v.company_id = ?");
+    $s = $pdo->prepare("SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON CONVERT(v.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE v.id = ? AND v.company_id = ?");
     $s->execute([$_GET['cert'], $compId]);
     $certVol = $s->fetch();
 }
@@ -959,7 +959,7 @@ document.getElementById('editModal').style.display = 'flex';
 if (isset($_GET['hist_json'])) {
     $s = $pdo->prepare("SELECT vh.*, u.name as editor_name, u.avatar_url as editor_avatar 
                         FROM volunteer_history vh 
-                        LEFT JOIN users u ON BINARY vh.edited_by = BINARY u.id 
+                        LEFT JOIN users u ON CONVERT(vh.edited_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
                         WHERE vh.volunteer_id = ? ORDER BY vh.created_at ASC");
     $s->execute([$_GET['hist_json']]);
     while (ob_get_level()) ob_end_clean();

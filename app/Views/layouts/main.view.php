@@ -211,6 +211,12 @@ $company = $company_stmt->fetch();
             <a href="<?= URL_BASE ?>/informacoes" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'informacoes') !== false ? 'active' : '' ?>">
                 <i class="fa-solid fa-circle-info"></i> Informações
             </a>
+            <?php if (in_array('pesquisa', $user_menus)): ?>
+            <a href="<?= URL_BASE ?>/pesquisa" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'pesquisa') !== false ? 'active' : '' ?>">
+                <i class="fa-solid fa-square-poll-vertical"></i> Pesquisa
+                <span style="background: #6366f1; color: white; font-size: 0.6rem; padding: 2px 6px; border-radius: 10px; margin-left: auto; font-weight: 800;">NOVO</span>
+            </a>
+            <?php endif; ?>
             <a href="<?= URL_BASE ?>/chamados" class="nav-link <?= strpos($_SERVER['REQUEST_URI'], 'chamados') !== false ? 'active' : '' ?>">
                 <i class="fa-solid fa-ticket"></i> Chamados
             </a>

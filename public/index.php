@@ -51,6 +51,9 @@ $router->add('GET', '/dashboard', 'DashboardController@index');
 $router->add('GET', '/informacoes', 'InfoController@index');
 $router->add('POST', '/informacoes', 'InfoController@store');
 
+$router->add('GET', '/pesquisa', 'SurveyController@index');
+$router->add('POST', '/pesquisa', 'SurveyController@store');
+
 $router->add('GET', '/tecnologia', 'TechnologyController@index');
 $router->add('POST', '/tecnologia', 'TechnologyController@store');
 

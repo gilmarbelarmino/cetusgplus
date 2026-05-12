@@ -161,7 +161,7 @@ $units = $pdo->prepare("SELECT * FROM units WHERE company_id = ? ORDER BY name")
 $units->execute([$compId]);
 $units = $units->fetchAll();
 
-$sectors = $pdo->prepare("SELECT s.*, u.name as unit_name FROM sectors s LEFT JOIN units u ON BINARY s.unit_id = BINARY u.id WHERE s.company_id = ? ORDER BY s.name");
+$sectors = $pdo->prepare("SELECT s.*, u.name as unit_name FROM sectors s LEFT JOIN units u ON CONVERT(s.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE s.company_id = ? ORDER BY s.name");
 $sectors->execute([$compId]);
 $sectors = $sectors->fetchAll();
 

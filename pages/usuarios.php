@@ -59,8 +59,22 @@ $history_tickets = [];
     
     // 1. BUSCA PRINCIPAL DE USUÁRIOS
     try {
-        $query = "SELECT u.* FROM users u WHERE 1=1";
+        $query = "SELECT u.*, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE 1=1";
         $params = [];
+
+        if ($search) {
+            $query .= " AND (u.name LIKE ? OR u.email LIKE ? OR u.sector LIKE ? OR u.login_name LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+        }
+
+        if ($unit_filter) {
+            $query .= " AND u.unit_id = ?";
+            $params[] = $unit_filter;
+        }
+
         if (!$isSuperAdmin) {
             $query .= " AND (u.company_id = ? OR u.company_id IS NULL OR u.company_id = 0)";
             $params[] = ($compId ?: 1);
@@ -116,13 +130,13 @@ try {
 } catch(Exception $e) { $all_positions = []; }
 
 try { 
-    $stmt_loans = $pdo->prepare("SELECT l.*, a.name as asset_full_name FROM loans l LEFT JOIN assets a ON BINARY l.asset_id = BINARY a.id WHERE l.company_id = ? ORDER BY l.loan_date DESC");
+    $stmt_loans = $pdo->prepare("SELECT l.*, a.name as asset_full_name FROM loans l LEFT JOIN assets a ON CONVERT(l.asset_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(a.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE l.company_id = ? ORDER BY l.loan_date DESC");
     $stmt_loans->execute([$compId]);
     $history_loans = $stmt_loans->fetchAll(); 
 } catch(Exception $e) { $history_loans = []; }
 
 try { 
-    $stmt_tix = $pdo->prepare("SELECT t.*, u.name as unit_name FROM tickets t LEFT JOIN units u ON BINARY t.unit_id = BINARY u.id WHERE t.company_id = ? ORDER BY t.created_at DESC");
+    $stmt_tix = $pdo->prepare("SELECT t.*, u.name as unit_name FROM tickets t LEFT JOIN units u ON CONVERT(t.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE t.company_id = ? ORDER BY t.created_at DESC");
     $stmt_tix->execute([$compId]);
     $history_tickets = $stmt_tix->fetchAll(); 
 } catch(Exception $e) { $history_tickets = []; }

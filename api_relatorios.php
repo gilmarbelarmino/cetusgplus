@@ -157,7 +157,7 @@ if ($action === 'rh_detail') {
         $stmt2->execute([$compId]);
         $data['genders'] = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
-        $stmt3 = $pdo->prepare("SELECT u.sector as name, AVG(rh.salary) as value FROM users u JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id WHERE u.company_id = ? GROUP BY u.sector");
+        $stmt3 = $pdo->prepare("SELECT u.sector as name, AVG(rh.salary) as value FROM users u JOIN rh_employee_details rh ON CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(rh.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? GROUP BY u.sector");
         $stmt3->execute([$compId]);
         $data['avg_salary_sector'] = $stmt3->fetchAll(PDO::FETCH_ASSOC);
     } catch(Exception $e) { $data['error'] = 'RH tables not fully mapped'; }

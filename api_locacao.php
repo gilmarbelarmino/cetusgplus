@@ -33,8 +33,8 @@ try {
                                 ed.name as editor_name, ed.avatar_url as editor_avatar
                                 FROM room_bookings b 
                                 JOIN rooms r ON b.room_id = r.id
-                                JOIN users u ON BINARY b.user_id = BINARY u.id
-                                LEFT JOIN users ed ON BINARY b.last_edited_by = BINARY ed.id
+                                JOIN users u ON CONVERT(b.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                                LEFT JOIN users ed ON CONVERT(b.last_edited_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(ed.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
                                 WHERE b.company_id = ?
                                 ORDER BY b.booking_date DESC, b.start_time ASC");
         $bookings->execute([$compId]);

@@ -16,7 +16,7 @@ require_once 'config.php';
     // ─── GET: Listar ou Histórico ──────────────────────────────────────────
     if ($method === 'GET') {
         if ($action === 'list' || empty($action)) {
-            $volunteers = $pdo->prepare("SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON BINARY v.unit_id = BINARY u.id WHERE v.company_id = ? ORDER BY v.created_at DESC");
+            $volunteers = $pdo->prepare("SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON CONVERT(v.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE v.company_id = ? ORDER BY v.created_at DESC");
             $volunteers->execute([$compId]);
             $volunteers = $volunteers->fetchAll(PDO::FETCH_ASSOC);
 
@@ -24,7 +24,7 @@ require_once 'config.php';
             $units->execute([$compId]);
             $units = $units->fetchAll(PDO::FETCH_ASSOC);
 
-            $users = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+            $users = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? ORDER BY u.name");
             $users->execute([$compId]);
             $users = $users->fetchAll(PDO::FETCH_ASSOC);
             
@@ -40,7 +40,7 @@ require_once 'config.php';
             $vid = $_GET['volunteer_id'] ?? '';
             $stmt = $pdo->prepare("SELECT vh.*, u.name as editor_name, u.avatar_url as editor_avatar 
                                 FROM volunteer_history vh 
-                                LEFT JOIN users u ON BINARY vh.edited_by = BINARY u.id 
+                                LEFT JOIN users u ON CONVERT(vh.edited_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
                                 WHERE vh.volunteer_id = ? AND vh.company_id = ? ORDER BY vh.created_at DESC");
             $stmt->execute([$vid, $compId]);
             echo json_encode(['success' => true, 'history' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);

@@ -107,7 +107,7 @@ $generalMsg = $stmt_msg->fetchColumn();
 // 3. Usuários por Setor (Com Foto e Nome) - Isolado por empresa
 $stmt_usrs = $pdo->prepare("SELECT u.id, u.name, u.avatar_url, rh.role_name as position, u.sector 
                                FROM users u 
-                               LEFT JOIN rh_employee_details rh ON BINARY u.id = BINARY rh.user_id 
+                               LEFT JOIN rh_employee_details rh ON CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(rh.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
                                WHERE u.company_id = ?
                                ORDER BY u.name ASC");
 $stmt_usrs->execute([$compId]);

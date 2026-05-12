@@ -24,7 +24,7 @@ try {
     if ($method === 'GET' && empty($action)) {
         // Listagem
         $compId = getCurrentUserCompanyId();
-        $query = "SELECT a.*, u.name as unit_name FROM assets a LEFT JOIN units u ON BINARY a.unit_id = BINARY u.id WHERE a.company_id = ? ORDER BY a.created_at DESC";
+        $query = "SELECT a.*, u.name as unit_name FROM assets a LEFT JOIN units u ON CONVERT(a.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE a.company_id = ? ORDER BY a.created_at DESC";
         $stmt = $pdo->prepare($query);
         $stmt->execute([$compId]);
         $assets = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -41,7 +41,7 @@ try {
         $sectors->execute([$compId]);
         $sectors = $sectors->fetchAll(PDO::FETCH_ASSOC);
 
-        $all_users = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.role, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+        $all_users = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.role, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? ORDER BY u.name");
         $all_users->execute([$compId]);
         $all_users = $all_users->fetchAll(PDO::FETCH_ASSOC);
 
@@ -70,7 +70,7 @@ try {
         $loan_hist->execute([$hist_id, $compId]);
         $loans = $loan_hist->fetchAll(PDO::FETCH_ASSOC);
         
-        $ticket_hist = $pdo->prepare("SELECT t.*, u.name as req_name FROM tickets t LEFT JOIN users u ON BINARY t.requester_id = BINARY u.id WHERE t.asset_id = ? AND t.company_id = ? ORDER BY t.created_at DESC");
+        $ticket_hist = $pdo->prepare("SELECT t.*, u.name as req_name FROM tickets t LEFT JOIN users u ON CONVERT(t.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE t.asset_id = ? AND t.company_id = ? ORDER BY t.created_at DESC");
         $ticket_hist->execute([$hist_id, $compId]);
         $tickets = $ticket_hist->fetchAll(PDO::FETCH_ASSOC);
 

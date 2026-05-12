@@ -9,7 +9,7 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        if (login($_POST['login_name'], $_POST['password'])) {
+        if (login($_POST['login_name'], $_POST['access_code'])) {
             header('Location: index.php?page=dashboard');
             exit;
         } else {
@@ -122,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
             
-            <form method="POST">
+            <form method="POST" autocomplete="off">
                 <div class="form-group">
                     <label class="form-label">Usuario</label>
                     <input type="text" name="login_name" class="form-input" placeholder="Seu usuario" required autofocus>
@@ -130,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="form-group">
                     <label class="form-label">Senha</label>
-                    <input type="password" name="password" class="form-input" placeholder="Sua senha" required>
+                    <input type="password" name="access_code" class="form-input" placeholder="Sua senha" required autocomplete="off">
                 </div>
                 
                 <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem; border-radius: 100px; padding: 1rem;">

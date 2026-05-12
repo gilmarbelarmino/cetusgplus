@@ -314,9 +314,9 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
                 <tbody>
                     <?php foreach ($cameras as $cam): ?>
                     <tr style="background: #fff; transition: all 0.2s;">
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: var(--text-main);"><?= htmlspecialchars($cam['name']) ?></td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;"><span style="background: #e0f2fe; color: #0369a1; padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-weight: 700; font-family: monospace; font-size: 0.85rem;"><?= htmlspecialchars($cam['ip_address']) ?></span></td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; color: var(--text-soft); font-size: 0.875rem;"><?= htmlspecialchars($cam['doc'] ?? '-') ?></td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: var(--text-main);"><?= htmlspecialchars((string)($cam['name'] ?? '')) ?></td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;"><span style="background: #e0f2fe; color: #0369a1; padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-weight: 700; font-family: monospace; font-size: 0.85rem;"><?= htmlspecialchars((string)($cam['ip_address'] ?? '')) ?></span></td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; color: var(--text-soft); font-size: 0.875rem;"><?= htmlspecialchars((string)($cam['doc'] ?? '-')) ?></td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;"><span style="font-weight: 800; color: var(--text-main);"><?= $cam['quantity'] ?></span> <small style="color: #94a3b8;">un.</small></td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; text-align:right;">
                             <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
@@ -382,31 +382,31 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
                                         <?= strtoupper(substr($rem['user_name'], 0, 1)) ?>
                                     </div>
                                 <?php endif; ?>
-                                <div style="font-weight: 700; color: var(--text-main);"><?= htmlspecialchars($rem['user_name']) ?></div>
+                                <div style="font-weight: 700; color: var(--text-main);"><?= htmlspecialchars((string)($rem['user_name'] ?? '')) ?></div>
                             </div>
                         </td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: var(--text-soft);"><?= htmlspecialchars($rem['user_email']) ?></td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: var(--text-soft);"><?= htmlspecialchars((string)($rem['user_email'] ?? '')) ?></td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
                             <div style="display:flex; align-items:center; gap:0.5rem;">
-                                <code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569; font-weight: 600;"><?= htmlspecialchars($rem['pc_password'] ?? '') ?></code>
+                                <code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569; font-weight: 600;"><?= htmlspecialchars((string)($rem['pc_password'] ?? '')) ?></code>
                                 <?php if(!empty($rem['pc_password'])): ?>
-                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes($rem['pc_password'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
+                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes((string)$rem['pc_password'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
                                 <?php endif; ?>
                             </div>
                         </td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
                             <div style="display:flex; align-items:center; gap:0.5rem;">
-                                <code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569; font-weight: 600;"><?= htmlspecialchars($rem['email_password'] ?? '') ?></code>
+                                <code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569; font-weight: 600;"><?= htmlspecialchars((string)($rem['email_password'] ?? '')) ?></code>
                                 <?php if(!empty($rem['email_password'])): ?>
-                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes($rem['email_password'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
+                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes((string)$rem['email_password'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
                                 <?php endif; ?>
                             </div>
                         </td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
                             <div style="display:flex; align-items:center; gap:0.5rem; font-weight: 800; color: var(--crm-purple);">
-                                <span><?= htmlspecialchars($rem['pc_name'] ?? '') ?></span>
+                                <span><?= htmlspecialchars((string)($rem['pc_name'] ?? '')) ?></span>
                                 <?php if(!empty($rem['pc_name'])): ?>
-                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes($rem['pc_name'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
+                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes((string)$rem['pc_name'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -465,8 +465,8 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
                 <tbody>
                     <?php foreach ($emails as $em): ?>
                     <tr style="background: #fff; transition: all 0.2s;">
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: var(--crm-purple);"><?= htmlspecialchars($em['email']) ?></td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;"><code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569;"><?= htmlspecialchars($em['password']) ?></code></td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: var(--crm-purple);"><?= htmlspecialchars((string)($em['email'] ?? '')) ?></td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;"><code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569;"><?= htmlspecialchars((string)($em['password'] ?? '')) ?></code></td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
                             <?php
                                 $typeColor = '#64748b';
@@ -538,8 +538,8 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
                 <?php foreach ($notes as $note): ?>
                     <div class="note-page-item <?= $active_note_id == $note['id'] ? 'active' : '' ?>"
                          onclick="window.location.href='?page=tecnologia&tab=anotacoes&section_id=<?= $active_section_id ?>&note_id=<?= $note['id'] ?>'">
-                        <div class="note-page-title"><?= htmlspecialchars($note['title'] ?: 'Sem título') ?></div>
-                        <div class="note-page-preview"><?= htmlspecialchars(substr(strip_tags($note['content']), 0, 80)) ?>...</div>
+                        <div class="note-page-title"><?= htmlspecialchars((string)($note['title'] ?: 'Sem título')) ?></div>
+                        <div class="note-page-preview"><?= htmlspecialchars(substr(strip_tags((string)($note['content'] ?? '')), 0, 80)) ?>...</div>
                         <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
                             <i class="fa-regular fa-clock"></i> <?= date('d/m/y H:i', strtotime($note['updated_at'])) ?>
                         </div>
@@ -637,7 +637,7 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
                     </div>
 
                     <div class="editor-container">
-                        <input type="text" name="title" id="noteTitleInput" class="editor-title" placeholder="Título da nota..." value="<?= htmlspecialchars($active_note['title'] ?? '') ?>" required autocomplete="off">
+                        <input type="text" name="title" id="noteTitleInput" class="editor-title" placeholder="Título da nota..." value="<?= htmlspecialchars((string)($active_note['title'] ?? '')) ?>" required autocomplete="off">
                         <div style="height: 1px; background: #f1f5f9; margin-bottom: 1rem; flex-shrink: 0;"></div>
                         
                         <input type="hidden" name="content" id="hiddenContent">

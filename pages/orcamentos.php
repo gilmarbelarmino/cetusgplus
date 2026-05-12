@@ -201,12 +201,12 @@ $query = "SELECT br.*, u.name as unit_name,
           (SELECT COUNT(*) FROM budget_quotes bq WHERE bq.budget_id = br.id AND bq.company_id = br.company_id) as quotes_count,
           wa.name as wishlist_approver_name, wa.avatar_url as wishlist_approver_avatar, wr.approved_at as wishlist_approved_at, wr.request_number as wishlist_number
           FROM budget_requests br 
-          LEFT JOIN units u ON BINARY br.unit_id = BINARY u.id 
-          LEFT JOIN users us ON BINARY br.requester_id = BINARY us.id 
-          LEFT JOIN users ap ON BINARY br.approved_by = BINARY ap.id 
-          LEFT JOIN users ed ON BINARY br.edited_by = BINARY ed.id
-          LEFT JOIN wishlist_requests wr ON BINARY br.wishlist_id = BINARY wr.id
-          LEFT JOIN users wa ON BINARY wr.approved_by = BINARY wa.id
+          LEFT JOIN units u ON CONVERT(br.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+          LEFT JOIN users us ON CONVERT(br.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(us.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+          LEFT JOIN users ap ON CONVERT(br.approved_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(ap.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+          LEFT JOIN users ed ON CONVERT(br.edited_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(ed.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+          LEFT JOIN wishlist_requests wr ON CONVERT(br.wishlist_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(wr.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+          LEFT JOIN users wa ON CONVERT(wr.approved_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(wa.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
           WHERE br.company_id = ?";
 $params = [$compId];
 
@@ -235,9 +235,9 @@ $stmt_w = $pdo->prepare("SELECT w.*, s.name as sector_name, u.name as requester_
                         ap.name as approver_name, ap.avatar_url as approver_avatar,
                         (SELECT COUNT(*) FROM wishlist_items wi WHERE wi.request_id = w.id AND wi.company_id = w.company_id) as item_count
                         FROM wishlist_requests w
-                        JOIN sectors s ON BINARY w.sector_id = BINARY s.id
-                        JOIN users u ON BINARY w.requester_id = BINARY u.id
-                        LEFT JOIN users ap ON BINARY w.approved_by = BINARY ap.id
+                        JOIN sectors s ON CONVERT(w.sector_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(s.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                        JOIN users u ON CONVERT(w.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                        LEFT JOIN users ap ON CONVERT(w.approved_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(ap.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
                         WHERE w.company_id = ?
                         ORDER BY w.created_at DESC");
 $stmt_w->execute([$compId]);
@@ -657,11 +657,11 @@ $activeTab = $_GET['tab'] ?? 'orcamentos';
     $stmt_v = $pdo->prepare("SELECT br.*, u.name as unit_name, us.name as requester_name, ap.name as approver_name,
                           wa.name as wishlist_approver_name, wa.avatar_url as wishlist_approver_avatar, wr.approved_at as wishlist_approved_at, wr.request_number as wishlist_number
                           FROM budget_requests br 
-                          LEFT JOIN units u ON BINARY br.unit_id = BINARY u.id 
-                          LEFT JOIN users us ON BINARY br.requester_id = BINARY us.id 
-                          LEFT JOIN users ap ON BINARY br.approved_by = BINARY ap.id 
-                          LEFT JOIN wishlist_requests wr ON BINARY br.wishlist_id = BINARY wr.id
-                          LEFT JOIN users wa ON BINARY wr.approved_by = BINARY wa.id
+                          LEFT JOIN units u ON CONVERT(br.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+                          LEFT JOIN users us ON CONVERT(br.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(us.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+                          LEFT JOIN users ap ON CONVERT(br.approved_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(ap.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+                          LEFT JOIN wishlist_requests wr ON CONVERT(br.wishlist_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(wr.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                          LEFT JOIN users wa ON CONVERT(wr.approved_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(wa.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
                           WHERE br.id = ? AND br.company_id = ?");
     $stmt_v->execute([$_GET['view'], $compId]);
     $budget = $stmt_v->fetch();

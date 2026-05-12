@@ -19,7 +19,7 @@ if ($action === 'list') {
     $stmt = $pdo->prepare("
         SELECT c.*, u.name as user_name, u.avatar_url as user_avatar
         FROM semanada_comments c
-        LEFT JOIN users u ON BINARY c.user_id = BINARY u.id
+        LEFT JOIN users u ON CONVERT(c.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
         WHERE c.company_id = ?
         ORDER BY c.created_at ASC
     ");
@@ -48,7 +48,7 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $comment = $pdo->prepare("
         SELECT c.*, u.name as user_name, u.avatar_url as user_avatar
         FROM semanada_comments c
-        LEFT JOIN users u ON BINARY c.user_id = BINARY u.id
+        LEFT JOIN users u ON CONVERT(c.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
         WHERE c.id = ? AND c.company_id = ?
     ");
     $comment->execute([$newId, $compId]);

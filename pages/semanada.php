@@ -100,7 +100,7 @@ $pdo->prepare("UPDATE semanada_uploads SET is_history = 1 WHERE is_history = 0 A
 $stmt_curr = $pdo->prepare("
     SELECT su.*, u.name as uploader_name, u.avatar_url as uploader_avatar 
     FROM semanada_uploads su 
-    LEFT JOIN users u ON BINARY su.uploaded_by = BINARY u.id 
+    LEFT JOIN users u ON CONVERT(su.uploaded_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
     WHERE su.is_history = 0 AND su.company_id = ?
     ORDER BY su.uploaded_at DESC LIMIT 1
 ");
@@ -111,7 +111,7 @@ $uploadInfo = $stmt_curr->fetch(PDO::FETCH_ASSOC);
 $stmt_hist = $pdo->prepare("
     SELECT su.*, u.name as uploader_name 
     FROM semanada_uploads su 
-    LEFT JOIN users u ON BINARY su.uploaded_by = BINARY u.id 
+    LEFT JOIN users u ON CONVERT(su.uploaded_by USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
     WHERE su.is_history = 1 AND su.company_id = ?
     ORDER BY su.uploaded_at DESC
 ");
@@ -125,7 +125,7 @@ $pdfUrl = $currentPdf ? 'uploads/semanada/' . $currentPdf : null;
 $stmt_comm = $pdo->prepare("
     SELECT c.*, u.name as user_name, u.avatar_url as user_avatar
     FROM semanada_comments c
-    LEFT JOIN users u ON BINARY c.user_id = BINARY u.id
+    LEFT JOIN users u ON CONVERT(c.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
     WHERE c.company_id = ?
     ORDER BY c.created_at ASC
 ");

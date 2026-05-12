@@ -3,6 +3,7 @@
 try { $pdo->exec("ALTER TABLE assets ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE assets ADD COLUMN estimated_value DECIMAL(12,2) DEFAULT 0"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE assets ADD COLUMN image_url VARCHAR(255) DEFAULT NULL"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE assets ADD COLUMN responsible_id INT NULL"); } catch(Exception $e) {}
 
 try {
     $pdo->exec("ALTER TABLE assets MODIFY patrimony_id VARCHAR(255) NULL");
@@ -16,10 +17,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         move_uploaded_file($_FILES['product_image']['tmp_name'], __DIR__ . '/../uploads/' . $image_name);
     }
     
-    $stmt = $pdo->prepare("INSERT INTO assets (id, name, category, patrimony_id, sector, unit_id, status, responsible_name, estimated_value, image_url, company_id) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO assets (id, name, category, patrimony_id, sector, unit_id, status, responsible_name, responsible_id, estimated_value, image_url, company_id) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?, ?)");
     $estimated = floatval(str_replace(['.', ','], ['', '.'], $_POST['estimated_value'] ?? '0'));
     $patrimony_id = !empty($_POST['patrimony_id']) ? $_POST['patrimony_id'] : null;
-    $stmt->execute(['A' . time(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['responsible_name'], $estimated, $image_name, $compId]);
+    $responsible_id = !empty($_POST['responsible_select']) ? $_POST['responsible_select'] : null;
+    $stmt->execute(['A' . time(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['responsible_name'], $responsible_id, $estimated, $image_name, $compId]);
     header('Location: ?page=patrimonio&success=1');
     exit;
 }
@@ -40,7 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     
     $image_update = "";
     $patrimony_id = !empty($_POST['patrimony_id']) ? $_POST['patrimony_id'] : null;
-    $params = [$_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['status'], $_POST['responsible_name'], $estimated];
+    $responsible_id = !empty($_POST['responsible_select']) ? $_POST['responsible_select'] : null;
+    $params = [$_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['status'], $_POST['responsible_name'], $responsible_id, $estimated];
     
     if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] == 0) {
         $image_name = 'asset_' . time() . '.' . pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION);
@@ -52,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $params[] = $_POST['asset_id'];
     $params[] = $compId;
     
-    $stmt = $pdo->prepare("UPDATE assets SET name = ?, category = ?, patrimony_id = ?, sector = ?, unit_id = ?, status = ?, responsible_name = ?, estimated_value = ? $image_update WHERE id = ? AND company_id = ?");
+    $stmt = $pdo->prepare("UPDATE assets SET name = ?, category = ?, patrimony_id = ?, sector = ?, unit_id = ?, status = ?, responsible_name = ?, responsible_id = ?, estimated_value = ? $image_update WHERE id = ? AND company_id = ?");
     $stmt->execute($params);
     header('Location: ?page=patrimonio&success=2');
     exit;
@@ -60,11 +63,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 $search = $_GET['search'] ?? '';
 $unit_filter = $_GET['unit'] ?? '';
+$sector_filter = $_GET['sector'] ?? '';
 $compId = getCurrentUserCompanyId();
 
 // Filtro baseado no perfil do usuário - Agora liberado se tiver acesso ao menu
-$query = "SELECT a.*, u.name as unit_name FROM assets a 
-          LEFT JOIN units u ON BINARY a.unit_id = BINARY u.id WHERE a.company_id = ?";
+$query = "SELECT a.*, u.name as unit_name, res.avatar_url as resp_avatar, res.name as resp_name 
+          FROM assets a 
+          LEFT JOIN units u ON CONVERT(a.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+          LEFT JOIN users res ON (a.responsible_id = res.id OR (a.responsible_id IS NULL AND a.responsible_name = res.name AND a.company_id = res.company_id))
+          WHERE a.company_id = ?";
 $params = [$compId];
 
 if ($search) {
@@ -76,6 +83,11 @@ if ($search) {
 if ($unit_filter) {
     $query .= " AND a.unit_id = ?";
     $params[] = $unit_filter;
+}
+
+if ($sector_filter) {
+    $query .= " AND a.sector = ?";
+    $params[] = $sector_filter;
 }
 
 $query .= " ORDER BY a.created_at DESC";
@@ -94,7 +106,7 @@ $stmt_sects = $pdo->prepare("SELECT DISTINCT sector FROM assets WHERE sector IS 
 $stmt_sects->execute([$compId]);
 $sectors = $stmt_sects->fetchAll();
 
-$stmt_users = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.role, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON BINARY u.unit_id = BINARY un.id WHERE u.company_id = ? ORDER BY u.name");
+$stmt_users = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.role, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? ORDER BY u.name");
 $stmt_users->execute([$compId]);
 $all_users = $stmt_users->fetchAll();
 
@@ -153,6 +165,18 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                 <?php endforeach; ?>
             </select>
         </div>
+
+        <div style="width: 250px;">
+            <label class="form-label">Setor</label>
+            <select name="sector" class="form-select">
+                <option value="">Todos os Setores</option>
+                <?php foreach ($sectors as $s): ?>
+                    <option value="<?= htmlspecialchars($s['sector']) ?>" <?= $sector_filter == $s['sector'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($s['sector']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
         
         <button type="submit" class="btn-primary">
             <i class="fa-solid fa-magnifying-glass"></i>
@@ -166,7 +190,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
         <thead>
             <tr>
                 <th>Ativo</th>
-                <th>Unidade / Setor</th>
+                <th>Unidade</th>
+                <th>Setor</th>
                 <th>Nº Acesso</th>
                 <th>Responsável</th>
                 <th>Status</th>
@@ -192,15 +217,26 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                     <div style="font-weight: 700; color: var(--crm-purple); font-size: 0.75rem;">
                         <?= htmlspecialchars($asset['unit_name']) ?>
                     </div>
-                    <div style="font-size: 0.625rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">
+                </td>
+                <td>
+                    <div style="font-size: 0.75rem; color: var(--text-soft); font-weight: 700; text-transform: uppercase;">
                         <?= htmlspecialchars($asset['sector']) ?>
                     </div>
                 </td>
                 <td style="font-family: monospace; font-size: 0.75rem; color: var(--text-soft);">
                     <?= htmlspecialchars($asset['patrimony_id'] ?? 'N/A') ?>
                 </td>
-                <td style="font-weight: 600;">
-                    <?= htmlspecialchars($asset['responsible_name'] ?? 'Não atribuído') ?>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--crm-purple); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; overflow: hidden; flex-shrink: 0;">
+                            <?php if (!empty($asset['resp_avatar'])): ?>
+                                <img src="<?= htmlspecialchars($asset['resp_avatar']) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                            <?php else: ?>
+                                <?= strtoupper(substr($asset['responsible_name'] ?? 'U', 0, 1)) ?>
+                            <?php endif; ?>
+                        </div>
+                        <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-main);"><?= htmlspecialchars($asset['responsible_name'] ?? 'Não atribuído') ?></span>
+                    </div>
                 </td>
                 <td>
                     <span class="badge badge-<?= 
@@ -358,6 +394,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                         <option value="">Selecione o responsável</option>
                         <?php foreach ($all_users as $u): ?>
                             <option value="<?= $u['id'] ?>" 
+                                <?= ($editAsset && $editAsset['responsible_id'] == $u['id']) ? 'selected' : '' ?>
                                 data-name="<?= htmlspecialchars($u['name']) ?>"
                                 data-email="<?= htmlspecialchars($u['email']) ?>"
                                 data-phone="<?= htmlspecialchars($u['phone']) ?>"
@@ -369,7 +406,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <input type="hidden" name="responsible_name" id="responsibleName">
+                    <input type="hidden" name="responsible_name" id="responsibleName" value="<?= htmlspecialchars($editAsset['responsible_name'] ?? '') ?>">
                 </div>
                 <div class="form-group">
                     <label class="form-label">E-mail</label>
@@ -553,6 +590,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             document.getElementById('responsibleRole').value = '';
             document.getElementById('responsibleUnit').value = '';
             document.getElementById('responsibleUnitDisplay').value = '';
+        }
+    }
+
+    function fillEditResponsibleData() {
+        const select = document.getElementById('editResponsibleSelect');
+        const option = select.options[select.selectedIndex];
+        
+        if (option.value) {
+            document.getElementById('editResponsibleName').value = option.getAttribute('data-name');
+            document.getElementById('editResponsibleSector').value = option.getAttribute('data-sector');
+            document.getElementById('editResponsibleUnit').value = option.getAttribute('data-unit');
         }
     }
     
