@@ -103,8 +103,18 @@
 [data-theme="dark"] h5, 
 [data-theme="dark"] h6,
 [data-theme="dark"] b,
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] label,
+[data-theme="dark"] small,
 [data-theme="dark"] strong {
     color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .text-soft,
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] .sidebar-category {
+    color: #CBD5E1 !important;
 }
 
 [data-theme="dark"] .sidebar-item:hover,
@@ -157,14 +167,30 @@
 [data-theme="dark"] *[style*="background: #ffffff"],
 [data-theme="dark"] *[style*="background:#ffffff"],
 [data-theme="dark"] *[style*="background: rgb(255, 255, 255)"],
-[data-theme="dark"] *[style*="background:#f8fafc"] {
+[data-theme="dark"] *[style*="background:#f8fafc"],
+[data-theme="dark"] *[style*="background: #f8fafc"] {
     background-color: var(--bg-card) !important;
     color: var(--text-main) !important;
+}
+
+/* Force white text on any element that might have inline dark colors */
+[data-theme="dark"] *[style*="color: #000"],
+[data-theme="dark"] *[style*="color:#000"],
+[data-theme="dark"] *[style*="color: #0f172a"],
+[data-theme="dark"] *[style*="color:#0f172a"],
+[data-theme="dark"] *[style*="color: #1e293b"],
+[data-theme="dark"] *[style*="color:#1e293b"],
+[data-theme="dark"] *[style*="color: #475569"],
+[data-theme="dark"] *[style*="color:#475569"] {
+    color: #FFFFFF !important;
 }
 
 [data-theme="dark"] .chat-messages {
     background: var(--bg-main) !important;
 }
+
+* {
+    margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
