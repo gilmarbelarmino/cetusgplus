@@ -292,21 +292,38 @@ $activeSurveyId = $_GET['id'] ?? null;
                             const textColor = style.getPropertyValue('--text-main').trim() || '#333';
 
                             const config = {
-                                type: 'doughnut',
+                                type: 'bar',
                                 data: {
                                     labels: labels,
                                     datasets: [{
                                         data: data,
-                                        backgroundColor: ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
+                                        backgroundColor: ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
+                                        borderRadius: 8,
+                                        borderSkipped: false,
+                                        barThickness: 32
                                     }]
                                 },
                                 options: {
+                                    indexAxis: 'y', // Barras horizontais ficam mais profissionais para labels longos
                                     responsive: true,
                                     maintainAspectRatio: false,
                                     plugins: {
-                                        legend: { 
-                                            position: 'bottom',
-                                            labels: { color: textColor }
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: '#0F172A',
+                                            padding: 12,
+                                            titleFont: { size: 14, weight: 'bold' },
+                                            bodyFont: { size: 13 }
+                                        }
+                                    },
+                                    scales: {
+                                        x: {
+                                            grid: { display: false, drawBorder: false },
+                                            ticks: { color: textColor, font: { weight: '600' } }
+                                        },
+                                        y: {
+                                            grid: { display: false, drawBorder: false },
+                                            ticks: { color: textColor, font: { weight: '700' } }
                                         }
                                     }
                                 }
@@ -317,11 +334,11 @@ $activeSurveyId = $_GET['id'] ?? null;
                                 try {
                                     Chart.register(ChartDataLabels);
                                     config.options.plugins.datalabels = {
-                                        color: '#FFFFFF',
-                                        backgroundColor: 'rgba(0,0,0,0.6)',
-                                        borderRadius: 4,
-                                        padding: 4,
-                                        font: { weight: 'bold', size: 11 },
+                                        color: textColor,
+                                        anchor: 'end',
+                                        align: 'right',
+                                        offset: 8,
+                                        font: { weight: 'bold', size: 12 },
                                         formatter: (val, context) => {
                                             let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                                             return sum > 0 ? (val * 100 / sum).toFixed(0) + "%" : "";
