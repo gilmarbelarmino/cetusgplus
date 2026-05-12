@@ -304,7 +304,7 @@ $activeSurveyId = $_GET['id'] ?? null;
                                     }]
                                 },
                                 options: {
-                                    indexAxis: 'y', // Barras horizontais ficam mais profissionais para labels longos
+                                    indexAxis: 'x', // Barras verticais com nomes abaixo
                                     responsive: true,
                                     maintainAspectRatio: false,
                                     plugins: {
@@ -319,11 +319,12 @@ $activeSurveyId = $_GET['id'] ?? null;
                                     scales: {
                                         x: {
                                             grid: { display: false, drawBorder: false },
-                                            ticks: { color: textColor, font: { weight: '600' } }
+                                            ticks: { color: textColor, font: { weight: '700' } }
                                         },
                                         y: {
-                                            grid: { display: false, drawBorder: false },
-                                            ticks: { color: textColor, font: { weight: '700' } }
+                                            beginAtZero: true,
+                                            grid: { color: 'rgba(148, 163, 184, 0.1)', drawBorder: false },
+                                            ticks: { color: textColor, font: { weight: '600' } }
                                         }
                                     }
                                 }
@@ -336,8 +337,8 @@ $activeSurveyId = $_GET['id'] ?? null;
                                     config.options.plugins.datalabels = {
                                         color: textColor,
                                         anchor: 'end',
-                                        align: 'right',
-                                        offset: 8,
+                                        align: 'top',
+                                        offset: 4,
                                         font: { weight: 'bold', size: 12 },
                                         formatter: (val, context) => {
                                             let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
