@@ -3,6 +3,40 @@ $compId = getCurrentUserCompanyId();
 $userId = $_SESSION['user_id'];
 $isAllowedToManage = ($user['role'] === 'Administrador' || $user['role'] === 'RH' || $user['role'] === 'Suporte Técnico' || $user['login_name'] === 'superadmin');
 
+// --- AUTO MIGRATION: Garantir tabelas de Pesquisa ---
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS surveys (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        company_id INT NOT NULL,
+        created_by VARCHAR(50),
+        status ENUM('Ativa', 'Encerrada') DEFAULT 'Ativa',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS survey_questions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        survey_id INT NOT NULL,
+        question_text TEXT NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS survey_options (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        question_id INT NOT NULL,
+        option_text VARCHAR(255) NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS survey_responses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        survey_id INT NOT NULL,
+        question_id INT NOT NULL,
+        option_id INT NOT NULL,
+        user_id VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+} catch (Exception $e) {}
+
 // Processar Ações
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
