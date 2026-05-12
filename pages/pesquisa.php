@@ -274,58 +274,75 @@ $activeSurveyId = $_GET['id'] ?? null;
                         <div style="height: 300px;">
                             <canvas id="chart-<?= $q['id'] ?>"></canvas>
                         </div>
-                    </div>
-                    <script>
+                                  <script>
                     (function() {
-                        // Registrar Plugin globalmente apenas uma vez
-                        if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
-                            try {
-                                Chart.register(ChartDataLabels);
-                            } catch(e) {
-                                // Já registrado
+                        // Função para inicializar o gráfico com segurança
+                        function initChart(qId, labels, data) {
+                            const ctx = document.getElementById('chart-' + qId);
+                            if (!ctx) return;
+
+                            // Verificar se o Chart.js está disponível
+                            if (typeof Chart === 'undefined') {
+                                console.error('Chart.js não carregado');
+                                return;
                             }
-                        }
 
-                        document.addEventListener('DOMContentLoaded', () => {
+                            // Configurações de cores dinâmicas baseadas no tema
+                            const style = getComputedStyle(document.documentElement);
+                            const textColor = style.getPropertyValue('--text-main').trim() || '#333';
 
-                        new Chart(document.getElementById('chart-<?= $q['id'] ?>'), {
-                            type: 'doughnut',
-                            data: {
-                                labels: <?= json_encode($labels) ?>,
-                                datasets: [{
-                                    data: <?= json_encode($data) ?>,
-                                    backgroundColor: ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: { 
-                                        position: 'bottom',
-                                        labels: {
-                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim() || '#333'
+                            const config = {
+                                type: 'doughnut',
+                                data: {
+                                    labels: labels,
+                                    datasets: [{
+                                        data: data,
+                                        backgroundColor: ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { 
+                                            position: 'bottom',
+                                            labels: { color: textColor }
                                         }
-                                    },
-                                    datalabels: {
+                                    }
+                                }
+                            };
+
+                            // Adicionar datalabels apenas se o plugin estiver carregado
+                            if (typeof ChartDataLabels !== 'undefined') {
+                                try {
+                                    Chart.register(ChartDataLabels);
+                                    config.options.plugins.datalabels = {
                                         color: '#FFFFFF',
-                                        backgroundColor: 'rgba(0,0,0,0.5)',
+                                        backgroundColor: 'rgba(0,0,0,0.6)',
                                         borderRadius: 4,
-                                        font: {
-                                            weight: 'bold'
-                                        },
-                                        formatter: (val, ctx) => {
-                                            let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                        padding: 4,
+                                        font: { weight: 'bold', size: 11 },
+                                        formatter: (val, context) => {
+                                            let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                                             return sum > 0 ? (val * 100 / sum).toFixed(0) + "%" : "";
                                         },
                                         display: function(context) {
                                             return context.dataset.data[context.dataIndex] > 0;
                                         }
-                                    }
+                                    };
+                                } catch(e) {
+                                    console.warn('Erro ao registrar ChartDataLabels:', e);
                                 }
                             }
+
+                            new Chart(ctx, config);
+                        }
+
+                        document.addEventListener('DOMContentLoaded', () => {
+                            setTimeout(() => {
+                                initChart('<?= $q['id'] ?>', <?= json_encode($labels) ?>, <?= json_encode($data) ?>);
+                            }, 100);
                         });
-                    });
                     })();
                     </script>
                 <?php endforeach; ?>
