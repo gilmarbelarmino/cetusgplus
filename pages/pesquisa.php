@@ -13,19 +13,19 @@ try {
         created_by VARCHAR(50),
         status ENUM('Ativa', 'Encerrada') DEFAULT 'Ativa',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS survey_questions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         survey_id INT NOT NULL,
         question_text TEXT NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS survey_options (
         id INT AUTO_INCREMENT PRIMARY KEY,
         question_id INT NOT NULL,
         option_text VARCHAR(255) NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS survey_responses (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -34,7 +34,7 @@ try {
         option_id INT NOT NULL,
         user_id VARCHAR(50) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 } catch (Exception $e) {}
 
 // Processar Ações
@@ -234,7 +234,7 @@ $activeSurveyId = $_GET['id'] ?? null;
         $stmtR = $pdo->prepare("
             SELECT r.*, u.name, u.avatar_url, o.option_text, q.question_text
             FROM survey_responses r
-            JOIN users u ON r.user_id = u.id
+            JOIN users u ON CONVERT(r.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
             JOIN survey_options o ON r.option_id = o.id
             JOIN survey_questions q ON r.question_id = q.id
             WHERE r.survey_id = ?
