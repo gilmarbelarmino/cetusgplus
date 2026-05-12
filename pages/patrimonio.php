@@ -129,7 +129,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             <p>Controle detalhado de inventário, movimentações e valores.</p>
         </div>
     </div>
-    <div class="page-header-actions">
+    <div class="page-header-actions" style="display: flex; gap: 1rem; align-items: center;">
+        <div style="flex: 1; min-width: 250px; position: relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.875rem;"></i>
+            <input type="text" id="search-patrimonio" class="form-input" placeholder="Filtrar ativos..." style="padding-left: 2.5rem; border-radius: 0.75rem; background: #fff;" onkeyup="filterTable('search-patrimonio', 'table-patrimonio')" autocomplete="off">
+        </div>
         <button class="btn-primary" onclick="window.location.href='?page=patrimonio&action=novo'">
             <i class="fa-solid fa-plus"></i>
             Cadastrar Ativo
@@ -186,7 +190,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
 </div>
 
 <div class="table-responsive">
-    <table>
+    <table id="table-patrimonio">
         <thead>
             <tr>
                 <th>Ativo</th>
@@ -650,3 +654,26 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
     }
 </script>
 
+
+<script>
+    function filterTable(inputId, tableId) {
+        const input = document.getElementById(inputId);
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById(tableId);
+        const tr = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < tr.length; i++) {
+            tr[i].style.display = "none";
+            const td = tr[i].getElementsByTagName("td");
+            for (let j = 0; j < td.length; j++) {
+                if (td[j]) {
+                    const txtValue = td[j].textContent || td[j].innerText;
+                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                        break;
+                    }
+                }
+            }
+        }
+    }
+</script>
