@@ -4,6 +4,8 @@ require_once 'access_control.php';
 // Migrações SaaS
 try { $pdo->exec("ALTER TABLE tech_cameras ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE tech_remote_access ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE tech_remote_access ADD COLUMN server_name VARCHAR(255) NULL"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE tech_remote_access ADD COLUMN email_address VARCHAR(255) NULL"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE tech_emails ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE tech_note_sections ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE tech_notes ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
@@ -59,15 +61,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ?page=tecnologia&tab=cameras&success=3'); exit;
     }
 
-    // Ações para Acessos Remotos
+    // Ações para Acessos Gerais
     if ($action === 'add_remote') {
-        $stmt = $pdo->prepare("INSERT INTO tech_remote_access (user_id, pc_password, email_password, pc_name, observations, company_id) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['user_id'], $_POST['pc_password'], $_POST['email_password'], $_POST['pc_name'], $_POST['observations'], $compId]);
+        $stmt = $pdo->prepare("INSERT INTO tech_remote_access (user_id, pc_password, email_password, email_address, server_name, pc_name, observations, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$_POST['user_id'], $_POST['pc_password'], $_POST['email_password'], $_POST['email_address'], $_POST['server_name'], $_POST['pc_name'], $_POST['observations'], $compId]);
         header('Location: ?page=tecnologia&tab=remotos&success=4'); exit;
     }
     if ($action === 'edit_remote') {
-        $stmt = $pdo->prepare("UPDATE tech_remote_access SET user_id = ?, pc_password = ?, email_password = ?, pc_name = ?, observations = ? WHERE id = ? AND company_id = ?");
-        $stmt->execute([$_POST['user_id'], $_POST['pc_password'], $_POST['email_password'], $_POST['pc_name'], $_POST['observations'], $_POST['id'], $compId]);
+        $stmt = $pdo->prepare("UPDATE tech_remote_access SET user_id = ?, pc_password = ?, email_password = ?, email_address = ?, server_name = ?, pc_name = ?, observations = ? WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['user_id'], $_POST['pc_password'], $_POST['email_password'], $_POST['email_address'], $_POST['server_name'], $_POST['pc_name'], $_POST['observations'], $_POST['id'], $compId]);
         header('Location: ?page=tecnologia&tab=remotos&success=5'); exit;
     }
     if ($action === 'delete_remote') {
@@ -76,22 +78,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ?page=tecnologia&tab=remotos&success=6'); exit;
     }
 
-    // Ações para E-mails
-    if ($action === 'add_email') {
-        $stmt = $pdo->prepare("INSERT INTO tech_emails (email, password, type, remote_user_id, usage_date, company_id) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$_POST['email'], $_POST['password'], $_POST['type'], $_POST['remote_user_id'], $_POST['usage_date'], $compId]);
-        header('Location: ?page=tecnologia&tab=emails&success=7'); exit;
-    }
-    if ($action === 'edit_email') {
-        $stmt = $pdo->prepare("UPDATE tech_emails SET email = ?, password = ?, type = ?, remote_user_id = ?, usage_date = ? WHERE id = ? AND company_id = ?");
-        $stmt->execute([$_POST['email'], $_POST['password'], $_POST['type'], $_POST['remote_user_id'], $_POST['usage_date'], $_POST['id'], $compId]);
-        header('Location: ?page=tecnologia&tab=emails&success=8'); exit;
-    }
-    if ($action === 'delete_email') {
-        $stmt = $pdo->prepare("DELETE FROM tech_emails WHERE id = ? AND company_id = ?");
-        $stmt->execute([$_POST['id'], $compId]);
-        header('Location: ?page=tecnologia&tab=emails&success=9'); exit;
-    }
 
     // Ações para Anotações (Seções)
     if ($action === 'add_note_section') {
@@ -142,13 +128,6 @@ $stmt_r = $pdo->prepare("SELECT tr.*, u.name as user_name, u.avatar_url, u.email
 $stmt_r->execute([$compId]);
 $remotes = $stmt_r->fetchAll();
 
-$stmt_e = $pdo->prepare("SELECT te.*, u.name as user_name 
-                        FROM tech_emails te 
-                        LEFT JOIN users u ON te.remote_user_id = u.id 
-                        WHERE te.company_id = ?
-                        ORDER BY te.email");
-$stmt_e->execute([$compId]);
-$emails = $stmt_e->fetchAll();
 
 $stmt_u = $pdo->prepare("SELECT id, name, avatar_url FROM users WHERE company_id = ? ORDER BY name");
 $stmt_u->execute([$compId]);
@@ -208,10 +187,7 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
         <i class="fa-solid fa-video"></i> Cameras Arrastão
     </button>
     <button onclick="unlockTab('remotos')" id="tab-btn-remotos" class="tab-btn <?= $activeTab == 'remotos' ? 'active' : '' ?>">
-        <i class="fa-solid fa-desktop"></i> Acessos Remotos
-    </button>
-    <button onclick="unlockTab('emails')" id="tab-btn-emails" class="tab-btn <?= $activeTab == 'emails' ? 'active' : '' ?>">
-        <i class="fa-solid fa-envelope"></i> E-mails
+        <i class="fa-solid fa-desktop"></i> Acessos Gerais
     </button>
     <button onclick="unlockTab('anotacoes')" id="tab-btn-anotacoes" class="tab-btn <?= $activeTab == 'anotacoes' ? 'active' : '' ?>">
         <i class="fa-solid fa-book"></i> Anotações
@@ -344,8 +320,8 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
     <div style="background: #fff; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
         <div style="display: flex; justify-content: space-between; margin-bottom: 2rem; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <div>
-                <h3 style="font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Acessos Remotos</h3>
-                <p style="font-size: 0.875rem; color: var(--text-soft);">Credenciais e senhas de acesso às estações de trabalho.</p>
+                <h3 style="font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Acessos Gerais</h3>
+                <p style="font-size: 0.875rem; color: var(--text-soft);">Credenciais e senhas de acesso às estações de trabalho e sistemas.</p>
             </div>
             <div style="display: flex; gap: 1rem; flex: 1; max-width: 600px; justify-content: flex-end;">
                 <div style="flex: 1; max-width: 300px; position: relative;">
@@ -363,10 +339,10 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
                 <thead>
                     <tr style="background: none;">
                         <th style="background: #f8fafc; border-radius: 0.5rem 0 0 0.5rem; padding: 1rem;">USUÁRIO</th>
-                        <th style="background: #f8fafc; padding: 1rem;">LOGIN / EMAIL</th>
-                        <th style="background: #f8fafc; padding: 1rem;">SENHA PC</th>
+                        <th style="background: #f8fafc; padding: 1rem;">LOGIN / PC</th>
+                        <th style="background: #f8fafc; padding: 1rem;">NOME SERVIDOR</th>
+                        <th style="background: #f8fafc; padding: 1rem;">E-MAIL CORP.</th>
                         <th style="background: #f8fafc; padding: 1rem;">SENHA EMAIL</th>
-                        <th style="background: #f8fafc; padding: 1rem;">REDE / PC</th>
                         <th style="background: #f8fafc; border-radius: 0 0.5rem 0.5rem 0; padding: 1rem; text-align:right;">AÇÕES</th>
                     </tr>
                 </thead>
@@ -385,28 +361,17 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
                                 <div style="font-weight: 700; color: var(--text-main);"><?= htmlspecialchars((string)($rem['user_name'] ?? '')) ?></div>
                             </div>
                         </td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: var(--text-soft);"><?= htmlspecialchars((string)($rem['user_email'] ?? '')) ?></td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
-                            <div style="display:flex; align-items:center; gap:0.5rem;">
-                                <code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569; font-weight: 600;"><?= htmlspecialchars((string)($rem['pc_password'] ?? '')) ?></code>
-                                <?php if(!empty($rem['pc_password'])): ?>
-                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes((string)$rem['pc_password'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
-                                <?php endif; ?>
-                            </div>
+                            <div style="font-weight: 800; color: var(--text-main);"><?= htmlspecialchars((string)($rem['pc_name'] ?? '')) ?></div>
+                            <div style="font-size: 0.75rem; color: var(--text-soft);">Senha: <?= htmlspecialchars((string)($rem['pc_password'] ?? '')) ?></div>
                         </td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: var(--crm-purple);"><?= htmlspecialchars((string)($rem['server_name'] ?? '-')) ?></td>
+                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: var(--text-soft);"><?= htmlspecialchars((string)($rem['email_address'] ?? '-')) ?></td>
                         <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
                             <div style="display:flex; align-items:center; gap:0.5rem;">
                                 <code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569; font-weight: 600;"><?= htmlspecialchars((string)($rem['email_password'] ?? '')) ?></code>
                                 <?php if(!empty($rem['email_password'])): ?>
                                 <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes((string)$rem['email_password'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
-                                <?php endif; ?>
-                            </div>
-                        </td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
-                            <div style="display:flex; align-items:center; gap:0.5rem; font-weight: 800; color: var(--crm-purple);">
-                                <span><?= htmlspecialchars((string)($rem['pc_name'] ?? '')) ?></span>
-                                <?php if(!empty($rem['pc_name'])): ?>
-                                <button class="btn-icon" style="padding:0; min-width:auto; width:28px; height:28px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px;" onclick="copyText(this, '<?= htmlspecialchars(addslashes((string)$rem['pc_name'])) ?>')" title="Copiar"><i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i></button>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -431,72 +396,6 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
     </div>
 </div>
 
-<!-- ABA 3: EMAILS -->
-<div id="content-emails" class="tech-content <?= $activeTab == 'emails' ? 'active' : '' ?>">
-    <div style="background: #fff; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 2rem; align-items: center; gap: 1rem; flex-wrap: wrap;">
-            <div>
-                <h3 style="font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">Contas de E-mail</h3>
-                <p style="font-size: 0.875rem; color: var(--text-soft);">Gestão de contas corporativas e provedores.</p>
-            </div>
-            <div style="display: flex; gap: 1rem; flex: 1; max-width: 600px; justify-content: flex-end;">
-                <div style="flex: 1; max-width: 300px; position: relative;">
-                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.875rem;"></i>
-                    <input type="text" id="search-emails" class="form-input" placeholder="Filtrar e-mails..." style="padding-left: 2.5rem; border-radius: 0.75rem; background: #f8fafc;" onkeyup="filterTable('search-emails', 'table-emails')">
-                </div>
-                <button class="btn-primary" onclick="openEmailModal()" style="border-radius: 0.75rem; padding: 0.6rem 1.25rem; font-weight: 700;">
-                    <i class="fa-solid fa-plus"></i> <span class="hide-mobile">Novo E-mail</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="table-responsive">
-            <table id="table-emails" style="border-collapse: separate; border-spacing: 0 0.5rem; margin-top: -0.5rem;">
-                <thead>
-                    <tr style="background: none;">
-                        <th style="background: #f8fafc; border-radius: 0.5rem 0 0 0.5rem; padding: 1rem;">E-MAIL CORPORATIVO</th>
-                        <th style="background: #f8fafc; padding: 1rem;">SENHA</th>
-                        <th style="background: #f8fafc; padding: 1rem;">PROVEDOR</th>
-                        <th style="background: #f8fafc; padding: 1rem;">USUÁRIO RESP.</th>
-                        <th style="background: #f8fafc; padding: 1rem;">ÚLTIMO USO</th>
-                        <th style="background: #f8fafc; border-radius: 0 0.5rem 0.5rem 0; padding: 1rem; text-align:right;">AÇÕES</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($emails as $em): ?>
-                    <tr style="background: #fff; transition: all 0.2s;">
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; font-weight: 700; color: var(--crm-purple);"><?= htmlspecialchars((string)($em['email'] ?? '')) ?></td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;"><code style="background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; color: #475569;"><?= htmlspecialchars((string)($em['password'] ?? '')) ?></code></td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9;">
-                            <?php
-                                $typeColor = '#64748b';
-                                if ($em['type'] == 'Google') $typeColor = '#4285F4';
-                                elseif ($em['type'] == 'Outlook') $typeColor = '#0078D4';
-                            ?>
-                            <span style="background: rgba(<?= hexToRgb($typeColor) ?>, 0.1); color: <?= $typeColor ?>; padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-weight: 800; font-size: 0.75rem;"><?= htmlspecialchars($em['type']) ?></span>
-                        </td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; color: #475569; font-weight: 600;"><?= htmlspecialchars($em['user_name'] ?? 'Não atribuído') ?></td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; color: #94a3b8; font-size: 0.85rem;"><?= $em['usage_date'] ? date('d/m/Y', strtotime($em['usage_date'])) : '-' ?></td>
-                        <td style="padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; text-align:right;">
-                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                                <button class="btn-icon" style="background: #f1f5f9; width: 32px; height: 32px;" onclick='openEmailModal(<?= json_encode($em) ?>)' title="Editar"><i class="fa-solid fa-pen-to-square" style="font-size: 0.85rem;"></i></button>
-                                <form method="POST" style="display:inline;" onsubmit="return confirm('Deseja excluir este e-mail?')">
-                                    <input type="hidden" name="action" value="delete_email">
-                                    <input type="hidden" name="id" value="<?= $em['id'] ?>">
-                                    <button type="submit" class="btn-icon" style="background: #fef2f2; color:#ef4444; width: 32px; height: 32px; border: 1px solid #fee2e2;"><i class="fa-solid fa-trash-can" style="font-size: 0.85rem;"></i></button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                    <?php if (empty($emails)): ?>
-                    <tr><td colspan="6" style="text-align:center;padding:4rem;color:#94a3b8;"><i class="fa-solid fa-envelope-open-text" style="font-size: 3rem; opacity: 0.1; margin-bottom: 1rem; display: block;"></i> Nenhum e-mail cadastrado.</td></tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
 
 <!-- ABA 4: ANOTAÇÕES (OneNote Style) -->
 <div id="content-anotacoes" class="tech-content <?= $activeTab == 'anotacoes' ? 'active' : '' ?>">
@@ -750,7 +649,7 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
 <div id="remoteModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
     <div class="glass-panel" style="max-width: 600px; width: 100%;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h3 id="remoteTitle" style="font-size: 1.25rem; font-weight: 900;">Novo Acesso Remoto</h3>
+            <h3 id="remoteTitle" style="font-size: 1.25rem; font-weight: 900;">Novo Acesso Geral</h3>
             <button onclick="document.getElementById('remoteModal').style.display='none'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
         </div>
         <form method="POST">
@@ -767,17 +666,27 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div class="form-group">
+                    <label class="form-label">Nome PC (Rede)</label>
+                    <input type="text" name="pc_name" id="remotePcName" class="form-input">
+                </div>
+                <div class="form-group">
                     <label class="form-label">Senha PC</label>
                     <input type="text" name="pc_password" id="remotePcPass" class="form-input">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Nome Servidor</label>
+                <input type="text" name="server_name" id="remoteServerName" class="form-input" placeholder="Ex: SRV-ARR-01">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">E-mail Corporativo</label>
+                    <input type="email" name="email_address" id="remoteEmailAddr" class="form-input">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Senha Email</label>
                     <input type="text" name="email_password" id="remoteEmailPass" class="form-input">
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Nome PC (Rede)</label>
-                <input type="text" name="pc_name" id="remotePcName" class="form-input">
             </div>
             <div class="form-group">
                 <label class="form-label">Observações</label>
@@ -791,55 +700,6 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
     </div>
 </div>
 
-<!-- Modal Email -->
-<div id="emailModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
-    <div class="glass-panel" style="max-width: 600px; width: 100%;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h3 id="emailTitle" style="font-size: 1.25rem; font-weight: 900;">Novo E-mail</h3>
-            <button onclick="document.getElementById('emailModal').style.display='none'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
-        </div>
-        <form method="POST">
-            <input type="hidden" name="action" id="emailAction" value="add_email">
-            <input type="hidden" name="id" id="email_id">
-            <div class="form-group">
-                <label class="form-label">E-mail *</label>
-                <input type="email" name="email" id="emailAddr" class="form-input" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Senha</label>
-                <input type="text" name="password" id="emailPass" class="form-input">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Tipo</label>
-                <select name="type" id="emailType" class="form-select">
-                    <option value="Google">Google (Workspace/Gmail)</option>
-                    <option value="Outlook">Outlook / Office 365</option>
-                    <option value="Bol">Bol</option>
-                    <option value="Uol">Uol</option>
-                    <option value="Yahoo">Yahoo</option>
-                    <option value="Outro">Outro</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Usuário Home Office</label>
-                <select name="remote_user_id" id="emailUser" class="form-select">
-                    <option value="">Nenhum</option>
-                    <?php foreach ($all_users as $u): ?>
-                    <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Data de Utilização</label>
-                <input type="date" name="usage_date" id="emailDate" class="form-input">
-            </div>
-            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
-                <button type="button" onclick="document.getElementById('emailModal').style.display='none'" class="btn-secondary">Cancelar</button>
-                <button type="submit" class="btn-primary">Salvar</button>
-            </div>
-        </form>
-    </div>
-</div>
 
 <script>
     let pendingTab = '';
@@ -847,13 +707,11 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
     const tabPasswords = {
         'cameras': systemTechPass,
         'remotos': systemTechPass,
-        'emails': systemTechPass,
         'anotacoes': systemTechPass
     };
     const unlockedTabs = {
         'cameras': <?= $activeTab == 'cameras' ? 'true' : 'false' ?>,
         'remotos': <?= $activeTab == 'remotos' ? 'true' : 'false' ?>,
-        'emails': <?= $activeTab == 'emails' ? 'true' : 'false' ?>,
         'anotacoes': <?= $activeTab == 'anotacoes' ? 'true' : 'false' ?>
     };
 
@@ -908,28 +766,18 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
     function openRemoteModal(rem = null) {
         const modal = document.getElementById('remoteModal');
         document.getElementById('remoteAction').value = rem ? 'edit_remote' : 'add_remote';
-        document.getElementById('remoteTitle').innerText = rem ? 'Editar Acesso Remoto' : 'Novo Acesso Remoto';
+        document.getElementById('remoteTitle').innerText = rem ? 'Editar Acesso Geral' : 'Novo Acesso Geral';
         document.getElementById('remote_id').value = rem ? rem.id : '';
         document.getElementById('remoteUser').value = rem ? rem.user_id : '';
         document.getElementById('remotePcPass').value = rem ? rem.pc_password : '';
         document.getElementById('remoteEmailPass').value = rem ? rem.email_password : '';
+        document.getElementById('remoteEmailAddr').value = rem ? (rem.email_address || '') : '';
+        document.getElementById('remoteServerName').value = rem ? (rem.server_name || '') : '';
         document.getElementById('remotePcName').value = rem ? rem.pc_name : '';
         document.getElementById('remoteObs').value = rem ? rem.observations : '';
         modal.style.display = 'flex';
     }
 
-    function openEmailModal(em = null) {
-        const modal = document.getElementById('emailModal');
-        document.getElementById('emailAction').value = em ? 'edit_email' : 'add_email';
-        document.getElementById('emailTitle').innerText = em ? 'Editar E-mail' : 'Novo E-mail';
-        document.getElementById('email_id').value = em ? em.id : '';
-        document.getElementById('emailAddr').value = em ? em.email : '';
-        document.getElementById('emailPass').value = em ? em.password : '';
-        document.getElementById('emailType').value = em ? em.type : 'Google';
-        document.getElementById('emailUser').value = em ? em.remote_user_id : '';
-        document.getElementById('emailDate').value = em ? em.usage_date : '';
-        modal.style.display = 'flex';
-    }
 
     // Notes Logic
     function openNoteSectionModal(sec = null) {
@@ -1050,7 +898,7 @@ $tech_pass = $stmt_pass->fetchColumn() ?: '1968';
 
     // Global listeners for modals
     window.onclick = function(event) {
-        ['cameraModal', 'remoteModal', 'emailModal', 'passModal'].forEach(id => {
+        ['cameraModal', 'remoteModal', 'passModal'].forEach(id => {
             const m = document.getElementById(id);
             if (event.target == m) m.style.display = "none";
         });
