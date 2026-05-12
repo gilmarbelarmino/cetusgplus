@@ -2,6 +2,7 @@
 $compId = getCurrentUserCompanyId();
 $userId = $_SESSION['user_id'];
 $isAllowedToManage = ($user['role'] === 'Administrador' || $user['role'] === 'RH' || $user['role'] === 'Suporte Técnico' || $user['login_name'] === 'superadmin');
+$isAdmin = ($user['role'] === 'Administrador' || $user['login_name'] === 'superadmin');
 
 // --- AUTO MIGRATION: Garantir tabelas de Pesquisa ---
 try {
@@ -76,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if ($_POST['action'] === 'delete_survey' && $isAllowedToManage) {
+        if ($_POST['action'] === 'delete_survey' && $isAdmin) {
             $surveyId = $_POST['survey_id'];
             $stmt = $pdo->prepare("DELETE FROM surveys WHERE id = ? AND company_id = ?");
             $stmt->execute([$surveyId, $compId]);
@@ -134,8 +135,10 @@ $activeSurveyId = $_GET['id'] ?? null;
                 <tbody>
                     <?php foreach ($surveys as $s): ?>
                         <tr>
+                            <td>
                                 <div style="font-weight: 700; color: var(--text-main);"><?= htmlspecialchars($s['title']) ?></div>
                                 <div style="font-size: 0.75rem; color: var(--text-soft);"><?= htmlspecialchars($s['description']) ?></div>
+                            </td>
                             <td>
                                 <span class="badge" style="background: <?= $s['status'] === 'Ativa' ? '#10B98120' : '#EF444420' ?>; color: <?= $s['status'] === 'Ativa' ? '#10B981' : '#EF4444' ?>;">
                                     <?= $s['status'] ?>
@@ -158,10 +161,13 @@ $activeSurveyId = $_GET['id'] ?? null;
                                     <a href="index.php?page=pesquisa&view=analysis&id=<?= $s['id'] ?>" class="btn-secondary" title="Análise">
                                         <i class="fa-solid fa-chart-pie"></i>
                                     </a>
+                                <?php endif; ?>
+                                
+                                <?php if ($isAdmin): ?>
                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta pesquisa?')">
                                         <input type="hidden" name="action" value="delete_survey">
                                         <input type="hidden" name="survey_id" value="<?= $s['id'] ?>">
-                                        <button type="submit" class="btn-secondary" style="color: #EF4444; border-color: rgba(239, 68, 68, 0.2);">
+                                        <button type="submit" class="btn-secondary" style="color: #EF4444; border-color: rgba(239, 68, 68, 0.2);" title="Excluir Pesquisa">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </form>
