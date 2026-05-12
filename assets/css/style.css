@@ -71,6 +71,9 @@
     --md-sys-color-primary: var(--brand-primary);
     --md-sys-color-surface: var(--bg-main);
     --md-sys-color-on-surface: var(--text-main);
+    --md-sys-color-on-surface-variant: var(--text-soft);
+    --md-sys-color-outline: var(--border-color);
+    --md-sys-color-surface-container: var(--bg-card);
 }
 
 /* --- DARK MODE TOKENS (PREMIUM GOLD & WHITE) --- */
@@ -94,6 +97,12 @@
     --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.5);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.6);
     --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.7);
+
+    /* M3 Dark Mappings */
+    --md-sys-color-on-surface: var(--text-main);
+    --md-sys-color-on-surface-variant: var(--text-soft);
+    --md-sys-color-outline: var(--border-color);
+    --md-sys-color-surface-container: var(--bg-card);
 }
 
 [data-theme="dark"] h1, 
