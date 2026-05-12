@@ -276,13 +276,17 @@ $activeSurveyId = $_GET['id'] ?? null;
                         </div>
                     </div>
                     <script>
-                    document.addEventListener('DOMContentLoaded', () => {
-                        // Registrar Plugin de Labels de forma segura se disponível
-                        if (typeof ChartDataLabels !== 'undefined') {
+                    (function() {
+                        // Registrar Plugin globalmente apenas uma vez
+                        if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
                             try {
                                 Chart.register(ChartDataLabels);
-                            } catch(e) {}
+                            } catch(e) {
+                                // Já registrado
+                            }
                         }
+
+                        document.addEventListener('DOMContentLoaded', () => {
 
                         new Chart(document.getElementById('chart-<?= $q['id'] ?>'), {
                             type: 'doughnut',
@@ -297,18 +301,32 @@ $activeSurveyId = $_GET['id'] ?? null;
                                 responsive: true,
                                 maintainAspectRatio: false,
                                 plugins: {
-                                    legend: { position: 'bottom' },
+                                    legend: { 
+                                        position: 'bottom',
+                                        labels: {
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim() || '#333'
+                                        }
+                                    },
                                     datalabels: {
-                                        color: '#fff',
+                                        color: '#FFFFFF',
+                                        backgroundColor: 'rgba(0,0,0,0.5)',
+                                        borderRadius: 4,
+                                        font: {
+                                            weight: 'bold'
+                                        },
                                         formatter: (val, ctx) => {
                                             let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                            return sum > 0 ? (val * 100 / sum).toFixed(0) + "%" : "0%";
+                                            return sum > 0 ? (val * 100 / sum).toFixed(0) + "%" : "";
+                                        },
+                                        display: function(context) {
+                                            return context.dataset.data[context.dataIndex] > 0;
                                         }
                                     }
                                 }
                             }
                         });
                     });
+                    })();
                     </script>
                 <?php endforeach; ?>
             </div>
