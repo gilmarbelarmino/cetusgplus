@@ -513,6 +513,7 @@ foreach ($userLoanMonthly as $uid => $ud) {
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
 <div class="page-header" style="margin-bottom: 2rem;">
     <div class="page-header-info">
@@ -1588,7 +1589,47 @@ function printCurrentTab() {
 
 <!-- ======================== SCRIPTS ======================== -->
 <script>
-    let chartOptions;
+    // Registro global do plugin
+    if (typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+    }
+
+    let chartOptions = {
+        responsive: true, 
+        maintainAspectRatio: false,
+        plugins: { 
+            legend: { position: 'bottom' },
+            tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                padding: 12,
+                titleFont: { size: 14, weight: 'bold' },
+                bodyFont: { size: 13 },
+                cornerRadius: 8,
+                displayColors: true
+            },
+            datalabels: {
+                color: '#fff',
+                font: { weight: 'bold', size: 11 },
+                formatter: (value, ctx) => {
+                    let sum = 0;
+                    let dataArr = ctx.chart.data.datasets[0].data;
+                    dataArr.map(data => { sum += data; });
+                    let percentage = (value * 100 / sum).toFixed(0);
+                    if (percentage < 5 && ctx.chart.config.type !== 'bar') return null;
+                    return ctx.chart.config.type === 'bar' ? value : percentage + "%";
+                },
+                anchor: 'center',
+                align: 'center',
+                display: 'auto'
+            }
+        }
+    };
+
+    // Logger de erros para debug em produção
+    window.onerror = function(msg, url, line) {
+        console.error("Erro no Relatório: ", msg, " em ", url, ":", line);
+        return false;
+    };
     // ===== CHART USUÁRIOS POR EMPRÉSTIMO =====
     const userChartRaw = <?= json_encode($userChartData) ?>;
     const totalCurrentYearLoans = <?= $totalCurrentYear ?>;
@@ -1672,42 +1713,6 @@ function printCurrentTab() {
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Registrar Plugin de Labels de forma segura
-        if (typeof ChartDataLabels !== 'undefined') {
-            Chart.register(ChartDataLabels);
-        }
-
-    chartOptions = {
-        responsive: true, 
-        maintainAspectRatio: false,
-        plugins: { 
-            legend: { position: 'bottom' },
-            tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                padding: 12,
-                titleFont: { size: 14, weight: 'bold' },
-                bodyFont: { size: 13 },
-                cornerRadius: 8,
-                displayColors: true
-            },
-            datalabels: {
-                color: '#fff',
-                font: { weight: 'bold', size: 11 },
-                formatter: (value, ctx) => {
-                    let sum = 0;
-                    let dataArr = ctx.chart.data.datasets[0].data;
-                    dataArr.map(data => { sum += data; });
-                    let percentage = (value * 100 / sum).toFixed(0);
-                    // Mostrar apenas se for maior que 5% para não poluir
-                    if (percentage < 5 && ctx.chart.config.type !== 'bar') return null;
-                    return ctx.chart.config.type === 'bar' ? value : percentage + "%";
-                },
-                anchor: 'center',
-                align: 'center',
-                display: 'auto'
-            }
-        }
-    };
 
     // ===== GRÁFICOS CHAMADOS =====
     if(document.getElementById('chamadosStatusChart')) new Chart(document.getElementById('chamadosStatusChart'), {
