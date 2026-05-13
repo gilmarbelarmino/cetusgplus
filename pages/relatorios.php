@@ -526,6 +526,17 @@ function getActiveTabId() {
     return active ? active.id.replace('content-', '') : 'geral';
 }
 
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    const content = document.getElementById('content-' + tabId);
+    if (content) content.classList.add('active');
+    const btn = document.getElementById('tab-' + tabId);
+    if (btn) btn.classList.add('active');
+}
+
+document.addEventListener('DOMContentLoaded', () => { switchTab('geral'); });
+
 function captureAllCharts() {
     // Converts all visible Chart.js canvases to base64 images
     const result = {};
