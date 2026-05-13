@@ -10,21 +10,29 @@ $company_stmt->execute([$compId]);
 $company = $company_stmt->fetch() ?: ['company_name' => 'Cetusg Plus', 'logo_url' => ''];
 
 // === DADOS VISÃO GERAL ===
-$totalAssets = $pdo->prepare("SELECT COUNT(*) as total FROM assets WHERE company_id = ?");
-$totalAssets->execute([$compId]);
-$totalAssets = $totalAssets->fetch()['total'];
+try {
+    $totalAssets_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM assets WHERE company_id = ?");
+    $totalAssets_stmt->execute([$compId]);
+    $totalAssets = $totalAssets_stmt->fetch()['total'] ?? 0;
+} catch(Exception $e) { $totalAssets = 0; }
 
-$totalTickets = $pdo->prepare("SELECT COUNT(*) as total FROM tickets WHERE company_id = ?");
-$totalTickets->execute([$compId]);
-$totalTickets = $totalTickets->fetch()['total'];
+try {
+    $totalTickets_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM tickets WHERE company_id = ?");
+    $totalTickets_stmt->execute([$compId]);
+    $totalTickets = $totalTickets_stmt->fetch()['total'] ?? 0;
+} catch(Exception $e) { $totalTickets = 0; }
 
-$totalUsers = $pdo->prepare("SELECT COUNT(*) as total FROM users WHERE company_id = ?");
-$totalUsers->execute([$compId]);
-$totalUsers = $totalUsers->fetch()['total'];
+try {
+    $totalUsers_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM users WHERE company_id = ?");
+    $totalUsers_stmt->execute([$compId]);
+    $totalUsers = $totalUsers_stmt->fetch()['total'] ?? 0;
+} catch(Exception $e) { $totalUsers = 0; }
 
-$totalUnits = $pdo->prepare("SELECT COUNT(*) as total FROM units WHERE company_id = ?");
-$totalUnits->execute([$compId]);
-$totalUnits = $totalUnits->fetch()['total'];
+try {
+    $totalUnits_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM units WHERE company_id = ?");
+    $totalUnits_stmt->execute([$compId]);
+    $totalUnits = $totalUnits_stmt->fetch()['total'] ?? 0;
+} catch(Exception $e) { $totalUnits = 0; }
 
 try {
     $totalLoans = $pdo->prepare("SELECT COUNT(*) FROM loans WHERE company_id = ?");
@@ -38,66 +46,74 @@ try {
     $totalVolunteers = $totalVolunteers->fetch()['total'];
 } catch(Exception $e) { $totalVolunteers = 0; }
 
-// === DADOS CHAMADOS ===
-// Agregação robusta de status
-$chRaw_stmt = $pdo->prepare("SELECT CASE WHEN status IS NULL OR TRIM(status)='' THEN 'Concluído' ELSE status END as status, COUNT(*) as count FROM tickets WHERE company_id = ? GROUP BY status");
-$chRaw_stmt->execute([$compId]);
-$chRaw = $chRaw_stmt->fetchAll();
-$chAllStatus = [];
-foreach ($chRaw as $row) {
-    $s = trim($row['status']);
-    $c = (int)$row['count'];
-    if (empty($s)) $s = 'Concluído';
-    $chAllStatus[$s] = ($chAllStatus[$s] ?? 0) + $c;
+try {
+    // Agregação robusta de status
+    $chRaw_stmt = $pdo->prepare("SELECT CASE WHEN status IS NULL OR TRIM(status)='' THEN 'Concluído' ELSE status END as status, COUNT(*) as count FROM tickets WHERE company_id = ? GROUP BY status");
+    $chRaw_stmt->execute([$compId]);
+    $chRaw = $chRaw_stmt->fetchAll();
+    $chAllStatus = [];
+    foreach ($chRaw as $row) {
+        $s = trim($row['status']);
+        $c = (int)$row['count'];
+        if (empty($s)) $s = 'Concluído';
+        $chAllStatus[$s] = ($chAllStatus[$s] ?? 0) + $c;
+    }
+
+    $totalChamados = array_sum($chAllStatus) ?: 0;
+    $chAbertos     = $chAllStatus['Aberto'] ?? 0;
+    $chPendentes   = ($chAllStatus['Pendente'] ?? 0) + ($chAllStatus['Pendência'] ?? 0) + ($chAllStatus['Pendenciado'] ?? 0);
+    $chSolucionados= ($chAllStatus['Concluído'] ?? 0) + ($chAllStatus['Concluido'] ?? 0) + ($chAllStatus['Solucionado'] ?? 0) + ($chAllStatus['Solucionados'] ?? 0) + ($chAllStatus['Finalizado'] ?? 0) + ($chAllStatus['Fechado'] ?? 0);
+    $chSemSolucao  = ($chAllStatus['Sem Solução'] ?? 0) + ($chAllStatus['Sem Solucao'] ?? 0);
+
+    $chBySector_stmt = $pdo->prepare("SELECT sector, COUNT(*) as count FROM tickets WHERE company_id = ? GROUP BY sector ORDER BY count DESC");
+    $chBySector_stmt->execute([$compId]);
+    $chBySector = $chBySector_stmt->fetchAll();
+} catch(Exception $e) {
+    $chAllStatus = []; $totalChamados = 0; $chAbertos = 0; $chPendentes = 0; $chSolucionados = 0; $chSemSolucao = 0; $chBySector = [];
 }
 
-$totalChamados = array_sum($chAllStatus) ?: 0;
-$chAbertos     = $chAllStatus['Aberto'] ?? 0;
-$chPendentes   = ($chAllStatus['Pendente'] ?? 0) + ($chAllStatus['Pendência'] ?? 0) + ($chAllStatus['Pendenciado'] ?? 0);
-$chSolucionados= ($chAllStatus['Concluído'] ?? 0) + ($chAllStatus['Concluido'] ?? 0) + ($chAllStatus['Solucionado'] ?? 0) + ($chAllStatus['Solucionados'] ?? 0) + ($chAllStatus['Finalizado'] ?? 0) + ($chAllStatus['Fechado'] ?? 0);
-$chSemSolucao  = ($chAllStatus['Sem Solução'] ?? 0) + ($chAllStatus['Sem Solucao'] ?? 0);
+try {
+    $chCurrentYear = array_fill(1, 12, 0);
+    $chCyQuery_stmt = $pdo->prepare("SELECT MONTH(created_at) as month, COUNT(*) as count FROM tickets WHERE YEAR(created_at) = YEAR(CURDATE()) AND company_id = ? GROUP BY MONTH(created_at)");
+    $chCyQuery_stmt->execute([$compId]);
+    $chCyQuery = $chCyQuery_stmt->fetchAll();
+    foreach ($chCyQuery as $r) { $chCurrentYear[intval($r['month'])] = intval($r['count']); }
 
-$chBySector_stmt = $pdo->prepare("SELECT sector, COUNT(*) as count FROM tickets WHERE company_id = ? GROUP BY sector ORDER BY count DESC");
-$chBySector_stmt->execute([$compId]);
-$chBySector = $chBySector_stmt->fetchAll();
+    $chLastYear = array_fill(1, 12, 0);
+    $chLyQuery_stmt = $pdo->prepare("SELECT MONTH(created_at) as month, COUNT(*) as count FROM tickets WHERE YEAR(created_at) = YEAR(CURDATE()) - 1 AND company_id = ? GROUP BY MONTH(created_at)");
+    $chLyQuery_stmt->execute([$compId]);
+    $chLyQuery = $chLyQuery_stmt->fetchAll();
+    foreach ($chLyQuery as $r) { $chLastYear[intval($r['month'])] = intval($r['count']); }
 
-$chCurrentYear = array_fill(1, 12, 0);
-$chCyQuery_stmt = $pdo->prepare("SELECT MONTH(created_at) as month, COUNT(*) as count FROM tickets WHERE YEAR(created_at) = YEAR(CURDATE()) AND company_id = ? GROUP BY MONTH(created_at)");
-$chCyQuery_stmt->execute([$compId]);
-$chCyQuery = $chCyQuery_stmt->fetchAll();
-foreach ($chCyQuery as $r) { $chCurrentYear[intval($r['month'])] = intval($r['count']); }
+    $currentDayOfYear = date('z') + 1;
+    $currentMonth = date('n');
+    $volThisYear = array_sum($chCurrentYear);
+    $chAvgDay = $currentDayOfYear > 0 ? $volThisYear / $currentDayOfYear : 0;
+    $chAvgMonth = $currentMonth > 0 ? $volThisYear / $currentMonth : 0;
+    $chEstYear = $chAvgMonth * 12;
 
-$chLastYear = array_fill(1, 12, 0);
-$chLyQuery_stmt = $pdo->prepare("SELECT MONTH(created_at) as month, COUNT(*) as count FROM tickets WHERE YEAR(created_at) = YEAR(CURDATE()) - 1 AND company_id = ? GROUP BY MONTH(created_at)");
-$chLyQuery_stmt->execute([$compId]);
-$chLyQuery = $chLyQuery_stmt->fetchAll();
-foreach ($chLyQuery as $r) { $chLastYear[intval($r['month'])] = intval($r['count']); }
+    $chTopUsers_stmt = $pdo->prepare("SELECT u.name, COUNT(*) as count FROM tickets t JOIN users u ON CONVERT(t.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE YEAR(t.created_at) = YEAR(CURDATE()) AND t.company_id = ? AND u.company_id = ? GROUP BY u.name ORDER BY count DESC LIMIT 10");
+    $chTopUsers_stmt->execute([$compId, $compId]);
+    $chTopUsers = $chTopUsers_stmt->fetchAll();
 
-$currentDayOfYear = date('z') + 1;
-$currentMonth = date('n');
-$volThisYear = array_sum($chCurrentYear);
-$chAvgDay = $currentDayOfYear > 0 ? $volThisYear / $currentDayOfYear : 0;
-$chAvgMonth = $currentMonth > 0 ? $volThisYear / $currentMonth : 0;
-$chEstYear = $chAvgMonth * 12;
-
-$chTopUsers_stmt = $pdo->prepare("SELECT u.name, COUNT(*) as count FROM tickets t JOIN users u ON CONVERT(t.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE YEAR(t.created_at) = YEAR(CURDATE()) AND t.company_id = ? AND u.company_id = ? GROUP BY u.name ORDER BY count DESC LIMIT 10");
-$chTopUsers_stmt->execute([$compId, $compId]);
-$chTopUsers = $chTopUsers_stmt->fetchAll();
-
-$chTopTechnicians_stmt = $pdo->prepare("
-    SELECT COALESCE(u.name, TRIM(t.closed_by)) as tech_name, u.avatar_url, COUNT(*) as count 
-    FROM tickets t 
-    LEFT JOIN users u ON t.closed_by = u.name AND u.company_id = t.company_id
-    WHERE t.status IN ('Concluído', 'Solucionado', 'Finalizado', 'Fechado') 
-      AND t.closed_by IS NOT NULL 
-      AND TRIM(t.closed_by) != ''
-      AND t.company_id = ?
-    GROUP BY tech_name, u.avatar_url 
-    ORDER BY count DESC 
-    LIMIT 15
-");
-$chTopTechnicians_stmt->execute([$compId]);
-$chTopTechnicians = $chTopTechnicians_stmt->fetchAll();
+    $chTopTechnicians_stmt = $pdo->prepare("
+        SELECT COALESCE(u.name, TRIM(t.closed_by)) as tech_name, u.avatar_url, COUNT(*) as count 
+        FROM tickets t 
+        LEFT JOIN users u ON t.closed_by = u.name AND u.company_id = t.company_id
+        WHERE t.status IN ('Concluído', 'Solucionado', 'Finalizado', 'Fechado') 
+          AND t.closed_by IS NOT NULL 
+          AND TRIM(t.closed_by) != ''
+          AND t.company_id = ?
+        GROUP BY tech_name, u.avatar_url 
+        ORDER BY count DESC 
+        LIMIT 15
+    ");
+    $chTopTechnicians_stmt->execute([$compId]);
+    $chTopTechnicians = $chTopTechnicians_stmt->fetchAll();
+} catch(Exception $e) {
+    $chCurrentYear = array_fill(1, 12, 0); $chLastYear = array_fill(1, 12, 0);
+    $chAvgDay = 0; $chAvgMonth = 0; $chEstYear = 0; $chTopUsers = []; $chTopTechnicians = [];
+}
 
 // === SLA DE CHAMADOS ===
 // SQL expression to calculate net SLA minutes (Total - Pauses)
@@ -163,30 +179,33 @@ try {
     $slaAvgTotal = 0; $slaBySector = []; $slaByMonth = array_fill(1,12,null); $slaFastest = 0; $slaSlowest = 0;
 }
 
-// === DADOS PATRIMÔNIO ===
-$assetsByStatus_stmt = $pdo->prepare("SELECT status, COUNT(*) as count FROM assets WHERE company_id = ? GROUP BY status");
-$assetsByStatus_stmt->execute([$compId]);
-$assetsByStatus = $assetsByStatus_stmt->fetchAll();
+try {
+    $assetsByStatus_stmt = $pdo->prepare("SELECT status, COUNT(*) as count FROM assets WHERE company_id = ? GROUP BY status");
+    $assetsByStatus_stmt->execute([$compId]);
+    $assetsByStatus = $assetsByStatus_stmt->fetchAll();
 
-$assetsBySector_stmt = $pdo->prepare("SELECT COALESCE(NULLIF(sector, ''), 'Sem Setor') as sector, COUNT(*) as count FROM assets WHERE company_id = ? GROUP BY sector ORDER BY count DESC");
-$assetsBySector_stmt->execute([$compId]);
-$assetsBySector = $assetsBySector_stmt->fetchAll();
+    $assetsBySector_stmt = $pdo->prepare("SELECT COALESCE(NULLIF(sector, ''), 'Sem Setor') as sector, COUNT(*) as count FROM assets WHERE company_id = ? GROUP BY sector ORDER BY count DESC");
+    $assetsBySector_stmt->execute([$compId]);
+    $assetsBySector = $assetsBySector_stmt->fetchAll();
 
-$assetsByCategory_stmt = $pdo->prepare("SELECT category, COUNT(*) as count FROM assets WHERE company_id = ? GROUP BY category ORDER BY count DESC LIMIT 8");
-$assetsByCategory_stmt->execute([$compId]);
-$assetsByCategory = $assetsByCategory_stmt->fetchAll();
+    $assetsByCategory_stmt = $pdo->prepare("SELECT category, COUNT(*) as count FROM assets WHERE company_id = ? GROUP BY category ORDER BY count DESC LIMIT 8");
+    $assetsByCategory_stmt->execute([$compId]);
+    $assetsByCategory = $assetsByCategory_stmt->fetchAll();
 
-$totalAssetValue_stmt = $pdo->prepare("SELECT COALESCE(SUM(estimated_value), 0) as total FROM assets WHERE company_id = ?");
-$totalAssetValue_stmt->execute([$compId]);
-$totalAssetValue = $totalAssetValue_stmt->fetch()['total'];
+    $totalAssetValue_stmt = $pdo->prepare("SELECT COALESCE(SUM(estimated_value), 0) as total FROM assets WHERE company_id = ?");
+    $totalAssetValue_stmt->execute([$compId]);
+    $totalAssetValue = $totalAssetValue_stmt->fetch()['total'];
 
-$assetValueBySector_stmt = $pdo->prepare("SELECT COALESCE(NULLIF(sector, ''), 'Sem Setor') as sector, COUNT(*) as count, COALESCE(SUM(estimated_value), 0) as total_value FROM assets WHERE company_id = ? GROUP BY sector ORDER BY total_value DESC");
-$assetValueBySector_stmt->execute([$compId]);
-$assetValueBySector = $assetValueBySector_stmt->fetchAll();
+    $assetValueBySector_stmt = $pdo->prepare("SELECT COALESCE(NULLIF(sector, ''), 'Sem Setor') as sector, COUNT(*) as count, COALESCE(SUM(estimated_value), 0) as total_value FROM assets WHERE company_id = ? GROUP BY sector ORDER BY total_value DESC");
+    $assetValueBySector_stmt->execute([$compId]);
+    $assetValueBySector = $assetValueBySector_stmt->fetchAll();
 
-$assetValueByCategory_stmt = $pdo->prepare("SELECT category, COUNT(*) as count, COALESCE(SUM(estimated_value), 0) as total_value FROM assets WHERE company_id = ? GROUP BY category ORDER BY total_value DESC");
-$assetValueByCategory_stmt->execute([$compId]);
-$assetValueByCategory = $assetValueByCategory_stmt->fetchAll();
+    $assetValueByCategory_stmt = $pdo->prepare("SELECT category, COUNT(*) as count, COALESCE(SUM(estimated_value), 0) as total_value FROM assets WHERE company_id = ? GROUP BY category ORDER BY total_value DESC");
+    $assetValueByCategory_stmt->execute([$compId]);
+    $assetValueByCategory = $assetValueByCategory_stmt->fetchAll();
+} catch(Exception $e) {
+    $assetsByStatus = []; $assetsBySector = []; $assetsByCategory = []; $totalAssetValue = 0; $assetValueBySector = []; $assetValueByCategory = [];
+}
 
 // === DADOS EMPRÉSTIMOS ===
 try {
@@ -294,16 +313,25 @@ $loansByUserLastYear_stmt = $pdo->prepare("
 ");
 $loansByUserLastYear_stmt->execute([$compId]);
 $loansByUserLastYear = $loansByUserLastYear_stmt->fetchAll();
-$loansByUserLastYearMap = [];
-foreach ($loansByUserLastYear as $r) {
-    $uid = $r['borrower_id'] ?: $r['borrower_name'];
-    $loansByUserLastYearMap[$uid] = $r['count_last'];
-}
+    $loansByUserLastYearMap = [];
+    foreach ($loansByUserLastYear as $r) {
+        $uid = $r['borrower_id'] ?: $r['borrower_name'];
+        $loansByUserLastYearMap[$uid] = $r['count_last'];
+    }
+
+    // Novos dados protegidos para os cards
+    $totalReturnedLoans = $pdo->query("SELECT COUNT(*) FROM loans WHERE status = 'Devolvido'")->fetchColumn();
+    
+    $openOcc = $pdo->prepare("SELECT COUNT(*) FROM loans WHERE company_id = ? AND status = 'Ativo' AND expected_return_date < NOW()");
+    $openOcc->execute([$compId]);
+    $totalOpenOccurrences = $openOcc->fetchColumn();
+
 } catch(Exception $e) {
     $loanOccurrences=[]; $occurrencesByUser=[]; $loansBySector=[]; $loansByCategory=[];
     $loansCurrentYear=array_fill(1,12,0); $loansLastYear=array_fill(1,12,0);
     $loansByUserCurrentYear=[]; $totalCurrentYear=1; $userLoanMonthly=[];
     $loansByUserLastYear=[]; $loansByUserLastYearMap=[]; $userChartData=[];
+    $totalReturnedLoans = 0; $totalOpenOccurrences = 0;
 }
 
 // === DADOS VOLUNTARIADO ===
@@ -1093,8 +1121,7 @@ function printCurrentTab() {
             <div class="stat-label">Taxa de Retorno</div>
             <div class="stat-value">
                 <?php 
-                    $returned = $pdo->query("SELECT COUNT(*) FROM loans WHERE status = 'Devolvido'")->fetchColumn();
-                    echo $totalLoans > 0 ? round(($returned / $totalLoans) * 100) : 0;
+                    echo $totalLoans > 0 ? round(($totalReturnedLoans / $totalLoans) * 100) : 0;
                 ?>%
             </div>
         </div>
@@ -1106,11 +1133,7 @@ function printCurrentTab() {
         <div class="stat-card" style="border: 2px solid rgba(239,68,68,0.25); background: linear-gradient(135deg, rgba(239,68,68,0.07), rgba(239,68,68,0.01));">
             <div class="stat-icon" style="background: rgba(239,68,68,0.1); color: #EF4444;"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <div class="stat-label">Ocorrências Abertas</div>
-            <div class="stat-value" style="color: #EF4444;"><?php
-                $openOcc = $pdo->prepare("SELECT COUNT(*) FROM loans WHERE company_id = ? AND status = 'Ativo' AND expected_return_date < NOW()");
-                $openOcc->execute([$compId]);
-                echo $openOcc->fetchColumn();
-            ?></div>
+            <div class="stat-value" style="color: #EF4444;"><?= $totalOpenOccurrences ?></div>
             <div style="font-size:0.7rem; color:#EF4444; font-weight:700; margin-top:0.25rem; opacity:0.8;">equipamentos em atraso</div>
         </div>
     </div>
@@ -1565,13 +1588,6 @@ function printCurrentTab() {
 
 <!-- ======================== SCRIPTS ======================== -->
 <script>
-    function switchTab(tab) {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('content-' + tab).classList.add('active');
-        document.getElementById('tab-' + tab).classList.add('active');
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
         // Registrar Plugin de Labels de forma segura
         if (typeof ChartDataLabels !== 'undefined') {
