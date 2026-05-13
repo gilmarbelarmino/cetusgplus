@@ -1588,13 +1588,14 @@ function printCurrentTab() {
 
 <!-- ======================== SCRIPTS ======================== -->
 <script>
+    let chartOptions;
     document.addEventListener('DOMContentLoaded', () => {
         // Registrar Plugin de Labels de forma segura
         if (typeof ChartDataLabels !== 'undefined') {
             Chart.register(ChartDataLabels);
         }
 
-    const chartOptions = {
+    chartOptions = {
         responsive: true, 
         maintainAspectRatio: false,
         plugins: { 
@@ -2016,8 +2017,7 @@ function printCurrentTab() {
             });
         }
     }
-
-    document.addEventListener('DOMContentLoaded', () => {
+        // ===== GRÁFICO USUÁRIOS POR EMPRÉSTIMO =====
         if (document.getElementById('loansByUserChart')) filterUserChart('month');
 
         // ===== GRÁFICOS RH (Inicializados após o DOM) =====
@@ -2179,5 +2179,5 @@ function printCurrentTab() {
             }
         });
 
-    });
+    }); // Fim do DOMContentLoaded único
 </script>
