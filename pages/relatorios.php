@@ -1589,6 +1589,88 @@ function printCurrentTab() {
 <!-- ======================== SCRIPTS ======================== -->
 <script>
     let chartOptions;
+    // ===== CHART USUÁRIOS POR EMPRÉSTIMO =====
+    const userChartRaw = <?= json_encode($userChartData) ?>;
+    const totalCurrentYearLoans = <?= $totalCurrentYear ?>;
+    const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    let userBarChart = null;
+
+    function filterUserChart(mode) {
+        const btnMonth = document.getElementById('btn-month');
+        const btnYear = document.getElementById('btn-year');
+        const monthSel = document.getElementById('month-selector');
+
+        if (mode === 'month') {
+            btnMonth.style.borderColor = 'var(--crm-purple)'; btnMonth.style.color = 'var(--crm-purple)'; btnMonth.style.background = 'rgba(91,33,182,0.05)';
+            btnYear.style.borderColor = ''; btnYear.style.color = ''; btnYear.style.background = '';
+            monthSel.style.display = 'inline-block';
+        } else {
+            btnYear.style.borderColor = 'var(--crm-purple)'; btnYear.style.color = 'var(--crm-purple)'; btnYear.style.background = 'rgba(91,33,182,0.05)';
+            btnMonth.style.borderColor = ''; btnMonth.style.color = ''; btnMonth.style.background = '';
+            monthSel.style.display = 'none';
+        }
+
+        const selectedMonth = parseInt(monthSel.value);
+        let data = userChartRaw.map(u => ({
+            name: u.name,
+            value: mode === 'month' ? u.months[selectedMonth - 1] : u.total,
+            total: u.total,
+            last_year: u.last_year
+        })).filter(u => u.value > 0).sort((a, b) => b.value - a.value).slice(0, 15);
+
+        const total = data.reduce((s, u) => s + u.value, 0) || 1;
+        const tbody = document.getElementById('userRankingBody');
+        if (!tbody) return; // Segurança
+        tbody.innerHTML = '';
+        data.forEach((u, i) => {
+            const pct = ((u.value / total) * 100).toFixed(1);
+            let trend = '';
+            if (mode === 'year') {
+                const diff = u.total - u.last_year;
+                trend = diff > 0 ? `<span style="color:#10B981;font-weight:700;">▲ +${diff}</span>` : (diff < 0 ? `<span style="color:#ef4444;font-weight:700;">▼ ${diff}</span>` : `<span style="color:#64748b;">= 0</span>`);
+            } else {
+                trend = '<span style="color:#94a3b8;font-size:0.75rem;">—</span>';
+            }
+            const rankColor = i===0?'#EAB308':i===1?'#94A3B8':i===2?'#CD7C2F':'var(--crm-purple)';
+            tbody.innerHTML += `
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:0.75rem 1rem; font-weight:900; color:${rankColor}; font-size:${i<3?'1.1rem':'0.9rem'}">${i+1}</td>
+                    <td style="padding:0.75rem 1rem; font-weight:700; color:#0F172A;">${u.name}</td>
+                    <td style="padding:0.75rem 1rem; text-align:center; font-weight:900; color:var(--crm-purple); font-size:1.1rem;">${u.value}</td>
+                    <td style="padding:0.75rem 1rem; font-weight:700; color:#334155;">${pct}%</td>
+                    <td style="padding:0.75rem 1rem;">${trend}</td>
+                    <td style="padding:0.75rem 1rem; min-width:120px;">
+                        <div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;">
+                            <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#5B21B6,#7C3AED);border-radius:4px;transition:width 0.6s ease;"></div>
+                        </div>
+                    </td>
+                </tr>`;
+        });
+
+        const chartEl = document.getElementById('loansByUserChart');
+        if (chartEl) {
+            if (userBarChart) userBarChart.destroy();
+            const colors = data.map((_, i) => `hsl(${260 - i * 14}, 70%, ${45 + i * 2}%)`);
+            userBarChart = new Chart(chartEl, {
+                type: 'bar',
+                data: {
+                    labels: data.map(u => u.name),
+                    datasets: [{
+                        label: mode === 'month' ? `Empréstimos em ${monthNames[selectedMonth-1]}` : 'Empréstimos no Ano',
+                        data: data.map(u => u.value),
+                        backgroundColor: colors,
+                        borderRadius: 6, borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => { const p = ((ctx.raw / total) * 100).toFixed(1); return ` ${ctx.raw} empréstimos (${p}%)`; } } } },
+                    scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.05)' } }, y: { ticks: { font: { weight: '700' } } } }
+                }
+            });
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         // Registrar Plugin de Labels de forma segura
         if (typeof ChartDataLabels !== 'undefined') {
@@ -1937,86 +2019,6 @@ function printCurrentTab() {
         }
     });
 
-    // ===== CHART USUÁRIOS POR EMPRÉSTIMO =====
-    const userChartRaw = <?= json_encode($userChartData) ?>;
-    const totalCurrentYearLoans = <?= $totalCurrentYear ?>;
-    const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    let userBarChart = null;
-
-    function filterUserChart(mode) {
-        const btnMonth = document.getElementById('btn-month');
-        const btnYear = document.getElementById('btn-year');
-        const monthSel = document.getElementById('month-selector');
-
-        if (mode === 'month') {
-            btnMonth.style.borderColor = 'var(--crm-purple)'; btnMonth.style.color = 'var(--crm-purple)'; btnMonth.style.background = 'rgba(91,33,182,0.05)';
-            btnYear.style.borderColor = ''; btnYear.style.color = ''; btnYear.style.background = '';
-            monthSel.style.display = 'inline-block';
-        } else {
-            btnYear.style.borderColor = 'var(--crm-purple)'; btnYear.style.color = 'var(--crm-purple)'; btnYear.style.background = 'rgba(91,33,182,0.05)';
-            btnMonth.style.borderColor = ''; btnMonth.style.color = ''; btnMonth.style.background = '';
-            monthSel.style.display = 'none';
-        }
-
-        const selectedMonth = parseInt(monthSel.value);
-        let data = userChartRaw.map(u => ({
-            name: u.name,
-            value: mode === 'month' ? u.months[selectedMonth - 1] : u.total,
-            total: u.total,
-            last_year: u.last_year
-        })).filter(u => u.value > 0).sort((a, b) => b.value - a.value).slice(0, 15);
-
-        const total = data.reduce((s, u) => s + u.value, 0) || 1;
-        const tbody = document.getElementById('userRankingBody');
-        tbody.innerHTML = '';
-        data.forEach((u, i) => {
-            const pct = ((u.value / total) * 100).toFixed(1);
-            let trend = '';
-            if (mode === 'year') {
-                const diff = u.total - u.last_year;
-                trend = diff > 0 ? `<span style="color:#10B981;font-weight:700;">▲ +${diff}</span>` : (diff < 0 ? `<span style="color:#ef4444;font-weight:700;">▼ ${diff}</span>` : `<span style="color:#64748b;">= 0</span>`);
-            } else {
-                trend = '<span style="color:#94a3b8;font-size:0.75rem;">—</span>';
-            }
-            const rankColor = i===0?'#EAB308':i===1?'#94A3B8':i===2?'#CD7C2F':'var(--crm-purple)';
-            tbody.innerHTML += `
-                <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="padding:0.75rem 1rem; font-weight:900; color:${rankColor}; font-size:${i<3?'1.1rem':'0.9rem'}">${i+1}</td>
-                    <td style="padding:0.75rem 1rem; font-weight:700; color:#0F172A;">${u.name}</td>
-                    <td style="padding:0.75rem 1rem; text-align:center; font-weight:900; color:var(--crm-purple); font-size:1.1rem;">${u.value}</td>
-                    <td style="padding:0.75rem 1rem; font-weight:700; color:#334155;">${pct}%</td>
-                    <td style="padding:0.75rem 1rem;">${trend}</td>
-                    <td style="padding:0.75rem 1rem; min-width:120px;">
-                        <div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;">
-                            <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#5B21B6,#7C3AED);border-radius:4px;transition:width 0.6s ease;"></div>
-                        </div>
-                    </td>
-                </tr>`;
-        });
-
-        const chartEl = document.getElementById('loansByUserChart');
-        if (chartEl) {
-            if (userBarChart) userBarChart.destroy();
-            const colors = data.map((_, i) => `hsl(${260 - i * 14}, 70%, ${45 + i * 2}%)`);
-            userBarChart = new Chart(chartEl, {
-                type: 'bar',
-                data: {
-                    labels: data.map(u => u.name),
-                    datasets: [{
-                        label: mode === 'month' ? `Empréstimos em ${monthNames[selectedMonth-1]}` : 'Empréstimos no Ano',
-                        data: data.map(u => u.value),
-                        backgroundColor: colors,
-                        borderRadius: 6, borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => { const p = ((ctx.raw / total) * 100).toFixed(1); return ` ${ctx.raw} empréstimos (${p}%)`; } } } },
-                    scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.05)' } }, y: { ticks: { font: { weight: '700' } } } }
-                }
-            });
-        }
-    }
         // ===== GRÁFICO USUÁRIOS POR EMPRÉSTIMO =====
         if (document.getElementById('loansByUserChart')) filterUserChart('month');
 
