@@ -1,6 +1,7 @@
 <?php
 // Migração segura
 try { $pdo->exec("ALTER TABLE assets ADD COLUMN estimated_value DECIMAL(12,2) DEFAULT 0"); } catch(Exception $e) {}
+try { $pdo->exec("CREATE TABLE IF NOT EXISTS ticket_pauses (id INT AUTO_INCREMENT PRIMARY KEY, ticket_id INT NOT NULL, paused_at DATETIME, resumed_at DATETIME) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"); } catch(Exception $e) {}
 
 // === DADOS EMPRESA E USUÁRIO (PARA IMPRESSÃO) ===
 $compId = getCurrentUserCompanyId();
@@ -25,13 +26,17 @@ $totalUnits = $pdo->prepare("SELECT COUNT(*) as total FROM units WHERE company_i
 $totalUnits->execute([$compId]);
 $totalUnits = $totalUnits->fetch()['total'];
 
-$totalLoans = $pdo->prepare("SELECT COUNT(*) FROM loans WHERE company_id = ?");
-$totalLoans->execute([$compId]);
-$totalLoans = $totalLoans->fetchColumn();
+try {
+    $totalLoans = $pdo->prepare("SELECT COUNT(*) FROM loans WHERE company_id = ?");
+    $totalLoans->execute([$compId]);
+    $totalLoans = $totalLoans->fetchColumn();
+} catch(Exception $e) { $totalLoans = 0; }
 
-$totalVolunteers = $pdo->prepare("SELECT COUNT(*) as total FROM volunteers WHERE company_id = ?");
-$totalVolunteers->execute([$compId]);
-$totalVolunteers = $totalVolunteers->fetch()['total'];
+try {
+    $totalVolunteers = $pdo->prepare("SELECT COUNT(*) as total FROM volunteers WHERE company_id = ?");
+    $totalVolunteers->execute([$compId]);
+    $totalVolunteers = $totalVolunteers->fetch()['total'];
+} catch(Exception $e) { $totalVolunteers = 0; }
 
 // === DADOS CHAMADOS ===
 // Agregação robusta de status
@@ -106,62 +111,57 @@ $slaExpr = "
     )
 ";
 
-$slaAvgTotal_stmt = $pdo->prepare("
-    SELECT ROUND(AVG($slaExpr) / 60, 1) as avg_hours
-    FROM tickets
-    WHERE closed_at IS NOT NULL AND status IN ('Concluído','Solucionado','Finalizado','Fechado')
-      AND company_id = ?
-");
-$slaAvgTotal_stmt->execute([$compId]);
-$slaAvgTotal = $slaAvgTotal_stmt->fetchColumn();
+try {
+    $slaAvgTotal_stmt = $pdo->prepare("
+        SELECT ROUND(AVG($slaExpr) / 60, 1) as avg_hours
+        FROM tickets
+        WHERE closed_at IS NOT NULL AND status IN ('Concluído','Solucionado','Finalizado','Fechado')
+          AND company_id = ?
+    ");
+    $slaAvgTotal_stmt->execute([$compId]);
+    $slaAvgTotal = $slaAvgTotal_stmt->fetchColumn();
 
-$slaBySector_stmt = $pdo->prepare("
-    SELECT sector, 
-           COUNT(*) as total,
-           ROUND(AVG($slaExpr) / 60, 1) as avg_hours
-    FROM tickets
-    WHERE closed_at IS NOT NULL AND status IN ('Concluído','Solucionado','Finalizado','Fechado')
-      AND sector IS NOT NULL AND TRIM(sector) != ''
-      AND company_id = ?
-    GROUP BY sector
-    ORDER BY avg_hours ASC
-");
-$slaBySector_stmt->execute([$compId]);
-$slaBySector = $slaBySector_stmt->fetchAll();
+    $slaBySector_stmt = $pdo->prepare("
+        SELECT sector, 
+               COUNT(*) as total,
+               ROUND(AVG($slaExpr) / 60, 1) as avg_hours
+        FROM tickets
+        WHERE closed_at IS NOT NULL AND status IN ('Concluído','Solucionado','Finalizado','Fechado')
+          AND sector IS NOT NULL AND TRIM(sector) != ''
+          AND company_id = ?
+        GROUP BY sector ORDER BY avg_hours ASC
+    ");
+    $slaBySector_stmt->execute([$compId]);
+    $slaBySector = $slaBySector_stmt->fetchAll();
 
-$slaByMonth = array_fill(1, 12, null);
-$slaMonthQuery_stmt = $pdo->prepare("
-    SELECT MONTH(closed_at) as month,
-           COUNT(*) as total,
-           ROUND(AVG($slaExpr) / 60, 1) as avg_hours
-    FROM tickets
-    WHERE closed_at IS NOT NULL
-      AND YEAR(closed_at) = YEAR(CURDATE())
-      AND status IN ('Concluído','Solucionado','Finalizado','Fechado')
-      AND company_id = ?
-    GROUP BY MONTH(closed_at)
-");
-$slaMonthQuery_stmt->execute([$compId]);
-$slaMonthQuery = $slaMonthQuery_stmt->fetchAll();
-foreach ($slaMonthQuery as $r) { $slaByMonth[intval($r['month'])] = (float)$r['avg_hours']; }
+    $slaByMonth = array_fill(1, 12, null);
+    $slaMonthQuery_stmt = $pdo->prepare("
+        SELECT MONTH(closed_at) as month, COUNT(*) as total,
+               ROUND(AVG($slaExpr) / 60, 1) as avg_hours
+        FROM tickets
+        WHERE closed_at IS NOT NULL AND YEAR(closed_at) = YEAR(CURDATE())
+          AND status IN ('Concluído','Solucionado','Finalizado','Fechado') AND company_id = ?
+        GROUP BY MONTH(closed_at)
+    ");
+    $slaMonthQuery_stmt->execute([$compId]);
+    foreach ($slaMonthQuery_stmt->fetchAll() as $r) { $slaByMonth[intval($r['month'])] = (float)$r['avg_hours']; }
 
-$slaFastest_stmt = $pdo->prepare("
-    SELECT ROUND(MIN($slaExpr) / 60, 1) as min_hours
-    FROM tickets
-    WHERE closed_at IS NOT NULL AND status IN ('Concluído','Solucionado','Finalizado','Fechado')
-      AND company_id = ?
-");
-$slaFastest_stmt->execute([$compId]);
-$slaFastest = $slaFastest_stmt->fetchColumn();
+    $slaFastest_stmt = $pdo->prepare("
+        SELECT ROUND(MIN($slaExpr) / 60, 1) as min_hours FROM tickets
+        WHERE closed_at IS NOT NULL AND status IN ('Concluído','Solucionado','Finalizado','Fechado') AND company_id = ?
+    ");
+    $slaFastest_stmt->execute([$compId]);
+    $slaFastest = $slaFastest_stmt->fetchColumn();
 
-$slaSlowest_stmt = $pdo->prepare("
-    SELECT ROUND(MAX($slaExpr) / 60, 1) as max_hours
-    FROM tickets
-    WHERE closed_at IS NOT NULL AND status IN ('Concluído','Solucionado','Finalizado','Fechado')
-      AND company_id = ?
-");
-$slaSlowest_stmt->execute([$compId]);
-$slaSlowest = $slaSlowest_stmt->fetchColumn();
+    $slaSlowest_stmt = $pdo->prepare("
+        SELECT ROUND(MAX($slaExpr) / 60, 1) as max_hours FROM tickets
+        WHERE closed_at IS NOT NULL AND status IN ('Concluído','Solucionado','Finalizado','Fechado') AND company_id = ?
+    ");
+    $slaSlowest_stmt->execute([$compId]);
+    $slaSlowest = $slaSlowest_stmt->fetchColumn();
+} catch(Exception $e) {
+    $slaAvgTotal = 0; $slaBySector = []; $slaByMonth = array_fill(1,12,null); $slaFastest = 0; $slaSlowest = 0;
+}
 
 // === DADOS PATRIMÔNIO ===
 $assetsByStatus_stmt = $pdo->prepare("SELECT status, COUNT(*) as count FROM assets WHERE company_id = ? GROUP BY status");
@@ -189,6 +189,7 @@ $assetValueByCategory_stmt->execute([$compId]);
 $assetValueByCategory = $assetValueByCategory_stmt->fetchAll();
 
 // === DADOS EMPRÉSTIMOS ===
+try {
 // Ocorrências de atraso por usuário
 $loanOccurrences_stmt = $pdo->prepare("
     SELECT l.borrower_id, l.borrower_name, u.avatar_url, l.asset_name,
@@ -298,36 +299,45 @@ foreach ($loansByUserLastYear as $r) {
     $uid = $r['borrower_id'] ?: $r['borrower_name'];
     $loansByUserLastYearMap[$uid] = $r['count_last'];
 }
+} catch(Exception $e) {
+    $loanOccurrences=[]; $occurrencesByUser=[]; $loansBySector=[]; $loansByCategory=[];
+    $loansCurrentYear=array_fill(1,12,0); $loansLastYear=array_fill(1,12,0);
+    $loansByUserCurrentYear=[]; $totalCurrentYear=1; $userLoanMonthly=[];
+    $loansByUserLastYear=[]; $loansByUserLastYearMap=[]; $userChartData=[];
+}
 
 // === DADOS VOLUNTARIADO ===
-$totalHours_stmt = $pdo->prepare("SELECT SUM(total_hours) as total FROM volunteers WHERE company_id = ?");
-$totalHours_stmt->execute([$compId]);
-$totalHours = $totalHours_stmt->fetch()['total'] ?? 0;
+try {
+    $totalHours_stmt = $pdo->prepare("SELECT SUM(total_hours) as total FROM volunteers WHERE company_id = ?");
+    $totalHours_stmt->execute([$compId]);
+    $totalHours = $totalHours_stmt->fetch()['total'] ?? 0;
 
-$volBySex_stmt = $pdo->prepare("SELECT gender as sex, COUNT(*) as count FROM volunteers WHERE company_id = ? GROUP BY gender");
-$volBySex_stmt->execute([$compId]);
-$volBySex = $volBySex_stmt->fetchAll();
+    $volBySex_stmt = $pdo->prepare("SELECT gender as sex, COUNT(*) as count FROM volunteers WHERE company_id = ? GROUP BY gender");
+    $volBySex_stmt->execute([$compId]);
+    $volBySex = $volBySex_stmt->fetchAll();
 
-$volByStatus_stmt = $pdo->prepare("SELECT status, COUNT(*) as count FROM volunteers WHERE company_id = ? GROUP BY status");
-$volByStatus_stmt->execute([$compId]);
-$volByStatus = $volByStatus_stmt->fetchAll();
+    $volByStatus_stmt = $pdo->prepare("SELECT status, COUNT(*) as count FROM volunteers WHERE company_id = ? GROUP BY status");
+    $volByStatus_stmt->execute([$compId]);
+    $volByStatus = $volByStatus_stmt->fetchAll();
 
-$volByType_stmt = $pdo->prepare("SELECT location as work_type, COUNT(*) as count FROM volunteers WHERE company_id = ? GROUP BY location");
-$volByType_stmt->execute([$compId]);
-$volByType = $volByType_stmt->fetchAll();
+    $volByType_stmt = $pdo->prepare("SELECT location as work_type, COUNT(*) as count FROM volunteers WHERE company_id = ? GROUP BY location");
+    $volByType_stmt->execute([$compId]);
+    $volByType = $volByType_stmt->fetchAll();
 
-// === DADOS FINANCEIRO ===
-$financialStats_stmt = $pdo->prepare("SELECT 
-    SUM(hours_jan * hourly_rate) as `jan`, SUM(hours_feb * hourly_rate) as `feb`, 
-    SUM(hours_mar * hourly_rate) as `mar`, SUM(hours_apr * hourly_rate) as `apr`,
-    SUM(hours_may * hourly_rate) as `may`, SUM(hours_jun * hourly_rate) as `jun`,
-    SUM(hours_jul * hourly_rate) as `jul`, SUM(hours_aug * hourly_rate) as `aug`,
-    SUM(hours_sep * hourly_rate) as `sep`, SUM(hours_oct * hourly_rate) as `oct`,
-    SUM(hours_nov * hourly_rate) as `nov`, SUM(hours_dec * hourly_rate) as `dec`,
-    SUM(total_hours * hourly_rate) as `total`
-FROM volunteers WHERE company_id = ?");
-$financialStats_stmt->execute([$compId]);
-$financialStats = $financialStats_stmt->fetch();
+    $financialStats_stmt = $pdo->prepare("SELECT 
+        SUM(hours_jan * hourly_rate) as `jan`, SUM(hours_feb * hourly_rate) as `feb`, 
+        SUM(hours_mar * hourly_rate) as `mar`, SUM(hours_apr * hourly_rate) as `apr`,
+        SUM(hours_may * hourly_rate) as `may`, SUM(hours_jun * hourly_rate) as `jun`,
+        SUM(hours_jul * hourly_rate) as `jul`, SUM(hours_aug * hourly_rate) as `aug`,
+        SUM(hours_sep * hourly_rate) as `sep`, SUM(hours_oct * hourly_rate) as `oct`,
+        SUM(hours_nov * hourly_rate) as `nov`, SUM(hours_dec * hourly_rate) as `dec`,
+        SUM(total_hours * hourly_rate) as `total`
+    FROM volunteers WHERE company_id = ?");
+    $financialStats_stmt->execute([$compId]);
+    $financialStats = $financialStats_stmt->fetch();
+} catch(Exception $e) {
+    $totalHours = 0; $volBySex = []; $volByStatus = []; $volByType = []; $financialStats = [];
+}
 
 // Preparar arrays para JS
 $sexLabels = []; $sexData = [];
@@ -342,6 +352,7 @@ foreach ($volByType as $v) { $typeLabels[] = $v['work_type']; $typeData[] = $v['
 $financialMonths = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 // === DADOS RH ===
+try {
 $rhContractTypes_stmt = $pdo->prepare("SELECT contract_type, COUNT(*) as count FROM rh_employee_details WHERE company_id = ? GROUP BY contract_type ORDER BY count DESC");
 $rhContractTypes_stmt->execute([$compId]);
 $rhContractTypes = $rhContractTypes_stmt->fetchAll();
@@ -448,6 +459,12 @@ $rhCertTrendQuery_stmt->execute([$compId]);
 $rhCertTrendQuery = $rhCertTrendQuery_stmt->fetchAll();
 $rhCertLabels = array_column($rhCertTrendQuery, 'm_name');
 $rhCertData = array_column($rhCertTrendQuery, 'count');
+} catch(Exception $e) {
+    $rhContractTypes=[]; $rhTransportCount=0; $rhGenders=[]; $rhRoles=[]; $rhAdmissions=[]; $rhTerminations=[];
+    $rhSectorStats=[]; $rhContractLabels=[]; $rhContractData=[]; $rhGenderLabels=[]; $rhGenderData=[];
+    $rhYears=[]; $rhAdmSeries=[]; $rhTermSeries=[]; $rhVacationsPending=0; $rhVacationsNext30=0;
+    $rhCertificatesTotal=0; $rhNotesTotal=0; $rhBirthdaysMonth=[]; $rhAvgSalarySector=[]; $rhCertLabels=[]; $rhCertData=[];
+}
 
 $financialData = [
     $financialStats['jan']??0, $financialStats['feb']??0, $financialStats['mar']??0, $financialStats['apr']??0,
