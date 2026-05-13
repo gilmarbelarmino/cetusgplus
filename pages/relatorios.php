@@ -533,6 +533,16 @@ function switchTab(tabId) {
     if (content) content.classList.add('active');
     const btn = document.getElementById('tab-' + tabId);
     if (btn) btn.classList.add('active');
+    // Re-renderizar gráficos após exibir a aba (Chart.js não consegue calcular
+    // dimensões enquanto o container está oculto com display:none)
+    setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        if (typeof Chart !== 'undefined') {
+            Chart.instances && Object.values(Chart.instances).forEach(chart => {
+                try { chart.resize(); } catch(e) {}
+            });
+        }
+    }, 50);
 }
 
 document.addEventListener('DOMContentLoaded', () => { switchTab('geral'); });
