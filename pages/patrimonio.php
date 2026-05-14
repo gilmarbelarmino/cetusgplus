@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $estimated = floatval(str_replace(['.', ','], ['', '.'], $_POST['estimated_value'] ?? '0'));
     $patrimony_id = !empty($_POST['patrimony_id']) ? $_POST['patrimony_id'] : null;
     $responsible_id = !empty($_POST['responsible_select']) ? $_POST['responsible_select'] : null;
-    $stmt->execute(['A' . time(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['responsible_name'], $responsible_id, $estimated, $image_name, $compId]);
+    $stmt->execute(['A' . uniqid(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['responsible_name'], $responsible_id, $estimated, $image_name, $compId]);
     header('Location: ?page=patrimonio&success=1');
     exit;
 }
@@ -70,7 +70,7 @@ $compId = getCurrentUserCompanyId();
 $query = "SELECT a.*, u.name as unit_name, res.avatar_url as resp_avatar, res.name as resp_name 
           FROM assets a 
           LEFT JOIN units u ON CONVERT(a.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
-          LEFT JOIN users res ON (a.responsible_id = res.id OR (a.responsible_id IS NULL AND a.responsible_name = res.name AND a.company_id = res.company_id))
+          LEFT JOIN users res ON a.responsible_id = res.id
           WHERE a.company_id = ?";
 $params = [$compId];
 
@@ -251,7 +251,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                     </span>
                 </td>
                 <td>
-                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
                     <div style="display: flex; gap: 0.5rem; justify-content: center;">
                         <a href="?page=patrimonio&hist_id=<?= $asset['id'] ?>" class="btn-icon" title="Histórico">
                             <i class="fa-solid fa-clock-rotate-left"></i>
@@ -495,7 +494,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                         <option value="">Selecione o responsável</option>
                         <?php foreach ($all_users as $u): ?>
                             <option value="<?= $u['id'] ?>" 
-                                <?= $editAsset['responsible_name'] == $u['name'] ? 'selected' : '' ?>
+                                <?= $editAsset['responsible_id'] == $u['id'] ? 'selected' : '' ?>
                                 data-name="<?= htmlspecialchars($u['name']) ?>"
                                 data-email="<?= htmlspecialchars($u['email']) ?>"
                                 data-phone="<?= htmlspecialchars($u['phone']) ?>"
@@ -607,7 +606,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             document.getElementById('editResponsibleUnit').value = option.getAttribute('data-unit');
         }
     }
-    
+
     function addCategory() {
         const newCat = document.getElementById('new_category').value.trim();
         if (!newCat) {
@@ -618,13 +617,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
     }
 
     function useCategory(name) {
-        // Tenta preencher no campo de novo ativo ou editivo
         const inputNovo = document.getElementById('category_input');
         const inputEdit = document.getElementById('edit_category_input');
-        
         if (inputNovo) inputNovo.value = name;
         if (inputEdit) inputEdit.value = name;
-        
         document.getElementById('categoryModal').style.display = 'none';
         document.getElementById('new_category').value = '';
     }
@@ -633,23 +629,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
         if (confirm('Deseja realmente excluir a categoria "' + name + '"?\nEsta ação desvinculada a categoria de todos os ativos associados.')) {
             const form = document.createElement('form');
             form.method = 'POST';
-            form.innerHTML = `
-                <input type="hidden" name="action" value="delete_category">
-                <input type="hidden" name="category_name" value="${name}">
-            `;
+            form.innerHTML = `<input type="hidden" name="action" value="delete_category"><input type="hidden" name="category_name" value="${name}">`;
             document.body.appendChild(form);
             form.submit();
-        }
-    }
-    
-    function fillEditResponsibleData() {
-        const select = document.getElementById('editResponsibleSelect');
-        const option = select.options[select.selectedIndex];
-        
-        if (option.value) {
-            document.getElementById('editResponsibleName').value = option.getAttribute('data-name');
-            document.getElementById('editResponsibleSector').value = option.getAttribute('data-sector');
-            document.getElementById('editResponsibleUnit').value = option.getAttribute('data-unit');
         }
     }
 </script>
