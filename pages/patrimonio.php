@@ -11,6 +11,17 @@ try {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_asset') {
     $compId = getCurrentUserCompanyId();
+
+    // Prevenção de duplicidade por patrimony_id (se fornecido)
+    if (!empty($_POST['patrimony_id'])) {
+        $check = $pdo->prepare("SELECT id FROM assets WHERE patrimony_id = ? AND company_id = ?");
+        $check->execute([$_POST['patrimony_id'], $compId]);
+        if ($check->fetch()) {
+            header('Location: ?page=patrimonio&error=duplicate_patrimony');
+            exit;
+        }
+    }
+
     $image_name = null;
     if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] == 0) {
         $image_name = 'asset_' . time() . '.' . pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION);
@@ -58,6 +69,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stmt = $pdo->prepare("UPDATE assets SET name = ?, category = ?, patrimony_id = ?, sector = ?, unit_id = ?, status = ?, responsible_name = ?, responsible_id = ?, estimated_value = ? $image_update WHERE id = ? AND company_id = ?");
     $stmt->execute($params);
     header('Location: ?page=patrimonio&success=2');
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_asset') {
+    $compId = getCurrentUserCompanyId();
+    $stmt = $pdo->prepare("DELETE FROM assets WHERE id = ? AND company_id = ?");
+    $stmt->execute([$_POST['asset_id'], $compId]);
+    header('Location: ?page=patrimonio&success=deleted');
     exit;
 }
 
@@ -144,7 +163,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
 <?php if (isset($_GET['success'])): ?>
 <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%); border: 1px solid rgba(16, 185, 129, 0.3); color: #059669; padding: 1rem; border-radius: 1rem; margin-bottom: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
     <i class="fa-solid fa-circle-check"></i>
-    <?= $_GET['success'] == '1' ? 'Ativo cadastrado com sucesso!' : ($_GET['success'] == '2' ? 'Ativo atualizado com sucesso!' : 'Categoria excluída com sucesso!') ?>
+    <?= $_GET['success'] == '1' ? 'Ativo cadastrado com sucesso!' : ($_GET['success'] == '2' ? 'Ativo atualizado com sucesso!' : ($_GET['success'] == 'deleted' ? 'Ativo excluído com sucesso!' : 'Categoria excluída com sucesso!')) ?>
+</div>
+<?php endif; ?>
+
+<?php if (isset($_GET['error']) && $_GET['error'] === 'duplicate_patrimony'): ?>
+<div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%); border: 1px solid rgba(239, 68, 68, 0.3); color: #dc2626; padding: 1rem; border-radius: 1rem; margin-bottom: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    Erro: Já existe um ativo cadastrado com este Número de Acesso.
 </div>
 <?php endif; ?>
 
@@ -258,6 +284,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                         <a href="?page=patrimonio&action=edit&id=<?= $asset['id'] ?>" class="btn-icon" title="Editar">
                             <i class="fa-solid fa-pen"></i>
                         </a>
+                        <button onclick="deleteAsset('<?= $asset['id'] ?>', '<?= htmlspecialchars(addslashes($asset['name'])) ?>')" class="btn-icon" title="Excluir" style="color: #ef4444; border: none; background: none; cursor: pointer;">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -360,7 +389,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             <h3 style="font-size: 1.25rem; font-weight: 900;">Cadastrar Novo Ativo</h3>
             <button onclick="window.location.href='?page=patrimonio'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
         </div>
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" onsubmit="return handleAssetSubmit(this);">
             <input type="hidden" name="action" value="add_asset">
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
                 <div class="form-group">
@@ -451,7 +480,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             <h3 style="font-size: 1.25rem; font-weight: 900;">Editar Ativo: <?= htmlspecialchars($editAsset['name']) ?></h3>
             <button onclick="window.location.href='?page=patrimonio'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
         </div>
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" onsubmit="return handleAssetSubmit(this);">
             <input type="hidden" name="action" value="edit_asset">
             <input type="hidden" name="asset_id" value="<?= $editAsset['id'] ?>">
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
@@ -633,6 +662,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             document.body.appendChild(form);
             form.submit();
         }
+    function handleAssetSubmit(form) {
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn.disabled) return false;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+        return true;
     }
 </script>
 
@@ -656,6 +691,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                     }
                 }
             }
+        }
+    function deleteAsset(id, name) {
+        if (confirm('Deseja realmente excluir o ativo "' + name + '"?\nEsta ação não pode ser desfeita.')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type="hidden" name="action" value="delete_asset">
+                <input type="hidden" name="asset_id" value="${id}">
+            `;
+            document.body.appendChild(form);
+            form.submit();
         }
     }
 </script>
