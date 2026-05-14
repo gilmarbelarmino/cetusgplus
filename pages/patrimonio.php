@@ -3,11 +3,8 @@
 try { $pdo->exec("ALTER TABLE assets ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE assets ADD COLUMN estimated_value DECIMAL(12,2) DEFAULT 0"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE assets ADD COLUMN image_url VARCHAR(255) DEFAULT NULL"); } catch(Exception $e) {}
-try { $pdo->exec("ALTER TABLE assets ADD COLUMN responsible_id INT NULL"); } catch(Exception $e) {}
-
-try {
-    $pdo->exec("ALTER TABLE assets MODIFY patrimony_id VARCHAR(255) NULL");
-} catch(Exception $e) { /* falha silenciosa se houver erro ao modificar */ }
+try { $pdo->exec("ALTER TABLE assets MODIFY responsible_id VARCHAR(50) NULL"); } catch(Exception $e) {}
+try { $pdo->exec("UPDATE assets SET responsible_id = NULL WHERE responsible_id = '0'"); } catch(Exception $e) {}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_asset') {
     $compId = getCurrentUserCompanyId();
@@ -656,35 +653,34 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
 
     function deleteCategory(name) {
         if (confirm('Deseja realmente excluir a categoria "' + name + '"?\nEsta ação desvinculada a categoria de todos os ativos associados.')) {
-            const form = document.createElement('form');
+            var form = document.createElement('form');
             form.method = 'POST';
-            form.innerHTML = `<input type="hidden" name="action" value="delete_category"><input type="hidden" name="category_name" value="${name}">`;
+            form.innerHTML = '<input type="hidden" name="action" value="delete_category"><input type="hidden" name="category_name" value="' + name + '">';
             document.body.appendChild(form);
             form.submit();
         }
+    }
+
     function handleAssetSubmit(form) {
-        const btn = form.querySelector('button[type="submit"]');
+        var btn = form.querySelector('button[type="submit"]');
         if (btn.disabled) return false;
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
         return true;
     }
-</script>
 
-
-<script>
     function filterTable(inputId, tableId) {
-        const input = document.getElementById(inputId);
-        const filter = input.value.toLowerCase();
-        const table = document.getElementById(tableId);
-        const tr = table.getElementsByTagName("tr");
+        var input = document.getElementById(inputId);
+        var filter = input.value.toLowerCase();
+        var table = document.getElementById(tableId);
+        var tr = table.getElementsByTagName("tr");
 
-        for (let i = 1; i < tr.length; i++) {
+        for (var i = 1; i < tr.length; i++) {
             tr[i].style.display = "none";
-            const td = tr[i].getElementsByTagName("td");
-            for (let j = 0; j < td.length; j++) {
+            var td = tr[i].getElementsByTagName("td");
+            for (var j = 0; j < td.length; j++) {
                 if (td[j]) {
-                    const txtValue = td[j].textContent || td[j].innerText;
+                    var txtValue = td[j].textContent || td[j].innerText;
                     if (txtValue.toLowerCase().indexOf(filter) > -1) {
                         tr[i].style.display = "";
                         break;
@@ -692,14 +688,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                 }
             }
         }
+    }
+
     function deleteAsset(id, name) {
         if (confirm('Deseja realmente excluir o ativo "' + name + '"?\nEsta ação não pode ser desfeita.')) {
-            const form = document.createElement('form');
+            var form = document.createElement('form');
             form.method = 'POST';
-            form.innerHTML = `
-                <input type="hidden" name="action" value="delete_asset">
-                <input type="hidden" name="asset_id" value="${id}">
-            `;
+            form.innerHTML = '<input type="hidden" name="action" value="delete_asset">' +
+                             '<input type="hidden" name="asset_id" value="' + id + '">';
             document.body.appendChild(form);
             form.submit();
         }

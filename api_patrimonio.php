@@ -81,18 +81,30 @@ try {
     }
 
     if ($method === 'POST' && $action === 'add_asset') {
+        $compId = getCurrentUserCompanyId();
+        
+        // Prevenção de duplicidade por patrimony_id
+        if (!empty($_POST['patrimony_id'])) {
+            $check = $pdo->prepare("SELECT id FROM assets WHERE patrimony_id = ? AND company_id = ?");
+            $check->execute([$_POST['patrimony_id'], $compId]);
+            if ($check->fetch()) {
+                echo json_encode(['success' => false, 'error' => 'Número de patrimônio já existe']);
+                exit;
+            }
+        }
+
         $image_name = null;
         if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] == 0) {
             $image_name = 'asset_' . time() . '.' . pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION);
             move_uploaded_file($_FILES['product_image']['tmp_name'], __DIR__ . '/../uploads/' . $image_name);
         }
         
-        $stmt = $pdo->prepare("INSERT INTO assets (id, name, category, patrimony_id, sector, unit_id, status, responsible_name, estimated_value, image_url, company_id) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO assets (id, name, category, patrimony_id, sector, unit_id, status, responsible_name, responsible_id, estimated_value, image_url, company_id) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?, ?)");
         $estimated = floatval(str_replace(['.', ','], ['', '.'], $_POST['estimated_value'] ?? '0'));
         $patrimony_id = !empty($_POST['patrimony_id']) ? $_POST['patrimony_id'] : null;
-        $compId = getCurrentUserCompanyId();
+        $responsible_id = !empty($_POST['responsible_id']) ? $_POST['responsible_id'] : null;
         
-        $stmt->execute(['A' . time(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['responsible_name'], $estimated, $image_name, $compId]);
+        $stmt->execute(['A' . uniqid(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['responsible_name'], $responsible_id, $estimated, $image_name, $compId]);
         
         triggerSocketUpdate('data_updated', ['module' => 'patrimonio', 'action' => 'add']);
         echo json_encode(['success' => true, 'message' => 'Ativo criado com sucesso']);
@@ -100,11 +112,13 @@ try {
     }
 
     if ($method === 'POST' && $action === 'edit_asset') {
+        $compId = getCurrentUserCompanyId();
         $estimated = floatval(str_replace(['.', ','], ['', '.'], $_POST['estimated_value'] ?? '0'));
         $image_update = "";
         $patrimony_id = !empty($_POST['patrimony_id']) ? $_POST['patrimony_id'] : null;
+        $responsible_id = !empty($_POST['responsible_id']) ? $_POST['responsible_id'] : null;
         
-        $params = [$_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['status'], $_POST['responsible_name'], $estimated];
+        $params = [$_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['status'], $_POST['responsible_name'], $responsible_id, $estimated];
         
         if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] == 0) {
             $image_name = 'asset_' . time() . '.' . pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION);
@@ -114,8 +128,9 @@ try {
         }
         
         $params[] = $_POST['asset_id'];
+        $params[] = $compId;
         
-        $stmt = $pdo->prepare("UPDATE assets SET name = ?, category = ?, patrimony_id = ?, sector = ?, unit_id = ?, status = ?, responsible_name = ?, estimated_value = ? $image_update WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE assets SET name = ?, category = ?, patrimony_id = ?, sector = ?, unit_id = ?, status = ?, responsible_name = ?, responsible_id = ?, estimated_value = ? $image_update WHERE id = ? AND company_id = ?");
         $stmt->execute($params);
         
         triggerSocketUpdate('data_updated', ['module' => 'patrimonio', 'action' => 'edit']);

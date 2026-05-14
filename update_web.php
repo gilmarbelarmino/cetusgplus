@@ -45,9 +45,14 @@ try {
         FOREIGN KEY (option_id) REFERENCES survey_options(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
+    // Correção do Patrimônio (Type Mismatch)
+    $pdo->exec("ALTER TABLE assets MODIFY responsible_id VARCHAR(50) NULL");
+    $pdo->exec("UPDATE assets SET responsible_id = NULL WHERE responsible_id = '0'");
+    echo "<p style='color: green;'>✅ Estrutura de patrimônio (responsible_id) corrigida!</p>";
+
     echo "<p style='color: green;'>✅ Tabelas de pesquisa verificadas/criadas com sucesso!</p>";
 } catch (Exception $e) {
-    echo "<p style='color: red;'>❌ Erro ao criar tabelas: " . $e->getMessage() . "</p>";
+    echo "<p style='color: red;'>❌ Erro ao atualizar banco: " . $e->getMessage() . "</p>";
 }
 
 echo "<p>Por favor, recarregue a página principal do sistema (Ctrl + F5) para ver as mudanças.</p>";

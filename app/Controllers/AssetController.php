@@ -71,13 +71,14 @@ class AssetController extends Controller {
                 } catch (\Exception $e) { }
             }
 
-            $stmt = $pdo->prepare("INSERT INTO assets (id, company_id, name, category, patrimony_id, sector, unit_id, status, responsible_name, estimated_value, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO assets (id, company_id, name, category, patrimony_id, sector, unit_id, status, responsible_name, responsible_id, estimated_value, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)");
             $estimated = floatval(str_replace(['.', ','], ['', '.'], $_POST['estimated_value'] ?? '0'));
+            $responsible_id = !empty($_POST['responsible_id']) ? $_POST['responsible_id'] : null;
             
             $stmt->execute([
-                'A' . time(), $companyId, $_POST['name'], $_POST['category'], 
+                'A' . uniqid(), $companyId, $_POST['name'], $_POST['category'], 
                 $_POST['patrimony_id'], $_POST['sector'], $_POST['unit_id'], 
-                $_POST['responsible_name'], $estimated, $image_url
+                $_POST['responsible_name'], $responsible_id, $estimated, $image_url
             ]);
 
             Logger::audit('add_asset', 'patrimonio', 'Ativo: ' . $_POST['name']);
