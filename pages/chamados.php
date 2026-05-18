@@ -2,6 +2,7 @@
 // Migrações SaaS
 try { $pdo->exec("ALTER TABLE tickets ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE ticket_responses ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE ticket_pauses ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_ticket') {
     $compId = getCurrentUserCompanyId();
