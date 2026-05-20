@@ -6,6 +6,7 @@ if ($user['role'] !== 'Administrador' && $user['role'] !== 'Suporte Técnico') {
 
 // Migrações SaaS
 try { $pdo->exec("ALTER TABLE company_settings ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE company_settings ADD COLUMN backup_full_path VARCHAR(255) DEFAULT NULL"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE units ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE sectors ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE rh_positions ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
