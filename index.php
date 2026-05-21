@@ -140,7 +140,7 @@ if (!empty($company['login_announcement']) && !isset($_SESSION['announcement_dis
 }
 
 $page = $_GET['page'] ?? 'dashboard';
-if (!in_array($page, $user_menus) && !in_array($page, ['dashboard', 'pesquisa'])) {
+if (!in_array($page, $user_menus) && !in_array($page, ['dashboard', 'pesquisa', 'ponto'])) {
     $page = 'dashboard';
 }
 
@@ -335,12 +335,10 @@ try {
                             <span>Recursos Humanos</span>
                         </a>
                     <?php endif; ?>
-                    <?php if (in_array('ponto', $user_menus) || in_array('rh', $user_menus)): ?>
-                        <a href="index.php?page=ponto" class="sidebar-item <?= $page === 'ponto' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-clock"></i>
-                            <span>Ponto Eletrônico</span>
-                        </a>
-                    <?php endif; ?>
+                    <a href="index.php?page=ponto" class="sidebar-item <?= $page === 'ponto' ? 'sidebar-active' : '' ?>">
+                        <i class="fa-solid fa-clock"></i>
+                        <span>Ponto Eletrônico</span>
+                    </a>
                     <?php if (in_array('voluntariado', $user_menus)): ?>
                         <a href="index.php?page=voluntariado" class="sidebar-item <?= $page === 'voluntariado' ? 'sidebar-active' : '' ?>">
                             <i class="fa-solid fa-heart"></i>
