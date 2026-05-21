@@ -19,6 +19,7 @@ try {
     try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN salary DECIMAL(15,2) DEFAULT 0.00"); } catch(Exception $e){}
     try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN use_transport VARCHAR(10) DEFAULT 'Não'"); } catch(Exception $e){}
     try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN transport_value DECIMAL(15,2) DEFAULT 0.00"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN daily_work_hours TIME DEFAULT '08:00:00'"); } catch(Exception $e){}
     try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN birth_date DATE NULL"); } catch(Exception $e){}
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS rh_vacations (
@@ -78,13 +79,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1. Dados Contratais
     if ($action === 'save_contract') {
         $compId = getCurrentUserCompanyId();
-        $stmt = $pdo->prepare("REPLACE INTO rh_employee_details (user_id, company_id, contract_type, role_name, work_days, work_hours, salary, use_transport, transport_value, gender, birth_date, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("REPLACE INTO rh_employee_details (user_id, company_id, contract_type, role_name, work_days, work_hours, daily_work_hours, salary, use_transport, transport_value, gender, birth_date, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $_POST['user_id'], $compId,
             $_POST['contract_type'], 
             $_POST['role_name'] ?? '', 
             $_POST['work_days'], 
             $_POST['work_hours'], 
+            $_POST['daily_work_hours'] ?? '08:00:00',
             !empty($_POST['salary']) ? $_POST['salary'] : 0, 
             $_POST['use_transport'] ?? 'Não', 
             !empty($_POST['transport_value']) ? $_POST['transport_value'] : 0, 
@@ -282,6 +284,7 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
         document.getElementById('c_birth_date').value = user.birth_date || '';
         document.getElementById('c_work_days').value = user.work_days || '';
         document.getElementById('c_work_hours').value = user.work_hours || '';
+        document.getElementById('c_daily_work_hours').value = user.daily_work_hours || '08:00:00';
         document.getElementById('c_start_date').value = user.start_date || '';
         document.getElementById('c_end_date').value = user.end_date || '';
         
@@ -951,7 +954,7 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
                 
                 <div class="form-group">
                     <label class="form-label" style="display:flex; justify-content:space-between;">
-                        Horário de Trabalho
+                        Horário de Trabalho (Texto Livre)
                         <button type="button" onclick="addCustomWorkHours()" style="background:none;border:none;color:var(--crm-purple);cursor:pointer;font-weight:900;" title="Adicionar Novo Horário"><i class="fa-solid fa-plus"></i></button>
                     </label>
                     <select name="work_hours" id="c_work_hours" class="form-select">
@@ -961,6 +964,12 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
                         <option value="07:00 às 16:00">07:00 às 16:00</option>
                         <option value="Comercial Padrão">Comercial Padrão</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Carga Horária Diária (Meta em Horas)</label>
+                    <input type="time" name="daily_work_hours" id="c_daily_work_hours" class="form-input" value="08:00">
+                    <p style="font-size:0.7rem; color:#64748b; margin-top:0.25rem;">Tempo exato usado para calcular o saldo do Banco de Horas (ex: 08:00).</p>
                 </div>
 
                 <div class="form-group">
@@ -1135,33 +1144,255 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
 
 <!-- ABA: PONTO ADMINISTRATIVO -->
 <div id="tab-ponto" class="rh-tab-content">
-    <div class="glass-panel" style="margin-bottom: 2rem;">
-        <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--crm-black); margin-bottom: 1.5rem;">
-            <i class="fa-solid fa-clock" style="color: var(--crm-purple);"></i>
-            Gestão de Ponto Eletrônico e Frequência
-        </h3>
+    
+    <!-- Filtros Superiores do Relatório de Ponto -->
+    <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: flex-end;">
+        <div style="flex: 2;">
+            <label class="form-label">Selecionar Funcionário</label>
+            <select id="ponto_user_select" class="form-select">
+                <option value="">-- Selecione um funcionário --</option>
+                <?php foreach ($users_data as $u): ?>
+                    <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['name']) ?> (<?= htmlspecialchars($u['email']) ?>)</option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div style="flex: 1;">
+            <label class="form-label">Mês</label>
+            <select id="ponto_month" class="form-select">
+                <?php for($m=1; $m<=12; $m++): ?>
+                    <option value="<?= str_pad($m, 2, '0', STR_PAD_LEFT) ?>" <?= $m == date('n') ? 'selected' : '' ?>><?= str_pad($m, 2, '0', STR_PAD_LEFT) ?></option>
+                <?php endfor; ?>
+            </select>
+        </div>
+        <div style="flex: 1;">
+            <label class="form-label">Ano</label>
+            <select id="ponto_year" class="form-select">
+                <option value="<?= date('Y') ?>"><?= date('Y') ?></option>
+                <option value="<?= date('Y') - 1 ?>"><?= date('Y') - 1 ?></option>
+            </select>
+        </div>
+        <button class="btn-primary" onclick="loadPontoReport()">
+            <i class="fa-solid fa-search"></i> Gerar Relatório
+        </button>
+    </div>
+
+    <!-- Container dos Resultados (Oculto Inicialmente) -->
+    <div id="ponto_report_container" style="display: none;">
         
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-            <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 1.5rem; border-radius: 12px; text-align: center;">
-                <h4 style="font-size: 0.85rem; color: #047857; text-transform: uppercase; font-weight: 900;">Funcionários Online</h4>
-                <div style="font-size: 2.5rem; font-weight: 900; color: #10b981;">0</div>
+        <!-- Cards de Resumo -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Horas Trabalhadas</h4>
+                <div id="lbl_total_worked" style="font-size: 2rem; font-weight: 900; color: var(--crm-purple);">00:00</div>
             </div>
-            <div style="background: #fef2f2; border: 1px solid #ef4444; padding: 1.5rem; border-radius: 12px; text-align: center;">
-                <h4 style="font-size: 0.85rem; color: #b91c1c; text-transform: uppercase; font-weight: 900;">Ocorrências Pendentes</h4>
-                <div style="font-size: 2.5rem; font-weight: 900; color: #ef4444;">0</div>
+            
+            <div style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Meta Diária de Horas</h4>
+                <div id="lbl_daily_goal" style="font-size: 2rem; font-weight: 900; color: #3b82f6;">08:00</div>
             </div>
-            <div style="background: #eff6ff; border: 1px solid #3b82f6; padding: 1.5rem; border-radius: 12px; text-align: center;">
-                <h4 style="font-size: 0.85rem; color: #1d4ed8; text-transform: uppercase; font-weight: 900;">Solicitações de Férias</h4>
-                <div style="font-size: 2.5rem; font-weight: 900; color: #3b82f6;">0</div>
+
+            <div id="card_balance" style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Saldo (Banco de Horas)</h4>
+                <div id="lbl_total_balance" style="font-size: 2rem; font-weight: 900;">00:00</div>
+            </div>
+            
+            <div style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Dias Trabalhados</h4>
+                <div id="lbl_days_worked" style="font-size: 2rem; font-weight: 900; color: #10b981;">0</div>
             </div>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
-            <button class="btn-primary"><i class="fa-solid fa-list-check"></i> Aprovar Ocorrências</button>
-            <button class="btn-secondary"><i class="fa-solid fa-file-pdf"></i> Gerar Espelho de Ponto Mensal</button>
-            <button class="btn-secondary"><i class="fa-solid fa-map-location-dot"></i> Mapa de Ativos</button>
+        <!-- Tabela de Registros Diários -->
+        <div class="glass-panel" style="padding:0; overflow:hidden;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="background: #f8fafc; padding: 1rem; text-align: left; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Data</th>
+                        <th style="background: #f8fafc; padding: 1rem; text-align: center; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Batidas do Dia</th>
+                        <th style="background: #f8fafc; padding: 1rem; text-align: center; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Carga Horária</th>
+                        <th style="background: #f8fafc; padding: 1rem; text-align: center; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Saldo Diário</th>
+                    </tr>
+                </thead>
+                <tbody id="ponto_table_body">
+                    <!-- Javascript will inject -->
+                </tbody>
+            </table>
         </div>
-        
-        <p style="color: #64748b; font-size: 0.85rem;">O painel detalhado de mapa, banco de horas e aprovação de férias está em implantação via backend.</p>
     </div>
 </div>
+
+<!-- Modal de Detalhe da Batida de Ponto -->
+<div id="pontoDetailModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 2000; align-items: center; justify-content: center; padding: 2rem;">
+    <div class="glass-panel" style="max-width: 500px; width: 100%; max-height:90vh; overflow-y:auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 900; color: var(--crm-black);">Evidência da Batida</h3>
+            <button onclick="document.getElementById('pontoDetailModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.5rem;">&times;</button>
+        </div>
+        
+        <div id="ponto_detail_content">
+            <!-- Dados da batida -->
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+            <button class="btn-primary" onclick="document.getElementById('pontoDetailModal').style.display='none'">Fechar Evidência</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function loadPontoReport() {
+        const userId = document.getElementById('ponto_user_select').value;
+        const month = document.getElementById('ponto_month').value;
+        const year = document.getElementById('ponto_year').value;
+        
+        if(!userId) {
+            alert('Por favor, selecione um funcionário.');
+            return;
+        }
+
+        const btn = event.currentTarget;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando...';
+        btn.disabled = true;
+
+        fetch(`api_rh_ponto.php?action=get_monthly_report&user_id=${userId}&month=${month}&year=${year}`)
+        .then(res => res.json())
+        .then(data => {
+            btn.innerHTML = '<i class="fa-solid fa-search"></i> Gerar Relatório';
+            btn.disabled = false;
+            
+            if(data.error) {
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById('ponto_report_container').style.display = 'block';
+            
+            // Preencher Resumos
+            document.getElementById('lbl_total_worked').innerText = data.summary.total_worked_hours;
+            document.getElementById('lbl_daily_goal').innerText = data.daily_goal;
+            document.getElementById('lbl_days_worked').innerText = data.summary.days_worked;
+            
+            const balDiv = document.getElementById('lbl_total_balance');
+            balDiv.innerText = data.summary.total_balance;
+            
+            const cardBal = document.getElementById('card_balance');
+            if(data.summary.is_balance_positive && data.summary.total_balance !== '00:00') {
+                balDiv.style.color = '#10b981'; // verde
+                cardBal.style.border = '1px solid #10b981';
+            } else if (!data.summary.is_balance_positive) {
+                balDiv.style.color = '#ef4444'; // vermelho
+                cardBal.style.border = '1px solid #ef4444';
+            } else {
+                balDiv.style.color = '#64748b'; // gris
+                cardBal.style.border = '1px solid #e2e8f0';
+            }
+
+            // Preencher Tabela
+            const tbody = document.getElementById('ponto_table_body');
+            tbody.innerHTML = '';
+            
+            if(data.days.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:3rem; color:#94a3b8;">Nenhuma batida registrada neste mês.</td></tr>`;
+                return;
+            }
+
+            // Armazenar os punches no window para acessar nos modais
+            window.pontoCurrentRecords = {};
+
+            data.days.forEach(d => {
+                const parts = d.date.split('-');
+                const displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                
+                // Montar as bolinhas de batidas
+                let punchesHtml = '<div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap;">';
+                d.punches.forEach(p => {
+                    window.pontoCurrentRecords[p.id] = p; // store for modal
+                    
+                    const timeOnly = p.record_time.split(' ')[1].substring(0, 5);
+                    let color = '#3b82f6';
+                    if (p.record_type === 'Entrada') color = '#10b981';
+                    if (p.record_type === 'Saida Almoco') color = '#f59e0b';
+                    if (p.record_type === 'Retorno Almoco') color = '#f59e0b';
+                    if (p.record_type === 'Saida') color = '#ef4444';
+                    
+                    let faceIcon = p.facial_used == 1 ? '<i class="fa-solid fa-face-smile"></i>' : '<i class="fa-solid fa-hand-pointer"></i>';
+
+                    punchesHtml += `
+                        <div onclick="openPontoDetail(${p.id})" style="background:${color}; color:white; padding:4px 10px; border-radius:99px; font-size:0.75rem; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 4px rgba(0,0,0,0.1); transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Clique para ver Evidências">
+                            ${faceIcon}
+                            ${p.record_type}: ${timeOnly}
+                        </div>
+                    `;
+                });
+                punchesHtml += '</div>';
+
+                // Formatar worked seconds
+                const ws = d.worked_seconds;
+                const wh = Math.floor(ws / 3600);
+                const wm = Math.floor((ws % 3600) / 60);
+                const workedStr = `${wh.toString().padStart(2, '0')}:${wm.toString().padStart(2, '0')}`;
+                
+                // Formatar balance seconds
+                const bs = d.balance_seconds;
+                const sign = bs < 0 ? '-' : (bs > 0 ? '+' : '');
+                const absBs = Math.abs(bs);
+                const bh = Math.floor(absBs / 3600);
+                const bm = Math.floor((absBs % 3600) / 60);
+                const balStr = `${sign}${bh.toString().padStart(2, '0')}:${bm.toString().padStart(2, '0')}`;
+                const balColor = bs > 0 ? '#10b981' : (bs < 0 ? '#ef4444' : '#64748b');
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="padding:1rem; font-weight:800; color:#1e293b;">${displayDate}</td>
+                        <td style="padding:1rem;">${punchesHtml}</td>
+                        <td style="padding:1rem; text-align:center; font-weight:700; color:#334155;">${workedStr}</td>
+                        <td style="padding:1rem; text-align:center; font-weight:800; color:${balColor};">${balStr}</td>
+                    </tr>
+                `;
+            });
+            
+        })
+        .catch(err => {
+            btn.innerHTML = '<i class="fa-solid fa-search"></i> Gerar Relatório';
+            btn.disabled = false;
+            alert('Erro de conexão com o servidor.');
+        });
+    }
+
+    function openPontoDetail(recordId) {
+        const p = window.pontoCurrentRecords[recordId];
+        if(!p) return;
+        
+        const dateStr = new Date(p.record_time).toLocaleString('pt-BR');
+        
+        let html = `
+            <div style="text-align:center; margin-bottom:1rem;">
+                <h4 style="font-size:1.5rem; font-weight:900; color:var(--crm-purple); margin:0;">${p.record_type}</h4>
+                <p style="color:#64748b; font-size:0.9rem; font-weight:700; margin-top:0.25rem;"><i class="fa-solid fa-clock"></i> ${dateStr}</p>
+            </div>
+        `;
+        
+        if (p.photo_base64) {
+            html += `<div style="margin-bottom:1rem; border-radius:1rem; overflow:hidden; border:4px solid #f1f5f9; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+                        <img src="${p.photo_base64}" style="width:100%; display:block;" alt="Foto do Ponto">
+                     </div>`;
+        }
+
+        html += `
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.75rem; padding:1rem; font-size:0.85rem; color:#334155;">
+                <p style="margin-bottom:0.5rem;"><strong>Validação:</strong> ${p.facial_used == 1 ? '<span style="color:#10b981;"><i class="fa-solid fa-face-viewfinder"></i> Reconhecimento Facial</span>' : '<span style="color:#f59e0b;"><i class="fa-solid fa-hand-pointer"></i> Ponto Manual</span>'}</p>
+                <p style="margin-bottom:0.5rem;"><strong>Status:</strong> ${p.status}</p>
+                <p style="margin-bottom:0.5rem;"><strong>Endereço do GPS:</strong><br> ${p.address || 'Não capturado'}</p>
+        `;
+
+        if (p.latitude && p.longitude) {
+            const mapLink = `https://www.google.com/maps?q=${p.latitude},${p.longitude}`;
+            html += `<p style="margin-bottom:0;"><a href="${mapLink}" target="_blank" style="color:var(--crm-purple); font-weight:800; text-decoration:none;"><i class="fa-solid fa-map-location-dot"></i> Ver no Google Maps</a></p>`;
+        }
+        
+        html += `</div>`;
+
+        document.getElementById('ponto_detail_content').innerHTML = html;
+        document.getElementById('pontoDetailModal').style.display = 'flex';
+    }
+</script>
