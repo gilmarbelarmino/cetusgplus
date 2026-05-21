@@ -636,6 +636,9 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
     <button class="rh-tab-btn" id="tab-btn-recados" onclick="switchRhTab('recados', this)">
         <i class="fa-solid fa-bullhorn"></i> Recados Geral
     </button>
+    <button class="rh-tab-btn" id="tab-btn-ponto" onclick="switchRhTab('ponto', this)">
+        <i class="fa-solid fa-clock-rotate-left"></i> Ponto Administrativo
+    </button>
 </div>
 
 <div id="tab-funcionarios" class="rh-tab-content active">
@@ -1127,5 +1130,38 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
         <div id="notes_content_body">
             <!-- Javascript will inject -->
         </div>
+    </div>
+</div>
+
+<!-- ABA: PONTO ADMINISTRATIVO -->
+<div id="tab-ponto" class="rh-tab-content">
+    <div class="glass-panel" style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--crm-black); margin-bottom: 1.5rem;">
+            <i class="fa-solid fa-clock" style="color: var(--crm-purple);"></i>
+            Gestão de Ponto Eletrônico e Frequência
+        </h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 1.5rem; border-radius: 12px; text-align: center;">
+                <h4 style="font-size: 0.85rem; color: #047857; text-transform: uppercase; font-weight: 900;">Funcionários Online</h4>
+                <div style="font-size: 2.5rem; font-weight: 900; color: #10b981;">0</div>
+            </div>
+            <div style="background: #fef2f2; border: 1px solid #ef4444; padding: 1.5rem; border-radius: 12px; text-align: center;">
+                <h4 style="font-size: 0.85rem; color: #b91c1c; text-transform: uppercase; font-weight: 900;">Ocorrências Pendentes</h4>
+                <div style="font-size: 2.5rem; font-weight: 900; color: #ef4444;">0</div>
+            </div>
+            <div style="background: #eff6ff; border: 1px solid #3b82f6; padding: 1.5rem; border-radius: 12px; text-align: center;">
+                <h4 style="font-size: 0.85rem; color: #1d4ed8; text-transform: uppercase; font-weight: 900;">Solicitações de Férias</h4>
+                <div style="font-size: 2.5rem; font-weight: 900; color: #3b82f6;">0</div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+            <button class="btn-primary"><i class="fa-solid fa-list-check"></i> Aprovar Ocorrências</button>
+            <button class="btn-secondary"><i class="fa-solid fa-file-pdf"></i> Gerar Espelho de Ponto Mensal</button>
+            <button class="btn-secondary"><i class="fa-solid fa-map-location-dot"></i> Mapa de Ativos</button>
+        </div>
+        
+        <p style="color: #64748b; font-size: 0.85rem;">O painel detalhado de mapa, banco de horas e aprovação de férias está em implantação via backend.</p>
     </div>
 </div>

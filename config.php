@@ -84,7 +84,7 @@ if (!function_exists('getUserMenus')) {
 
             if ($loginName === 'superadmin') {
                 return [
-                    'super_admin', 'rh', 'voluntariado', 'semanada', 'patrimonio', 
+                    'super_admin', 'rh', 'ponto', 'voluntariado', 'semanada', 'patrimonio', 
                     'emprestimos', 'chamados', 'orcamentos', 'locacao_salas', 
                     'relatorios', 'tecnologia', 'informacoes', 'usuarios', 'configuracoes'
                 ];

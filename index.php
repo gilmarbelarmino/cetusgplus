@@ -335,6 +335,12 @@ try {
                             <span>Recursos Humanos</span>
                         </a>
                     <?php endif; ?>
+                    <?php if (in_array('ponto', $user_menus) || in_array('rh', $user_menus)): ?>
+                        <a href="index.php?page=ponto" class="sidebar-item <?= $page === 'ponto' ? 'sidebar-active' : '' ?>">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>Ponto Eletrônico</span>
+                        </a>
+                    <?php endif; ?>
                     <?php if (in_array('voluntariado', $user_menus)): ?>
                         <a href="index.php?page=voluntariado" class="sidebar-item <?= $page === 'voluntariado' ? 'sidebar-active' : '' ?>">
                             <i class="fa-solid fa-heart"></i>
