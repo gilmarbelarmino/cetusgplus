@@ -645,8 +645,24 @@ async function geocode(lat,lng){
     try {
         const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,{headers:{'Accept-Language':'pt-BR,pt'}});
         const d=await r.json();
-        curAddr=d&&d.display_name?d.display_name:`${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-        document.getElementById('gpsAddr').textContent=curAddr;
+        if(d && d.address){
+            const a = d.address;
+            const rua = a.road || a.pedestrian || a.street || '';
+            const num = a.house_number ? `, ${a.house_number}` : '';
+            const bairro = a.suburb || a.neighbourhood || a.city_district || '';
+            const cidade = a.city || a.town || a.village || a.municipality || '';
+            
+            let parts = [];
+            if(rua) parts.push(rua + num);
+            if(bairro) parts.push(bairro);
+            if(cidade) parts.push(cidade);
+            
+            curAddr = parts.length > 0 ? parts.join(' - ') : (d.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+            document.getElementById('gpsAddr').textContent=curAddr;
+        } else {
+            curAddr=d&&d.display_name?d.display_name:`${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            document.getElementById('gpsAddr').textContent=curAddr;
+        }
     } catch(e){ curAddr=`${lat.toFixed(6)}, ${lng.toFixed(6)}`; document.getElementById('gpsAddr').textContent=curAddr; }
 }
 
