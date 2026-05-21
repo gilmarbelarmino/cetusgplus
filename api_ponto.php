@@ -72,51 +72,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($action === 'register_face') {
         $descriptor = $data['descriptor'] ?? '';
+        $photo      = $data['photo'] ?? null;
         if (!$descriptor) {
-            echo json_encode(['success' => false, 'error' => 'Descriptor missing']);
+            echo json_encode(['success' => false, 'error' => 'Descriptor vazio']);
             exit;
         }
-        $stmt = $pdo->prepare("INSERT INTO user_face_descriptors (user_id, descriptor) VALUES (?, ?) ON DUPLICATE KEY UPDATE descriptor = ?");
-        $stmt->execute([$user['id'], $descriptor, $descriptor]);
+        $stmt = $pdo->prepare("INSERT INTO user_face_descriptors (user_id, descriptor, photo_base64) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE descriptor = ?, photo_base64 = ?");
+        $stmt->execute([$user['id'], $descriptor, $photo, $descriptor, $photo]);
         echo json_encode(['success' => true]);
         exit;
     }
     
     if ($action === 'register_punch') {
-        $type = $data['type'] ?? 'Entrada';
-        $lat = $data['latitude'] ?? null;
-        $lng = $data['longitude'] ?? null;
-        $photo = $data['photo'] ?? '';
-        $address = $data['address'] ?? '';
-        $device = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        
+        $type        = $data['type'] ?? 'Entrada';
+        $lat         = $data['latitude'] ?? null;
+        $lng         = $data['longitude'] ?? null;
+        $accuracy    = $data['accuracy'] ?? null;
+        $photo       = $data['photo'] ?? '';
+        $address     = $data['address'] ?? '';
+        $isFallback  = $data['isFallback'] ?? false;
+        $facialUsed  = $data['facialUsed'] ?? false;
+        $device      = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        $ip          = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
+        $ip          = trim(explode(',', $ip)[0]); // pegar IP real atrás de proxy
+
         $stmt = $pdo->prepare("SELECT latitude, longitude, radius_meters, allow_remote_work FROM company_settings WHERE id = ?");
         $stmt->execute([$compId]);
         $comp = $stmt->fetch();
-        
-        $status = 'Aprovado';
+
+        $status   = 'Aprovado';
         $incident = null;
         $distance = null;
-        
+
         if ($comp && $comp['latitude'] && $comp['longitude'] && !$comp['allow_remote_work']) {
             $distance = getDistanceMeters($lat, $lng, $comp['latitude'], $comp['longitude']);
             if ($distance !== null && $distance > ($comp['radius_meters'] ?: 100)) {
-                $status = 'Ocorrencia';
+                $status   = 'Ocorrencia';
                 $incident = 'Fora do Raio';
             }
         }
-        
-        $stmt = $pdo->prepare("INSERT INTO time_records (user_id, company_id, record_type, record_time, latitude, longitude, address, ip_address, device_info, photo_base64, status) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$user['id'], $compId, $type, $lat, $lng, $address, $ip, $device, $photo, $status]);
-        
+
+        // Garantir coluna accuracy e facial_used
+        try { $pdo->exec("ALTER TABLE time_records ADD COLUMN gps_accuracy FLOAT DEFAULT NULL"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE time_records ADD COLUMN facial_used TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE time_records ADD COLUMN is_manual TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
+
+        $stmt = $pdo->prepare("INSERT INTO time_records (user_id, company_id, record_type, record_time, latitude, longitude, address, ip_address, device_info, photo_base64, status, gps_accuracy, facial_used, is_manual) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$user['id'], $compId, $type, $lat, $lng, $address, $ip, $device, $photo, $status, $accuracy, $facialUsed ? 1 : 0, $isFallback ? 1 : 0]);
+
         $record_id = $pdo->lastInsertId();
-        
+
         if ($incident) {
             $stmt = $pdo->prepare("INSERT INTO time_incidents (user_id, company_id, record_id, incident_date, incident_type, description) VALUES (?, ?, ?, CURDATE(), ?, ?)");
             $stmt->execute([$user['id'], $compId, $record_id, 'Fora do Raio', "Registro efetuado a " . round($distance, 2) . " metros da empresa."]);
         }
-        
+
         echo json_encode(['success' => true, 'record_id' => $record_id, 'status' => $status]);
         exit;
     }
