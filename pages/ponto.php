@@ -9,6 +9,43 @@ $stmt_u = $pdo->prepare("SELECT u.name, u.email, u.avatar_url, u.sector, rh.role
 $stmt_u->execute([$currentUser['id']]);
 $userData = $stmt_u->fetch(PDO::FETCH_ASSOC);
 
+// Garantir que as tabelas existam no banco de dados da hospedagem web (Hostinger)
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS time_records (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL,
+        company_id INT NOT NULL,
+        record_type ENUM('Entrada','Saida Almoco','Retorno Almoco','Saida','Pausa') NOT NULL,
+        record_time DATETIME NOT NULL,
+        latitude DECIMAL(10,8) DEFAULT NULL,
+        longitude DECIMAL(11,8) DEFAULT NULL,
+        address TEXT DEFAULT NULL,
+        ip_address VARCHAR(50) DEFAULT NULL,
+        device_info VARCHAR(255) DEFAULT NULL,
+        gps_accuracy FLOAT DEFAULT NULL,
+        photo_base64 LONGTEXT DEFAULT NULL,
+        status ENUM('Aprovado','Pendente','Rejeitado','Ocorrencia') DEFAULT 'Pendente',
+        confidence_score FLOAT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        facial_used TINYINT(1) DEFAULT 0,
+        is_manual TINYINT(1) DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS time_incidents (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL,
+        company_id INT NOT NULL,
+        record_id INT DEFAULT NULL,
+        incident_date DATE NOT NULL,
+        incident_type ENUM('Atraso','Falta','Hora Extra','Saida Antecipada','Fraude','Fora do Raio','Outro') NOT NULL,
+        description TEXT DEFAULT NULL,
+        time_amount_minutes INT DEFAULT 0,
+        status ENUM('Pendente','Justificado','Descontado') DEFAULT 'Pendente',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (record_id) REFERENCES time_records(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+} catch (Exception $e) {}
+
 $stmt_r = $pdo->prepare("SELECT record_type, record_time, address, status FROM time_records WHERE user_id = ? AND company_id = ? AND DATE(record_time) = CURDATE() ORDER BY record_time ASC");
 $stmt_r->execute([$currentUser['id'], $compId]);
 $todayRecords = $stmt_r->fetchAll(PDO::FETCH_ASSOC);
