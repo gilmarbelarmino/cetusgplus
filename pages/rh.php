@@ -1315,11 +1315,8 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
                     if (p.record_type === 'Retorno Almoco') color = '#f59e0b';
                     if (p.record_type === 'Saida') color = '#ef4444';
                     
-                    let faceIcon = p.facial_used == 1 ? '<i class="fa-solid fa-face-smile"></i>' : '<i class="fa-solid fa-hand-pointer"></i>';
-
                     punchesHtml += `
-                        <div onclick="openPontoDetail(${p.id})" style="background:${color}; color:white; padding:4px 10px; border-radius:99px; font-size:0.75rem; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 4px rgba(0,0,0,0.1); transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Clique para ver Evidências">
-                            ${faceIcon}
+                        <div onclick="openPontoDetail(${p.id})" style="background:${color}; color:white; padding:4px 10px; border-radius:99px; font-size:0.75rem; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 4px rgba(0,0,0,0.1); transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Clique para ver Detalhes">
                             ${p.record_type}: ${timeOnly}
                         </div>
                     `;
@@ -1372,15 +1369,8 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
             </div>
         `;
         
-        if (p.photo_base64) {
-            html += `<div style="margin-bottom:1rem; border-radius:1rem; overflow:hidden; border:4px solid #f1f5f9; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
-                        <img src="${p.photo_base64}" style="width:100%; display:block;" alt="Foto do Ponto">
-                     </div>`;
-        }
-
         html += `
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.75rem; padding:1rem; font-size:0.85rem; color:#334155;">
-                <p style="margin-bottom:0.5rem;"><strong>Validação:</strong> ${p.facial_used == 1 ? '<span style="color:#10b981;"><i class="fa-solid fa-face-viewfinder"></i> Reconhecimento Facial</span>' : '<span style="color:#f59e0b;"><i class="fa-solid fa-hand-pointer"></i> Ponto Manual</span>'}</p>
                 <p style="margin-bottom:0.5rem;"><strong>Status:</strong> ${p.status}</p>
                 <p style="margin-bottom:0.5rem;"><strong>Endereço do GPS:</strong><br> ${p.address || 'Não capturado'}</p>
         `;

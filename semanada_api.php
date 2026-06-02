@@ -58,6 +58,7 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // DELETAR COMENTÁRIO
+if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $compId = getCurrentUserCompanyId();
     $cid = intval($_POST['comment_id'] ?? 0);
     $stmt = $pdo->prepare("DELETE FROM semanada_comments WHERE id = ? AND user_id = ? AND company_id = ?");

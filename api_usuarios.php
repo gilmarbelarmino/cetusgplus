@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'config.php';
 
+try {
     $compId = getCurrentUserCompanyId();
 
     // ─── GET: Listar Usuários e Históricos ────────────────────────────────

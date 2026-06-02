@@ -58,17 +58,7 @@ try {
     }
 
     // ... (restante do código original) ...
-    // Note: I will only replace the top and bottom to avoid repeating the whole file, 
-    // but since I'm in a tool that needs exact matches, I'll be careful.
     
-} catch (Exception $e) {
-    if (ob_get_length()) ob_clean();
-    echo json_encode([
-        'success' => false,
-        'message' => "ERRO CRÍTICO NO BACKUP:\n" . $e->getMessage()
-    ]);
-}
-
 // ─── 2. EXPORTAR BANCO DE DADOS ───────────────────────────────────────────────
 $mysqldumpPaths = [
     'C:\\xampp\\mysql\\bin\\mysqldump.exe',

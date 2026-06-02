@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'config.php';
 
+try {
     $compId = getCurrentUserCompanyId();
 
     // 1. Relatório Geral de Funcionários com detalhes de RH
