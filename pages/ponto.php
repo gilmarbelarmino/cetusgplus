@@ -17,19 +17,28 @@ try {
         company_id INT NOT NULL,
         record_type ENUM('Entrada','Saida Almoco','Retorno Almoco','Saida','Pausa') NOT NULL,
         record_time DATETIME NOT NULL,
-        latitude DECIMAL(10,8) DEFAULT NULL,
-        longitude DECIMAL(11,8) DEFAULT NULL,
-        address TEXT DEFAULT NULL,
-        ip_address VARCHAR(50) DEFAULT NULL,
-        device_info VARCHAR(255) DEFAULT NULL,
-        gps_accuracy FLOAT DEFAULT NULL,
-        photo_base64 LONGTEXT DEFAULT NULL,
         status ENUM('Aprovado','Pendente','Rejeitado','Ocorrencia') DEFAULT 'Pendente',
-        confidence_score FLOAT DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        facial_used TINYINT(1) DEFAULT 0,
-        is_manual TINYINT(1) DEFAULT 0
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // Adiciona colunas se for uma tabela velha (ignora erro se já existir)
+    $colunas = [
+        "latitude DECIMAL(10,8) DEFAULT NULL",
+        "longitude DECIMAL(11,8) DEFAULT NULL",
+        "address TEXT DEFAULT NULL",
+        "ip_address VARCHAR(50) DEFAULT NULL",
+        "device_info VARCHAR(255) DEFAULT NULL",
+        "gps_accuracy FLOAT DEFAULT NULL",
+        "photo_base64 LONGTEXT DEFAULT NULL",
+        "confidence_score FLOAT DEFAULT NULL",
+        "facial_used TINYINT(1) DEFAULT 0",
+        "is_manual TINYINT(1) DEFAULT 0"
+    ];
+    foreach($colunas as $col) {
+        try {
+            $pdo->exec("ALTER TABLE time_records ADD COLUMN $col");
+        } catch (Exception $e) { } // ignorar se a coluna ja existe (erro 1060)
+    }
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS time_incidents (
         id INT AUTO_INCREMENT PRIMARY KEY,
