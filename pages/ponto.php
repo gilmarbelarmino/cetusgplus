@@ -21,7 +21,6 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
-    // Adiciona colunas se for uma tabela velha (ignora erro se já existir)
     $colunas = [
         "latitude DECIMAL(10,8) DEFAULT NULL",
         "longitude DECIMAL(11,8) DEFAULT NULL",
@@ -38,6 +37,18 @@ try {
         try {
             $pdo->exec("ALTER TABLE time_records ADD COLUMN $col");
         } catch (Exception $e) { } // ignorar se a coluna ja existe (erro 1060)
+    }
+
+    $colunas_company = [
+        "latitude DECIMAL(10,8) DEFAULT NULL",
+        "longitude DECIMAL(11,8) DEFAULT NULL",
+        "radius_meters INT DEFAULT 100",
+        "allow_remote_work TINYINT(1) DEFAULT 0"
+    ];
+    foreach($colunas_company as $col) {
+        try {
+            $pdo->exec("ALTER TABLE company_settings ADD COLUMN $col");
+        } catch (Exception $e) { } 
     }
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS time_incidents (
