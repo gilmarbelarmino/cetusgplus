@@ -21,6 +21,12 @@ try {
     try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN transport_value DECIMAL(15,2) DEFAULT 0.00"); } catch(Exception $e){}
     try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN daily_work_hours TIME DEFAULT '08:00:00'"); } catch(Exception $e){}
     try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN birth_date DATE NULL"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN dismissal_reason TEXT"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN benefits TEXT"); } catch(Exception $e){}
+
+    try { $pdo->exec("ALTER TABLE rh_candidates ADD COLUMN birth_date DATE NULL"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_candidates ADD COLUMN gender VARCHAR(20) DEFAULT ''"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_candidates ADD COLUMN use_transport VARCHAR(10) DEFAULT ''"); } catch(Exception $e){}
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS rh_vacations (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -108,7 +114,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1. Dados Contratais
     if ($action === 'save_contract') {
         $compId = getCurrentUserCompanyId();
-        $stmt = $pdo->prepare("REPLACE INTO rh_employee_details (user_id, company_id, contract_type, role_name, work_days, work_hours, daily_work_hours, salary, use_transport, transport_value, gender, birth_date, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("
+            INSERT INTO rh_employee_details 
+            (user_id, company_id, contract_type, role_name, work_days, work_hours, daily_work_hours, salary, use_transport, transport_value, gender, birth_date, start_date, end_date, dismissal_reason) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            contract_type = VALUES(contract_type), role_name = VALUES(role_name), work_days = VALUES(work_days),
+            work_hours = VALUES(work_hours), daily_work_hours = VALUES(daily_work_hours), salary = VALUES(salary),
+            use_transport = VALUES(use_transport), transport_value = VALUES(transport_value), gender = VALUES(gender),
+            birth_date = VALUES(birth_date), start_date = VALUES(start_date), end_date = VALUES(end_date),
+            dismissal_reason = VALUES(dismissal_reason)
+        ");
         $stmt->execute([
             $_POST['user_id'], $compId,
             $_POST['contract_type'], 
@@ -122,7 +138,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['gender'] ?? '',
             !empty($_POST['birth_date']) ? $_POST['birth_date'] : null,
             !empty($_POST['start_date']) ? $_POST['start_date'] : null, 
-            !empty($_POST['end_date']) ? $_POST['end_date'] : null
+            !empty($_POST['end_date']) ? $_POST['end_date'] : null,
+            $_POST['dismissal_reason'] ?? ''
         ]);
         // Sync bidirecional: atualizar tabela users com gender e position
         try {
@@ -286,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $compId = getCurrentUserCompanyId();
         $candId = $_POST['candidate_id'];
         
-        $stmt = $pdo->prepare("SELECT c.*, j.title, j.sector, j.contract_type, j.work_days, j.work_hours, j.salary, j.start_date FROM rh_candidates c JOIN rh_jobs j ON c.job_id = j.id WHERE c.id = ? AND c.company_id = ?");
+        $stmt = $pdo->prepare("SELECT c.*, j.title, j.sector, j.contract_type, j.work_days, j.work_hours, j.salary, j.start_date, j.benefits FROM rh_candidates c JOIN rh_jobs j ON c.job_id = j.id WHERE c.id = ? AND c.company_id = ?");
         $stmt->execute([$candId, $compId]);
         $cand = $stmt->fetch();
         
@@ -298,8 +315,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtUser = $pdo->prepare("INSERT INTO users (id, company_id, name, email, phone, sector, role, status, login_name, password) VALUES (?, ?, ?, ?, ?, ?, 'Colaborador', 'Ativo', ?, ?)");
             $stmtUser->execute([$uuid, $compId, $cand['name'], $cand['email'], $cand['phone'], $cand['sector'], $login, $pwd]);
             
-            $stmtRh = $pdo->prepare("INSERT INTO rh_employee_details (user_id, company_id, contract_type, work_days, work_hours, role_name, salary, start_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmtRh->execute([$uuid, $compId, $cand['contract_type'], $cand['work_days'], $cand['work_hours'], $cand['title'], $cand['salary'], $cand['start_date']]);
+            $stmtRh = $pdo->prepare("INSERT INTO rh_employee_details (user_id, company_id, contract_type, work_days, work_hours, role_name, salary, start_date, birth_date, gender, use_transport, benefits) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmtRh->execute([
+                $uuid, $compId, $cand['contract_type'], $cand['work_days'], $cand['work_hours'], 
+                $cand['title'], $cand['salary'], $cand['start_date'], $cand['birth_date'], 
+                $cand['gender'], $cand['use_transport'], $cand['benefits']
+            ]);
             
             $pdo->prepare("UPDATE rh_candidates SET status = 'Contratado' WHERE id = ?")->execute([$candId]);
         }
@@ -311,22 +332,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare("DELETE FROM rh_candidates WHERE id = ? AND company_id = ?")->execute([$_POST['candidate_id'], $compId]);
         header('Location: ?page=rh&success=candidate_deleted&tab=candidatos'); exit;
     }
+    // 12. Demissão de Funcionário
+    if ($action === 'fire_employee') {
+        $compId = getCurrentUserCompanyId();
+        $uid = $_POST['user_id'];
+        $end_date = $_POST['end_date'];
+        $reason = $_POST['dismissal_reason'];
+        
+        $pdo->prepare("UPDATE rh_employee_details SET end_date = ?, dismissal_reason = ? WHERE user_id = ? AND company_id = ?")->execute([$end_date, $reason, $uid, $compId]);
+        $pdo->prepare("UPDATE users SET status = 'Inativo' WHERE id = ? AND company_id = ?")->execute([$uid, $compId]);
+        header('Location: ?page=rh&success=employee_fired&tab=funcionarios'); exit;
+    }
 }
 
 // Resgate de Dados para a UI e injeção do JS Dashboard
 $search = $_GET['search'] ?? '';
+$status_filter = $_GET['status_filter'] ?? 'Ativo';
 $query = "
     SELECT 
         u.id, u.name, u.email, u.sector, u.unit_id, u.avatar_url, u.status, u.role, u.phone,
         un.name as unit_name,
-        rh.contract_type, rh.role_name, rh.work_days, rh.work_hours, rh.salary, rh.use_transport, rh.transport_value, rh.gender, rh.birth_date, rh.start_date, rh.end_date 
+        rh.contract_type, rh.role_name, rh.work_days, rh.work_hours, rh.salary, rh.use_transport, rh.transport_value, rh.gender, rh.birth_date, rh.start_date, rh.end_date, rh.dismissal_reason, rh.benefits 
     FROM users u
     LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
     LEFT JOIN rh_employee_details rh ON CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(rh.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
-    WHERE u.company_id = ?
+    WHERE u.company_id = ? AND u.status = ?
 ";
 $compId = getCurrentUserCompanyId();
-$params = [$compId];
+$params = [$compId, $status_filter];
 if ($search) {
     $query .= " AND (u.name LIKE ? OR u.sector LIKE ?)";
     $params[] = "%$search%"; $params[] = "%$search%";
@@ -401,6 +434,9 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
         document.getElementById('c_daily_work_hours').value = user.daily_work_hours || '08:00:00';
         document.getElementById('c_start_date').value = user.start_date || '';
         document.getElementById('c_end_date').value = user.end_date || '';
+        if(document.getElementById('c_dismissal_reason')) {
+            document.getElementById('c_dismissal_reason').value = user.dismissal_reason || '';
+        }
         
         toggleTransportValue();
         document.getElementById('contractModal').style.display = 'flex';
@@ -773,6 +809,13 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
             <label class="form-label">Buscar Funcionário</label>
             <input type="text" name="search" class="form-input" placeholder="Buscar por Nome ou Setor..." value="<?= htmlspecialchars($search) ?>">
         </div>
+        <div>
+            <label class="form-label">Status</label>
+            <select name="status_filter" class="form-select" style="min-width: 150px;">
+                <option value="Ativo" <?= $status_filter == 'Ativo' ? 'selected' : '' ?>>Ativos</option>
+                <option value="Inativo" <?= $status_filter == 'Inativo' ? 'selected' : '' ?>>Inativos (Demitidos)</option>
+            </select>
+        </div>
         <button type="submit" class="btn-primary">
             <i class="fa-solid fa-magnifying-glass"></i>
             Filtrar
@@ -849,6 +892,12 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
                         </form>
                     <?php endif; ?>
                     
+                    <?php if (empty($usr['end_date']) || $usr['end_date'] === '0000-00-00' || $usr['end_date'] > date('Y-m-d')): ?>
+                        <button class="btn-icon" style="background:#ef4444; color:#fff;" onclick="event.stopPropagation(); openDismissModal('<?= $usr['id'] ?>', '<?= htmlspecialchars(addslashes($usr['name'])) ?>')" title="Demitir / Inativar Funcionário">
+                            <i class="fa-solid fa-user-minus"></i>
+                        </button>
+                    <?php endif; ?>
+                    
                     <button class="btn-icon rh-btn-contract" onclick="event.stopPropagation(); openContractModal('<?= $usr['id'] ?>')" title="Dados Contratuais e Admissão">
                         <i class="fa-solid fa-file-signature"></i>
                     </button>
@@ -879,6 +928,42 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
     </div>
 <?php endif; ?>
 </div><!-- Fim tab-funcionarios -->
+
+<!-- Modal Demissão -->
+<div id="dismissModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
+    <div class="glass-panel" style="max-width: 500px; width: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h3 id="dismiss_modal_title" style="font-size: 1.25rem; font-weight: 900; color: #ef4444;"><i class="fa-solid fa-user-minus"></i> Demitir Funcionário</h3>
+            <button onclick="document.getElementById('dismissModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: var(--text-soft); font-size: 1.5rem;">&times;</button>
+        </div>
+        <form method="POST">
+            <input type="hidden" name="action" value="fire_employee">
+            <input type="hidden" name="user_id" id="dismiss_user_id">
+            
+            <div class="form-group">
+                <label class="form-label">Data da Demissão *</label>
+                <input type="date" name="end_date" class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Motivo / Detalhes da Demissão</label>
+                <textarea name="dismissal_reason" class="form-textarea" rows="4" placeholder="Registrar o motivo para o histórico..." required></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" onclick="document.getElementById('dismissModal').style.display='none'" class="btn-secondary">Cancelar</button>
+                <button type="submit" class="btn-primary" style="background:#ef4444;"><i class="fa-solid fa-user-minus"></i> Confirmar Demissão</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+function openDismissModal(userId, userName) {
+    document.getElementById('dismiss_user_id').value = userId;
+    document.getElementById('dismiss_modal_title').innerHTML = '<i class="fa-solid fa-user-minus"></i> Demitir: ' + userName;
+    document.getElementById('dismissModal').style.display = 'flex';
+}
+</script>
 <?php include 'rh_ats.php'; ?>
 
 <!-- ABA: RECADOS GERAL -->
@@ -1104,6 +1189,11 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
                 <div class="form-group">
                     <label class="form-label">Data de Término <span style="font-weight:400;text-transform:none;font-size:.7rem;">(opcional/demissão)</span></label>
                     <input type="date" name="end_date" id="c_end_date" class="form-input">
+                </div>
+                
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Motivo / Histórico de Demissão</label>
+                    <textarea name="dismissal_reason" id="c_dismissal_reason" class="form-textarea" rows="2" placeholder="Opcional. Preenchido automaticamente ao demitir."></textarea>
                 </div>
                 
             </div>

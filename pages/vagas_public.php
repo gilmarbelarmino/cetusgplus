@@ -59,8 +59,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
 
         if (empty($error_msg)) {
-            $stmt_insert = $pdo->prepare("INSERT INTO rh_candidates (job_id, company_id, name, email, phone, resume_url) VALUES (?, ?, ?, ?, ?, ?)");
-            if ($stmt_insert->execute([$job_id, $company_id, $name, $email, $phone, $resume_url])) {
+            $birth_date = $_POST['birth_date'] ?? null;
+            $gender = $_POST['gender'] ?? '';
+            $use_transport = $_POST['use_transport'] ?? 'Não';
+            
+            $stmt_insert = $pdo->prepare("INSERT INTO rh_candidates (job_id, company_id, name, email, phone, resume_url, birth_date, gender, use_transport) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($stmt_insert->execute([$job_id, $company_id, $name, $email, $phone, $resume_url, $birth_date, $gender, $use_transport])) {
                 $success_msg = 'Sua candidatura foi enviada com sucesso! O RH entrará em contato.';
             } else {
                 $error_msg = 'Ocorreu um erro ao enviar sua candidatura. Tente novamente.';
@@ -198,6 +202,28 @@ $jobs = $stmt_jobs->fetchAll();
             <div class="form-group">
                 <label>Celular / WhatsApp *</label>
                 <input type="text" name="phone" required placeholder="(11) 99999-9999">
+            </div>
+            <div style="display:flex; gap:1rem;">
+                <div class="form-group" style="flex:1;">
+                    <label>Data de Nascimento *</label>
+                    <input type="date" name="birth_date" required>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Gênero *</label>
+                    <select name="gender" required style="width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 1rem; background:white;">
+                        <option value="">Selecione</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Feminino">Feminino</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Utiliza Vale Transporte? *</label>
+                <select name="use_transport" required style="width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 1rem; background:white;">
+                    <option value="Não">Não</option>
+                    <option value="Sim">Sim</option>
+                </select>
             </div>
             <div class="form-group">
                 <label>Anexar Currículo (Apenas PDF) *</label>
