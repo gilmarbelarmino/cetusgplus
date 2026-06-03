@@ -239,11 +239,11 @@ $tenants = $stmt->fetchAll();
 <?php endif; ?>
 
 <div style="margin-bottom: 2rem;">
-    <div style="display: flex; gap: 1rem; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 0;">
-        <div onclick="switchSaasTab('empresas')" id="tab_empresas" style="padding: 1rem 2rem; cursor: pointer; border-bottom: 3px solid var(--brand-primary); color: white; font-weight: 800; font-size: 1.1rem; transition: 0.3s;">
+    <div style="display: flex; gap: 1rem; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 0; overflow-x: auto;">
+        <div onclick="switchSaasTab('empresas')" id="tab_empresas" style="padding: 1rem 2rem; cursor: pointer; border-bottom: 3px solid var(--brand-primary); color: var(--text-main); font-weight: 800; font-size: 1.1rem; transition: 0.3s; white-space: nowrap;">
             <i class="fa-solid fa-building"></i> Empresas
         </div>
-        <div onclick="switchSaasTab('relatorios')" id="tab_relatorios" style="padding: 1rem 2rem; cursor: pointer; border-bottom: 3px solid transparent; color: var(--text-soft); font-weight: 800; font-size: 1.1rem; transition: 0.3s;">
+        <div onclick="switchSaasTab('relatorios')" id="tab_relatorios" style="padding: 1rem 2rem; cursor: pointer; border-bottom: 3px solid transparent; color: var(--text-soft); font-weight: 800; font-size: 1.1rem; transition: 0.3s; white-space: nowrap;">
             <i class="fa-solid fa-chart-pie"></i> Relatórios
         </div>
     </div>
@@ -255,10 +255,10 @@ function switchSaasTab(tab) {
     document.getElementById('content_relatorios').style.display = tab === 'relatorios' ? 'block' : 'none';
     
     document.getElementById('tab_empresas').style.borderBottomColor = tab === 'empresas' ? 'var(--brand-primary)' : 'transparent';
-    document.getElementById('tab_empresas').style.color = tab === 'empresas' ? 'white' : 'var(--text-soft)';
+    document.getElementById('tab_empresas').style.color = tab === 'empresas' ? 'var(--text-main)' : 'var(--text-soft)';
     
     document.getElementById('tab_relatorios').style.borderBottomColor = tab === 'relatorios' ? 'var(--brand-primary)' : 'transparent';
-    document.getElementById('tab_relatorios').style.color = tab === 'relatorios' ? 'white' : 'var(--text-soft)';
+    document.getElementById('tab_relatorios').style.color = tab === 'relatorios' ? 'var(--text-main)' : 'var(--text-soft)';
 
     if (tab === 'relatorios' && !window.saasChartsLoaded) {
         loadSaasReports();
@@ -367,30 +367,30 @@ function switchSaasTab(tab) {
 
 <div id="content_relatorios" style="display: none;">
     <!-- Cards Superiores -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
         <div class="glass-panel" style="padding: 1.5rem; border-left: 4px solid #3b82f6;">
             <h4 style="color: var(--text-soft); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem; font-weight:800;">Total Usuários SaaS</h4>
-            <div id="rep_tot_users" style="font-size: 2rem; font-weight: 900; color: white;">0</div>
+            <div id="rep_tot_users" style="font-size: 2rem; font-weight: 900; color: var(--text-main);">0</div>
         </div>
         <div class="glass-panel" style="padding: 1.5rem; border-left: 4px solid #10b981;">
             <h4 style="color: var(--text-soft); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem; font-weight:800;">Total Ativos (Valor Estimado)</h4>
-            <div id="rep_tot_assets_val" style="font-size: 2rem; font-weight: 900; color: white;">R$ 0,00</div>
+            <div id="rep_tot_assets_val" style="font-size: 1.8rem; font-weight: 900; color: var(--text-main); word-break: break-all;">R$ 0,00</div>
         </div>
         <div class="glass-panel" style="padding: 1.5rem; border-left: 4px solid #f59e0b;">
             <h4 style="color: var(--text-soft); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem; font-weight:800;">Voluntariado (Valor Retornado)</h4>
-            <div id="rep_tot_vol_val" style="font-size: 2rem; font-weight: 900; color: white;">R$ 0,00</div>
+            <div id="rep_tot_vol_val" style="font-size: 1.8rem; font-weight: 900; color: var(--text-main); word-break: break-all;">R$ 0,00</div>
         </div>
         <div class="glass-panel" style="padding: 1.5rem; border-left: 4px solid #ef4444;">
             <h4 style="color: var(--text-soft); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem; font-weight:800;">Total Chamados Abertos</h4>
-            <div id="rep_tot_tickets" style="font-size: 2rem; font-weight: 900; color: white;">0</div>
+            <div id="rep_tot_tickets" style="font-size: 2rem; font-weight: 900; color: var(--text-main);">0</div>
         </div>
     </div>
 
     <!-- Linha 1 de Gráficos -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
         <!-- Gráfico Usuários -->
-        <div class="glass-panel" style="padding: 1.5rem;">
-            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: white;">Usuários por Empresa</h3>
+        <div class="glass-panel" style="padding: 1.5rem; overflow: hidden;">
+            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: var(--text-main);">Usuários por Empresa</h3>
             <div style="height: 300px; position: relative;">
                 <canvas id="chartUsers"></canvas>
             </div>
@@ -398,8 +398,8 @@ function switchSaasTab(tab) {
         </div>
 
         <!-- Gráfico Ativos / Patrimônio -->
-        <div class="glass-panel" style="padding: 1.5rem;">
-            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: white;">Patrimônio (Valor) por Empresa</h3>
+        <div class="glass-panel" style="padding: 1.5rem; overflow: hidden;">
+            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: var(--text-main);">Patrimônio (Valor) por Empresa</h3>
             <div style="height: 300px; position: relative;">
                 <canvas id="chartAssets"></canvas>
             </div>
@@ -408,10 +408,10 @@ function switchSaasTab(tab) {
     </div>
 
     <!-- Linha 2 de Gráficos -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
         <!-- Gráfico Voluntariado -->
-        <div class="glass-panel" style="padding: 1.5rem;">
-            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: white;">Horas de Voluntariado por Empresa</h3>
+        <div class="glass-panel" style="padding: 1.5rem; overflow: hidden;">
+            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: var(--text-main);">Horas de Voluntariado por Empresa</h3>
             <div style="height: 300px; position: relative;">
                 <canvas id="chartVolunteers"></canvas>
             </div>
@@ -419,8 +419,8 @@ function switchSaasTab(tab) {
         </div>
 
         <!-- Gráfico Voluntariado Sexo/Setor -->
-        <div class="glass-panel" style="padding: 1.5rem;">
-            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: white;">Voluntários por Gênero</h3>
+        <div class="glass-panel" style="padding: 1.5rem; overflow: hidden;">
+            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: var(--text-main);">Voluntários por Gênero</h3>
             <div style="height: 300px; position: relative;">
                 <canvas id="chartVolGender"></canvas>
             </div>
@@ -456,7 +456,9 @@ function loadSaasReports() {
         document.getElementById('rep_tot_vol_val').innerText = formatCurrency(data.volunteers.grand_total_returned);
         document.getElementById('rep_tot_tickets').innerText = data.tickets.grand_total;
 
-        Chart.defaults.color = 'rgba(255, 255, 255, 0.7)';
+        const docStyle = getComputedStyle(document.body);
+        const chartColor = docStyle.getPropertyValue('--text-soft').trim() || '#999';
+        Chart.defaults.color = chartColor;
         Chart.defaults.font.family = "'Inter', sans-serif";
 
         const userLabels = data.users.data.map(d => d.company_name);
@@ -464,12 +466,12 @@ function loadSaasReports() {
         new Chart(document.getElementById('chartUsers'), {
             type: 'doughnut',
             data: { labels: userLabels, datasets: [{ data: userData, backgroundColor: colorPalette, borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
         });
         
-        let htmlUsr = '<table style="width:100%; border-collapse:collapse; color:white; font-size:0.85rem;">';
+        let htmlUsr = '<table style="width:100%; border-collapse:collapse; color:var(--text-main); font-size:0.85rem;">';
         data.users.data.forEach(d => {
-            htmlUsr += `<tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:8px;">${d.company_name}</td><td style="padding:8px; text-align:right;">${d.total_users} (${d.percentage}%)</td></tr>`;
+            htmlUsr += `<tr style="border-bottom:1px solid rgba(128,128,128,0.2);"><td style="padding:8px; word-break: break-word;">${d.company_name}</td><td style="padding:8px; text-align:right; white-space: nowrap;">${d.total_users} (${d.percentage}%)</td></tr>`;
         });
         htmlUsr += '</table>';
         document.getElementById('tableUsers').innerHTML = htmlUsr;
@@ -482,9 +484,9 @@ function loadSaasReports() {
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        let htmlAssets = '<table style="width:100%; border-collapse:collapse; color:white; font-size:0.85rem;">';
+        let htmlAssets = '<table style="width:100%; border-collapse:collapse; color:var(--text-main); font-size:0.85rem;">';
         data.assets.data.forEach(d => {
-            htmlAssets += `<tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:8px;">${d.company_name}</td><td style="padding:8px; text-align:center;">${d.total_assets} itens</td><td style="padding:8px; text-align:right;">${formatCurrency(d.total_value)} (${d.val_percentage}%)</td></tr>`;
+            htmlAssets += `<tr style="border-bottom:1px solid rgba(128,128,128,0.2);"><td style="padding:8px; word-break: break-word;">${d.company_name}</td><td style="padding:8px; text-align:center;">${d.total_assets} itens</td><td style="padding:8px; text-align:right; white-space: nowrap;">${formatCurrency(d.total_value)} (${d.val_percentage}%)</td></tr>`;
         });
         htmlAssets += '</table>';
         document.getElementById('tableAssets').innerHTML = htmlAssets;
@@ -497,9 +499,9 @@ function loadSaasReports() {
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        let htmlVol = '<table style="width:100%; border-collapse:collapse; color:white; font-size:0.85rem;">';
+        let htmlVol = '<table style="width:100%; border-collapse:collapse; color:var(--text-main); font-size:0.85rem;">';
         data.volunteers.data.forEach(d => {
-            htmlVol += `<tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:8px;">${d.company_name}</td><td style="padding:8px; text-align:center;">${d.total_volunteers} vols</td><td style="padding:8px; text-align:right;">${d.total_hours}h (${d.hours_percentage}%)<br><span style="color:#10b981;">Retorno: ${formatCurrency(d.returned_value)}</span></td></tr>`;
+            htmlVol += `<tr style="border-bottom:1px solid rgba(128,128,128,0.2);"><td style="padding:8px; word-break: break-word;">${d.company_name}</td><td style="padding:8px; text-align:center;">${d.total_volunteers} vols</td><td style="padding:8px; text-align:right; white-space: nowrap;">${d.total_hours}h (${d.hours_percentage}%)<br><span style="color:#10b981;">Retorno: ${formatCurrency(d.returned_value)}</span></td></tr>`;
         });
         htmlVol += '</table>';
         document.getElementById('tableVolunteers').innerHTML = htmlVol;
