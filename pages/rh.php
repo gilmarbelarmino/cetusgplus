@@ -284,6 +284,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header('Location: ?page=rh&success=candidate_hired&tab=candidatos'); exit;
     }
+    // 11. ATS - Excluir Candidato
+    if ($action === 'delete_candidate') {
+        $compId = getCurrentUserCompanyId();
+        $pdo->prepare("DELETE FROM rh_candidates WHERE id = ? AND company_id = ?")->execute([$_POST['candidate_id'], $compId]);
+        header('Location: ?page=rh&success=candidate_deleted&tab=candidatos'); exit;
+    }
 }
 
 // Resgate de Dados para a UI e injeção do JS Dashboard

@@ -187,13 +187,20 @@
                                 </select>
                             </form>
                         </td>
-                        <td style="text-align:right;">
+                        <td style="text-align:right; display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
                             <?php if($cand['status'] !== 'Contratado'): ?>
                             <form method="POST" style="margin:0;" onsubmit="return confirm('Deseja realmente CONTRATAR <?= htmlspecialchars(addslashes($cand['name'])) ?>?\n\nIsso criará automaticamente um usuário na aba de Funcionários com a senha padrão Cetusg@123.')">
                                 <input type="hidden" name="action" value="hire_candidate">
                                 <input type="hidden" name="candidate_id" value="<?= $cand['id'] ?>">
                                 <button type="submit" class="btn-primary" style="padding:0.4rem 0.8rem; font-size:0.85rem; background:#10b981; border:none;">
                                     <i class="fa-solid fa-handshake"></i> Contratar
+                                </button>
+                            </form>
+                            <form method="POST" style="margin:0;" onsubmit="return confirm('Deseja realmente EXCLUIR este candidato? Esta ação não pode ser desfeita.')">
+                                <input type="hidden" name="action" value="delete_candidate">
+                                <input type="hidden" name="candidate_id" value="<?= $cand['id'] ?>">
+                                <button type="submit" class="btn-secondary" style="padding:0.4rem 0.6rem; font-size:0.85rem; background:#fee2e2; color:#991b1b; border:none;">
+                                    <i class="fa-solid fa-trash"></i>
                                 </button>
                             </form>
                             <?php else: ?>

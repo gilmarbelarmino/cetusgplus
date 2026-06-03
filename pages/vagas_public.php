@@ -46,6 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $dest = $resume_dir . $filename;
                 if (move_uploaded_file($_FILES['resume']['tmp_name'], $dest)) {
                     $resume_url = 'uploads/resumes/' . $filename;
+                } else {
+                    $error_msg = 'Falha ao salvar o currículo no servidor. Tente novamente.';
                 }
             } else {
                 $error_msg = 'Por favor, envie o currículo apenas em formato PDF.';
