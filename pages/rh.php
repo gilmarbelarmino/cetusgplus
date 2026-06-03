@@ -254,6 +254,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare("UPDATE rh_jobs SET status = 'Fechada' WHERE id = ? AND company_id = ?")->execute([$_POST['job_id'], $compId]);
         header('Location: ?page=rh&success=job_closed&tab=vagas'); exit;
     }
+    // 8.1 ATS - Editar Vaga
+    if ($action === 'update_job') {
+        $compId = getCurrentUserCompanyId();
+        $stmt = $pdo->prepare("UPDATE rh_jobs SET title=?, sector=?, contract_type=?, salary=?, show_salary=?, work_days=?, work_hours=?, workload=?, start_date=?, responsibilities=?, benefits=?, status=? WHERE id=? AND company_id=?");
+        $stmt->execute([
+            $_POST['title'], $_POST['sector'], $_POST['contract_type'], 
+            $_POST['salary'] ?: 0, isset($_POST['show_salary']) ? 1 : 0, 
+            $_POST['work_days'], $_POST['work_hours'], $_POST['workload'], 
+            $_POST['start_date'] ?: null, $_POST['responsibilities'], $_POST['benefits'], $_POST['status'], $_POST['job_id'], $compId
+        ]);
+        header('Location: ?page=rh&success=job_updated&tab=vagas'); exit;
+    }
+    // 8.2 ATS - Excluir Vaga
+    if ($action === 'delete_job_ats') {
+        $compId = getCurrentUserCompanyId();
+        // Exclui as candidaturas ligadas a esta vaga primeiro
+        $pdo->prepare("DELETE FROM rh_candidates WHERE job_id = ? AND company_id = ?")->execute([$_POST['job_id'], $compId]);
+        // Depois exclui a vaga
+        $pdo->prepare("DELETE FROM rh_jobs WHERE id = ? AND company_id = ?")->execute([$_POST['job_id'], $compId]);
+        header('Location: ?page=rh&success=job_deleted&tab=vagas'); exit;
+    }
     // 9. ATS - Status do Candidato
     if ($action === 'update_candidate_status') {
         $compId = getCurrentUserCompanyId();

@@ -104,15 +104,25 @@
                                 <?php endif; ?>
                             </td>
                             <td style="text-align:right; display:flex; gap:0.5rem; justify-content:flex-end;">
+                                <button type="button" class="btn-secondary" style="padding:0.4rem 0.6rem; font-size:0.8rem; background:#f1f5f9; color:#475569; border:none;" onclick='openEditJobModal(<?= json_encode($job) ?>)'>
+                                    <i class="fa-solid fa-edit"></i>
+                                </button>
                                 <?php if($job['status'] == 'Aberta'): ?>
                                 <form method="POST" style="margin:0;">
                                     <input type="hidden" name="action" value="close_job">
                                     <input type="hidden" name="job_id" value="<?= $job['id'] ?>">
-                                    <button type="submit" class="btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem; background:#fee2e2; color:#991b1b; border:none;" onclick="return confirm('Fechar esta vaga? Não receberá novos candidatos.')">
-                                        <i class="fa-solid fa-ban"></i> Fechar
+                                    <button type="submit" class="btn-secondary" title="Fechar Vaga" style="padding:0.4rem 0.6rem; font-size:0.8rem; background:#fef3c7; color:#d97706; border:none;" onclick="return confirm('Fechar esta vaga? Não receberá novos candidatos.')">
+                                        <i class="fa-solid fa-ban"></i>
                                     </button>
                                 </form>
                                 <?php endif; ?>
+                                <form method="POST" style="margin:0;">
+                                    <input type="hidden" name="action" value="delete_job_ats">
+                                    <input type="hidden" name="job_id" value="<?= $job['id'] ?>">
+                                    <button type="submit" class="btn-secondary" title="Excluir Vaga" style="padding:0.4rem 0.6rem; font-size:0.8rem; background:#fee2e2; color:#991b1b; border:none;" onclick="return confirm('Excluir vaga e candidatos ligados a ela? Isso não pode ser desfeito.')">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -217,3 +227,103 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Edição Vaga ATS -->
+<div id="modal-edit-job" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div class="glass-panel" style="width: 100%; max-width: 600px; max-height:90vh; overflow-y:auto; position:relative; background:#fff; padding:2rem; border-radius:16px;">
+        <button type="button" onclick="document.getElementById('modal-edit-job').style.display='none'" style="position:absolute; top:1.5rem; right:1.5rem; background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-soft);"><i class="fa-solid fa-times"></i></button>
+        <h3 style="font-size: 1.25rem; font-weight: 900; margin-bottom: 1.5rem;"><i class="fa-solid fa-edit" style="color: var(--brand-primary);"></i> Editar Vaga</h3>
+        
+        <form method="POST">
+            <input type="hidden" name="action" value="update_job">
+            <input type="hidden" name="job_id" id="edit_job_id">
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.85rem;">Cargo/Título *</label>
+                <input type="text" name="title" id="edit_job_title" required style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: var(--bg-color); color: var(--text-main);">
+            </div>
+            <div style="display:flex; gap:1rem; margin-bottom:1rem;">
+                <div style="flex:1;">
+                    <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.85rem;">Setor *</label>
+                    <input type="text" name="sector" id="edit_job_sector" required style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: var(--bg-color); color: var(--text-main);">
+                </div>
+                <div style="flex:1;">
+                    <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.85rem;">Tipo de Contrato</label>
+                    <select name="contract_type" id="edit_job_contract" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: var(--bg-color); color: var(--text-main);">
+                        <option value="CLT">CLT</option>
+                        <option value="PJ">PJ</option>
+                        <option value="Estágio">Estágio</option>
+                        <option value="Temporário">Temporário</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; gap:1rem; margin-bottom:1rem;">
+                <div style="flex:1;">
+                    <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.85rem;">Salário (R$)</label>
+                    <input type="number" step="0.01" name="salary" id="edit_job_salary" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: var(--bg-color); color: var(--text-main);">
+                </div>
+                <div style="flex:1;">
+                    <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.85rem;">Status</label>
+                    <select name="status" id="edit_job_status" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: var(--bg-color); color: var(--text-main);">
+                        <option value="Aberta">Aberta</option>
+                        <option value="Fechada">Fechada</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-bottom:1rem;">
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600; font-size:0.85rem;">
+                    <input type="checkbox" name="show_salary" id="edit_job_show_salary" value="1"> Mostrar Salário no Link Público
+                </label>
+            </div>
+            <div style="display:flex; gap:1rem; margin-bottom:1rem;">
+                <div style="flex:1;">
+                    <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.85rem;">Dias Trabalhados</label>
+                    <input type="text" name="work_days" id="edit_job_workdays" placeholder="Ex: Seg a Sex" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: var(--bg-color); color: var(--text-main);">
+                </div>
+                <div style="flex:1;">
+                    <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.85rem;">Horário</label>
+                    <input type="text" name="work_hours" id="edit_job_workhours" placeholder="Ex: 08:00 às 17:00" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: var(--bg-color); color: var(--text-main);">
+                </div>
+            </div>
+            <div style="display:flex; gap:1rem; margin-bottom:1rem;">
+                <div style="flex:1;">
+                    <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.85rem;">Carga Horária Semanal</label>
+                    <input type="text" name="workload" id="edit_job_workload" placeholder="Ex: 40h" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: var(--bg-color); color: var(--text-main);">
+                </div>
+                <div style="flex:1;">
+                    <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.85rem;">Data de Início Prevista</label>
+                    <input type="date" name="start_date" id="edit_job_startdate" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: var(--bg-color); color: var(--text-main);">
+                </div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.85rem;">Ações a serem realizadas</label>
+                <textarea name="responsibilities" id="edit_job_resp" rows="3" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: var(--bg-color); color: var(--text-main);"></textarea>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem; font-size:0.85rem;">Benefícios Oferecidos</label>
+                <textarea name="benefits" id="edit_job_ben" rows="3" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: var(--bg-color); color: var(--text-main);"></textarea>
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%; padding:0.8rem; font-size:1rem;"><i class="fa-solid fa-save"></i> Salvar Alterações</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditJobModal(job) {
+    document.getElementById('edit_job_id').value = job.id || '';
+    document.getElementById('edit_job_title').value = job.title || '';
+    document.getElementById('edit_job_sector').value = job.sector || '';
+    document.getElementById('edit_job_contract').value = job.contract_type || 'CLT';
+    document.getElementById('edit_job_salary').value = job.salary > 0 ? job.salary : '';
+    document.getElementById('edit_job_status').value = job.status || 'Aberta';
+    document.getElementById('edit_job_show_salary').checked = job.show_salary == 1;
+    document.getElementById('edit_job_workdays').value = job.work_days || '';
+    document.getElementById('edit_job_workhours').value = job.work_hours || '';
+    document.getElementById('edit_job_workload').value = job.workload || '';
+    document.getElementById('edit_job_startdate').value = job.start_date || '';
+    document.getElementById('edit_job_resp').value = job.responsibilities || '';
+    document.getElementById('edit_job_ben').value = job.benefits || '';
+    
+    document.getElementById('modal-edit-job').style.display = 'flex';
+}
+</script>
