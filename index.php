@@ -8,6 +8,12 @@ require_once 'auth.php';
 // Inicialização Global
 $openTickets = 0;
 
+// Rota Pública: Vagas em Aberto (ATS)
+if (isset($_GET['page']) && $_GET['page'] === 'vagas_public') {
+    include 'pages/vagas_public.php';
+    exit;
+}
+
 // Verificar login
 $user = getCurrentUser();
 if (!$user) {

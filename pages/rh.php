@@ -206,6 +206,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$msg, $image_url, $id, $compId]);
         header('Location: ?page=rh&success=announcement_updated&tab=recados'); exit;
     }
+
+    // 7. ATS - Criar Vaga
+    if ($action === 'save_job') {
+        $compId = getCurrentUserCompanyId();
+        $stmt = $pdo->prepare("INSERT INTO rh_jobs (company_id, title, sector, contract_type, salary, show_salary, work_days, work_hours, workload, start_date, responsibilities, benefits) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $compId, $_POST['title'], $_POST['sector'], $_POST['contract_type'], 
+            $_POST['salary'] ?: 0, isset($_POST['show_salary']) ? 1 : 0, 
+            $_POST['work_days'], $_POST['work_hours'], $_POST['workload'], 
+            $_POST['start_date'] ?: null, $_POST['responsibilities'], $_POST['benefits']
+        ]);
+        header('Location: ?page=rh&success=job_saved&tab=vagas'); exit;
+    }
+    // 8. ATS - Fechar Vaga
+    if ($action === 'close_job') {
+        $compId = getCurrentUserCompanyId();
+        $pdo->prepare("UPDATE rh_jobs SET status = 'Fechada' WHERE id = ? AND company_id = ?")->execute([$_POST['job_id'], $compId]);
+        header('Location: ?page=rh&success=job_closed&tab=vagas'); exit;
+    }
+    // 9. ATS - Status do Candidato
+    if ($action === 'update_candidate_status') {
+        $compId = getCurrentUserCompanyId();
+        $pdo->prepare("UPDATE rh_candidates SET status = ? WHERE id = ? AND company_id = ?")->execute([$_POST['status'], $_POST['candidate_id'], $compId]);
+        header('Location: ?page=rh&success=candidate_updated&tab=candidatos'); exit;
+    }
+    // 10. ATS - Contratar Candidato
+    if ($action === 'hire_candidate') {
+        $compId = getCurrentUserCompanyId();
+        $candId = $_POST['candidate_id'];
+        
+        $stmt = $pdo->prepare("SELECT c.*, j.title, j.sector, j.contract_type, j.work_days, j.work_hours, j.salary, j.start_date FROM rh_candidates c JOIN rh_jobs j ON c.job_id = j.id WHERE c.id = ? AND c.company_id = ?");
+        $stmt->execute([$candId, $compId]);
+        $cand = $stmt->fetch();
+        
+        if ($cand) {
+            $uuid = uniqid('usr_');
+            $login = strtolower(str_replace(' ', '.', explode(' ', $cand['name'])[0])) . rand(100,999);
+            $pwd = password_hash('Cetusg@123', PASSWORD_DEFAULT);
+            
+            $stmtUser = $pdo->prepare("INSERT INTO users (id, company_id, name, email, phone, sector, role, status, login_name, password) VALUES (?, ?, ?, ?, ?, ?, 'Colaborador', 'Ativo', ?, ?)");
+            $stmtUser->execute([$uuid, $compId, $cand['name'], $cand['email'], $cand['phone'], $cand['sector'], $login, $pwd]);
+            
+            $stmtRh = $pdo->prepare("INSERT INTO rh_employee_details (user_id, company_id, contract_type, work_days, work_hours, role_name, salary, start_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmtRh->execute([$uuid, $compId, $cand['contract_type'], $cand['work_days'], $cand['work_hours'], $cand['title'], $cand['salary'], $cand['start_date']]);
+            
+            $pdo->prepare("UPDATE rh_candidates SET status = 'Contratado' WHERE id = ?")->execute([$candId]);
+        }
+        header('Location: ?page=rh&success=candidate_hired&tab=candidatos'); exit;
+    }
 }
 
 // Resgate de Dados para a UI e injeção do JS Dashboard
@@ -251,6 +300,15 @@ try {
 } catch (Exception $e) {
     $all_notes = [];
 }
+
+// Resgate ATS (Vagas e Candidatos)
+$stmt_jobs = $pdo->prepare("SELECT * FROM rh_jobs WHERE company_id = ? ORDER BY id DESC");
+$stmt_jobs->execute([$compId]);
+$ats_jobs = $stmt_jobs->fetchAll(PDO::FETCH_ASSOC);
+
+$stmt_cands = $pdo->prepare("SELECT c.*, j.title as job_title FROM rh_candidates c JOIN rh_jobs j ON c.job_id = j.id WHERE c.company_id = ? ORDER BY c.id DESC");
+$stmt_cands->execute([$compId]);
+$ats_candidates = $stmt_cands->fetchAll(PDO::FETCH_ASSOC);
 
 // Resgate de Recados
 $stmt_ann = $pdo->prepare("
@@ -632,9 +690,15 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
 <?php endif; ?>
 
 <!-- Navegação por Abas -->
-<div class="rh-tabs">
+<div class="rh-tabs" style="overflow-x: auto; white-space: nowrap;">
     <button class="rh-tab-btn active" id="tab-btn-funcionarios" onclick="switchRhTab('funcionarios', this)">
         <i class="fa-solid fa-users"></i> Gestão de Funcionários
+    </button>
+    <button class="rh-tab-btn" id="tab-btn-vagas" onclick="switchRhTab('vagas', this)">
+        <i class="fa-solid fa-briefcase"></i> Vagas em Aberto
+    </button>
+    <button class="rh-tab-btn" id="tab-btn-candidatos" onclick="switchRhTab('candidatos', this)">
+        <i class="fa-solid fa-address-card"></i> Candidatos
     </button>
     <button class="rh-tab-btn" id="tab-btn-recados" onclick="switchRhTab('recados', this)">
         <i class="fa-solid fa-bullhorn"></i> Recados Geral
@@ -759,6 +823,7 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
     </div>
 <?php endif; ?>
 </div><!-- Fim tab-funcionarios -->
+<?php include 'rh_ats.php'; ?>
 
 <!-- ABA: RECADOS GERAL -->
 <div id="tab-recados" class="rh-tab-content">
