@@ -32,6 +32,35 @@ try {
         limit_date DATE NOT NULL,
         status VARCHAR(50) DEFAULT 'Programada'
     )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS rh_jobs (
+        id INT AUTO_INCREMENT PRIMARY KEY, 
+        company_id INT NOT NULL, 
+        title VARCHAR(255) NOT NULL, 
+        sector VARCHAR(255), 
+        contract_type VARCHAR(100), 
+        salary DECIMAL(15,2) DEFAULT 0.00, 
+        show_salary TINYINT(1) DEFAULT 0, 
+        work_days VARCHAR(100), 
+        work_hours VARCHAR(100), 
+        workload VARCHAR(100), 
+        start_date DATE, 
+        responsibilities TEXT, 
+        benefits TEXT, 
+        status ENUM('Aberta', 'Fechada') DEFAULT 'Aberta', 
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS rh_candidates (
+        id INT AUTO_INCREMENT PRIMARY KEY, 
+        job_id INT NOT NULL, 
+        company_id INT NOT NULL, 
+        name VARCHAR(255) NOT NULL, 
+        email VARCHAR(255), 
+        phone VARCHAR(50), 
+        resume_url VARCHAR(255), 
+        status ENUM('Novo', '2ª Fase', 'Contratado', 'Rejeitado') DEFAULT 'Novo', 
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS rh_certificates (
         id INT AUTO_INCREMENT PRIMARY KEY,
