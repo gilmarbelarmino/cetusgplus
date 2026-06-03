@@ -8,12 +8,14 @@ if ($company_id === 0) {
 }
 
 // Obter dados da empresa
-$stmt = $pdo->prepare("SELECT name FROM tenants WHERE id = ?");
+$stmt = $pdo->prepare("SELECT t.name as tenant_name, c.company_name, c.logo_url FROM tenants t LEFT JOIN company_settings c ON t.id = c.id WHERE t.id = ?");
 $stmt->execute([$company_id]);
 $company = $stmt->fetch();
 if (!$company) {
     die("Empresa não encontrada.");
 }
+
+$display_name = !empty($company['company_name']) ? $company['company_name'] : $company['tenant_name'];
 
 // Processar candidatura
 $success_msg = '';
@@ -77,7 +79,7 @@ $jobs = $stmt_jobs->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vagas Abertas - <?= htmlspecialchars($company['name']) ?></title>
+    <title>Vagas Abertas - <?= htmlspecialchars($display_name) ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -89,7 +91,8 @@ $jobs = $stmt_jobs->fetchAll();
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background: var(--bg-color); color: var(--text-color); line-height: 1.6; }
-        .header { background: #0f172a; padding: 3rem 2rem; text-align: center; color: white; }
+        .header { background: #0f172a; padding: 3rem 2rem; text-align: center; color: white; display: flex; flex-direction: column; align-items: center; }
+        .header img { max-height: 80px; margin-bottom: 1.5rem; border-radius: 8px; }
         .header h1 { font-size: 2.5rem; font-weight: 900; margin-bottom: 0.5rem; }
         .header p { color: #94a3b8; font-size: 1.1rem; }
         .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
@@ -121,7 +124,10 @@ $jobs = $stmt_jobs->fetchAll();
 <body>
 
 <div class="header">
-    <h1><?= htmlspecialchars($company['name']) ?></h1>
+    <?php if(!empty($company['logo_url'])): ?>
+        <img src="<?= htmlspecialchars($company['logo_url']) ?>" alt="Logo">
+    <?php endif; ?>
+    <h1><?= htmlspecialchars($display_name) ?></h1>
     <p>Trabalhe Conosco - Vagas em Aberto</p>
 </div>
 
