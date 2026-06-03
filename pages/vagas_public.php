@@ -36,7 +36,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $ext = strtolower(pathinfo($_FILES['resume']['name'], PATHINFO_EXTENSION));
             if ($ext === 'pdf') {
                 $filename = 'cv_' . time() . '_' . rand(1000, 9999) . '.pdf';
-                $dest = __DIR__ . '/../uploads/resumes/' . $filename;
+                $resume_dir = __DIR__ . '/../uploads/resumes/';
+                
+                // Cria o diretório se não existir (necessário para a Hostinger)
+                if (!is_dir($resume_dir)) {
+                    mkdir($resume_dir, 0777, true);
+                }
+                
+                $dest = $resume_dir . $filename;
                 if (move_uploaded_file($_FILES['resume']['tmp_name'], $dest)) {
                     $resume_url = 'uploads/resumes/' . $filename;
                 }
