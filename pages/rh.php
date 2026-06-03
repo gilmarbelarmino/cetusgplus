@@ -700,10 +700,14 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
         flex-direction: column;
         align-items: flex-start !important;
     }
-        .rh-employee-avatar {
-        width: 100% !important;
-        height: 120px !important;
-        border-radius: 1rem !important;
+    .rh-employee-avatar {
+        width: 80px !important;
+        height: 80px !important;
+        border-radius: 50% !important;
+        margin: 0 auto;
+    }
+    .user-grid-info > div:last-child {
+        justify-content: center !important;
     }
 }
 
@@ -803,7 +807,7 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
 <div id="tab-funcionarios" class="rh-tab-content active">
 <!-- Barra de Procurar e Filtros -->
 <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-    <form method="GET" style="display: flex; gap: 1rem; align-items: end;">
+    <form method="GET" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: end;">
         <input type="hidden" name="page" value="rh">
         <div style="flex: 1;">
             <label class="form-label">Buscar Funcionário</label>
@@ -880,7 +884,7 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
                     </p>
                 </div>
                 
-                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
                     <!-- Botões de Ação do RH -->
                     <?php if (!empty($usr['end_date']) && $usr['end_date'] <= date('Y-m-d') && $usr['end_date'] !== '0000-00-00'): ?>
                         <form method="POST" style="margin:0;" onsubmit="return confirm('Tem certeza que deseja REATIVAR este usuário? O contrato voltará a ser permanente e o status voltará a ser Ativo no sistema.');">

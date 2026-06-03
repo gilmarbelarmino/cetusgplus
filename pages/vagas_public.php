@@ -123,6 +123,16 @@ $jobs = $stmt_jobs->fetchAll();
         .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: #334155; }
         .form-group input { width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 1rem; }
         .form-group input[type="file"] { padding: 0.5rem; }
+        .form-select { width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 1rem; background: #fff; }
+
+        @media (max-width: 768px) {
+            .header { padding: 2rem 1rem; }
+            .header h1 { font-size: 1.8rem; }
+            .container { padding: 1rem; }
+            .job-card { padding: 1.5rem; }
+            .job-meta { flex-direction: column; gap: 0.5rem; }
+            .modal-content { padding: 1.5rem 1rem; width: 95%; max-height: 95vh; }
+        }
     </style>
 </head>
 <body>

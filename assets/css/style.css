@@ -734,6 +734,7 @@ table {
     width: 100%;
     border-collapse: collapse;
     background: var(--bg-card);
+    min-width: 600px; /* Impede que tabelas fiquem ilegíveis no celular */
 }
 
 th {
@@ -904,6 +905,23 @@ tr:hover td {
     .top-bar { padding: 0 1rem; }
     .user-name { display: none; }
     .btn-primary, .btn-secondary { width: 100%; }
+    
+    /* Responsive Modals */
+    .modal-content {
+        padding: 1.5rem 1rem !important;
+        width: 95% !important;
+        max-width: 95% !important;
+        max-height: 95vh !important;
+    }
+    
+    /* Responsive Grids in Modals */
+    .form-group[style*="grid-column"] {
+        grid-column: span 1 !important;
+    }
+    .modal-content div[style*="display: grid"] {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
 }
 
 /* --- EMOJI PICKER --- */
