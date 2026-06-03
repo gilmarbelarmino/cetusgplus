@@ -6,8 +6,16 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$user = getCurrentUser();
-if (!$user || $user['login_name'] !== 'superadmin') {
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['error' => 'Acesso negado. Sessão inválida.']);
+    exit();
+}
+
+$stmt = $pdo->prepare("SELECT login_name FROM users WHERE id = ?");
+$stmt->execute([$_SESSION['user_id']]);
+$login_name = $stmt->fetchColumn();
+
+if ($login_name !== 'superadmin') {
     echo json_encode(['error' => 'Acesso negado. Apenas superadmin.']);
     exit();
 }
