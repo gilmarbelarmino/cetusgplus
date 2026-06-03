@@ -311,6 +311,7 @@ try {
             </div>
             
             <nav class="sidebar-nav">
+                <?php if ($user['login_name'] !== 'superadmin'): ?>
                 <div class="sidebar-group">
                     <span class="sidebar-category">Principal</span>
                     <a href="index.php?page=dashboard" class="sidebar-item <?= $page === 'dashboard' ? 'sidebar-active' : '' ?>">
@@ -440,6 +441,7 @@ try {
                     <?php endif; ?>
                 </div>
                 <?php endif; ?>
+                <?php endif; // Fim do bloqueio do superadmin ?>
 
 
                 <?php if (in_array('super_admin', $user_menus)): ?>

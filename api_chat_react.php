@@ -56,7 +56,7 @@ try {
                     ) as unread_count,
                     (CASE WHEN u.last_activity >= DATE_SUB(NOW(), INTERVAL 5 MINUTE) THEN 1 ELSE 0 END) as is_online
                     FROM users u
-                    WHERE u.status = 'Ativo' AND u.id != ?
+                    WHERE u.status = 'Ativo' AND u.id != ? AND (u.role = 'Administrador' OR u.is_super_admin = 1)
                     ORDER BY u.company_id ASC, is_online DESC, u.name ASC
                 ");
                 $stmt->execute([$current_id, $current_id, $current_id]);
