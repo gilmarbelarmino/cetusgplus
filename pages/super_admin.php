@@ -238,6 +238,35 @@ $tenants = $stmt->fetchAll();
     </div>
 <?php endif; ?>
 
+<div style="margin-bottom: 2rem;">
+    <div style="display: flex; gap: 1rem; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 0;">
+        <div onclick="switchSaasTab('empresas')" id="tab_empresas" style="padding: 1rem 2rem; cursor: pointer; border-bottom: 3px solid var(--brand-primary); color: white; font-weight: 800; font-size: 1.1rem; transition: 0.3s;">
+            <i class="fa-solid fa-building"></i> Empresas
+        </div>
+        <div onclick="switchSaasTab('relatorios')" id="tab_relatorios" style="padding: 1rem 2rem; cursor: pointer; border-bottom: 3px solid transparent; color: var(--text-soft); font-weight: 800; font-size: 1.1rem; transition: 0.3s;">
+            <i class="fa-solid fa-chart-pie"></i> Relatórios
+        </div>
+    </div>
+</div>
+
+<script>
+function switchSaasTab(tab) {
+    document.getElementById('content_empresas').style.display = tab === 'empresas' ? 'block' : 'none';
+    document.getElementById('content_relatorios').style.display = tab === 'relatorios' ? 'block' : 'none';
+    
+    document.getElementById('tab_empresas').style.borderBottomColor = tab === 'empresas' ? 'var(--brand-primary)' : 'transparent';
+    document.getElementById('tab_empresas').style.color = tab === 'empresas' ? 'white' : 'var(--text-soft)';
+    
+    document.getElementById('tab_relatorios').style.borderBottomColor = tab === 'relatorios' ? 'var(--brand-primary)' : 'transparent';
+    document.getElementById('tab_relatorios').style.color = tab === 'relatorios' ? 'white' : 'var(--text-soft)';
+
+    if (tab === 'relatorios' && !window.saasChartsLoaded) {
+        loadSaasReports();
+    }
+}
+</script>
+
+<div id="content_empresas" style="display: block;">
 <div style="overflow-x: auto; background: var(--bg-secondary); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
     <table style="width: 100%; border-collapse: collapse; min-width: 1000px;">
         <thead>
@@ -334,6 +363,160 @@ $tenants = $stmt->fetchAll();
         </tbody>
     </table>
 </div>
+</div> <!-- Fechamento da div content_empresas -->
+
+<div id="content_relatorios" style="display: none;">
+    <!-- Cards Superiores -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="glass-panel" style="padding: 1.5rem; border-left: 4px solid #3b82f6;">
+            <h4 style="color: var(--text-soft); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem; font-weight:800;">Total Usuários SaaS</h4>
+            <div id="rep_tot_users" style="font-size: 2rem; font-weight: 900; color: white;">0</div>
+        </div>
+        <div class="glass-panel" style="padding: 1.5rem; border-left: 4px solid #10b981;">
+            <h4 style="color: var(--text-soft); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem; font-weight:800;">Total Ativos (Valor Estimado)</h4>
+            <div id="rep_tot_assets_val" style="font-size: 2rem; font-weight: 900; color: white;">R$ 0,00</div>
+        </div>
+        <div class="glass-panel" style="padding: 1.5rem; border-left: 4px solid #f59e0b;">
+            <h4 style="color: var(--text-soft); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem; font-weight:800;">Voluntariado (Valor Retornado)</h4>
+            <div id="rep_tot_vol_val" style="font-size: 2rem; font-weight: 900; color: white;">R$ 0,00</div>
+        </div>
+        <div class="glass-panel" style="padding: 1.5rem; border-left: 4px solid #ef4444;">
+            <h4 style="color: var(--text-soft); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem; font-weight:800;">Total Chamados Abertos</h4>
+            <div id="rep_tot_tickets" style="font-size: 2rem; font-weight: 900; color: white;">0</div>
+        </div>
+    </div>
+
+    <!-- Linha 1 de Gráficos -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Gráfico Usuários -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: white;">Usuários por Empresa</h3>
+            <div style="height: 300px; position: relative;">
+                <canvas id="chartUsers"></canvas>
+            </div>
+            <div id="tableUsers" style="margin-top: 1rem; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+
+        <!-- Gráfico Ativos / Patrimônio -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: white;">Patrimônio (Valor) por Empresa</h3>
+            <div style="height: 300px; position: relative;">
+                <canvas id="chartAssets"></canvas>
+            </div>
+            <div id="tableAssets" style="margin-top: 1rem; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- Linha 2 de Gráficos -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Gráfico Voluntariado -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: white;">Horas de Voluntariado por Empresa</h3>
+            <div style="height: 300px; position: relative;">
+                <canvas id="chartVolunteers"></canvas>
+            </div>
+            <div id="tableVolunteers" style="margin-top: 1rem; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+
+        <!-- Gráfico Voluntariado Sexo/Setor -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; color: white;">Voluntários por Gênero</h3>
+            <div style="height: 300px; position: relative;">
+                <canvas id="chartVolGender"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+window.saasChartsLoaded = false;
+
+function formatCurrency(val) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+}
+
+const colorPalette = [
+    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
+];
+
+function loadSaasReports() {
+    window.saasChartsLoaded = true;
+    
+    fetch('api_saas_reports.php')
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        document.getElementById('rep_tot_users').innerText = data.users.grand_total;
+        document.getElementById('rep_tot_assets_val').innerText = formatCurrency(data.assets.grand_total_value);
+        document.getElementById('rep_tot_vol_val').innerText = formatCurrency(data.volunteers.grand_total_returned);
+        document.getElementById('rep_tot_tickets').innerText = data.tickets.grand_total;
+
+        Chart.defaults.color = 'rgba(255, 255, 255, 0.7)';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        const userLabels = data.users.data.map(d => d.company_name);
+        const userData = data.users.data.map(d => d.total_users);
+        new Chart(document.getElementById('chartUsers'), {
+            type: 'doughnut',
+            data: { labels: userLabels, datasets: [{ data: userData, backgroundColor: colorPalette, borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+        });
+        
+        let htmlUsr = '<table style="width:100%; border-collapse:collapse; color:white; font-size:0.85rem;">';
+        data.users.data.forEach(d => {
+            htmlUsr += `<tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:8px;">${d.company_name}</td><td style="padding:8px; text-align:right;">${d.total_users} (${d.percentage}%)</td></tr>`;
+        });
+        htmlUsr += '</table>';
+        document.getElementById('tableUsers').innerHTML = htmlUsr;
+
+        const assetLabels = data.assets.data.map(d => d.company_name);
+        const assetDataVal = data.assets.data.map(d => d.total_value);
+        new Chart(document.getElementById('chartAssets'), {
+            type: 'bar',
+            data: { labels: assetLabels, datasets: [{ label: 'Valor (R$)', data: assetDataVal, backgroundColor: '#10b981', borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        let htmlAssets = '<table style="width:100%; border-collapse:collapse; color:white; font-size:0.85rem;">';
+        data.assets.data.forEach(d => {
+            htmlAssets += `<tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:8px;">${d.company_name}</td><td style="padding:8px; text-align:center;">${d.total_assets} itens</td><td style="padding:8px; text-align:right;">${formatCurrency(d.total_value)} (${d.val_percentage}%)</td></tr>`;
+        });
+        htmlAssets += '</table>';
+        document.getElementById('tableAssets').innerHTML = htmlAssets;
+
+        const volLabels = data.volunteers.data.map(d => d.company_name);
+        const volDataHs = data.volunteers.data.map(d => d.total_hours);
+        new Chart(document.getElementById('chartVolunteers'), {
+            type: 'bar',
+            data: { labels: volLabels, datasets: [{ label: 'Horas Voluntárias', data: volDataHs, backgroundColor: '#f59e0b', borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        let htmlVol = '<table style="width:100%; border-collapse:collapse; color:white; font-size:0.85rem;">';
+        data.volunteers.data.forEach(d => {
+            htmlVol += `<tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><td style="padding:8px;">${d.company_name}</td><td style="padding:8px; text-align:center;">${d.total_volunteers} vols</td><td style="padding:8px; text-align:right;">${d.total_hours}h (${d.hours_percentage}%)<br><span style="color:#10b981;">Retorno: ${formatCurrency(d.returned_value)}</span></td></tr>`;
+        });
+        htmlVol += '</table>';
+        document.getElementById('tableVolunteers').innerHTML = htmlVol;
+
+        const genderLabels = data.volunteers_gender.map(d => d.gender);
+        const genderData = data.volunteers_gender.map(d => d.total);
+        new Chart(document.getElementById('chartVolGender'), {
+            type: 'pie',
+            data: { labels: genderLabels, datasets: [{ data: genderData, backgroundColor: ['#3b82f6', '#ec4899', '#8b5cf6'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+
+    }).catch(err => {
+        alert("Erro ao carregar relatórios SaaS: " + err);
+    });
+}
+</script>
 
 <!-- Modal Renovar -->
 <div id="renewModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 3000; align-items: center; justify-content: center; padding: 2rem;">
