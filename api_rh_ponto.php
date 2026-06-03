@@ -24,11 +24,12 @@ if ($action === 'get_monthly_report') {
     }
 
     // Buscar a meta diária de horas do contrato (default 08:00)
-    $stmt_rh = $pdo->prepare("SELECT daily_work_hours FROM rh_employee_details WHERE user_id = ? AND company_id = ?");
+    $stmt_rh = $pdo->prepare("SELECT daily_work_hours, work_days FROM rh_employee_details WHERE user_id = ? AND company_id = ?");
     $stmt_rh->execute([$target_user_id, $compId]);
     $rh = $stmt_rh->fetch(PDO::FETCH_ASSOC);
     $daily_goal_str = $rh['daily_work_hours'] ?? '08:00:00';
     $daily_goal_seconds = strtotime("1970-01-01 $daily_goal_str UTC");
+    $work_days_str = strtolower($rh['work_days'] ?? 'segunda a sexta');
 
     // Buscar registros do mês
     $stmt = $pdo->prepare("
@@ -95,9 +96,19 @@ if ($action === 'get_monthly_report') {
 
         $dayData['worked_seconds'] = $worked;
         
+        // Calcular Meta Diária baseado no dia da semana
+        $dayOfWeek = date('N', strtotime($date)); // 1=Mon, 7=Sun
+        $current_goal = $daily_goal_seconds;
+
+        if (strpos($work_days_str, 'segunda a sexta') !== false) {
+            if ($dayOfWeek == 6 || $dayOfWeek == 7) $current_goal = 0; // Sab e Dom não tem meta (100% extra se bater ponto)
+        } else if (strpos($work_days_str, 'segunda a sabado') !== false) {
+            if ($dayOfWeek == 7) $current_goal = 0; // Dom não tem meta
+        }
+
         // Se trabalhou, calculamos o saldo
         if ($worked > 0) {
-            $balance = $worked - $daily_goal_seconds;
+            $balance = $worked - $current_goal;
             $dayData['balance_seconds'] = $balance;
             
             $total_worked_month += $worked;

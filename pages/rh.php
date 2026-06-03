@@ -732,6 +732,9 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
                     <button class="btn-icon rh-btn-contract" onclick="event.stopPropagation(); openContractModal('<?= $usr['id'] ?>')" title="Dados Contratuais e Admissão">
                         <i class="fa-solid fa-file-signature"></i>
                     </button>
+                    <button class="btn-icon rh-btn-timesheet" style="background:#4f46e5; color:#fff;" onclick="event.stopPropagation(); openUserTimesheetModal('<?= $usr['id'] ?>', '<?= htmlspecialchars(addslashes($usr['name'])) ?>')" title="Registro de Ponto">
+                        <i class="fa-solid fa-user-clock"></i>
+                    </button>
                     <button class="btn-icon rh-btn-vacation" onclick="event.stopPropagation(); openVacationModal('<?= $usr['id'] ?>', '<?= htmlspecialchars(addslashes($usr['name'])) ?>')" title="Escala de Férias">
                         <i class="fa-solid fa-plane-departure"></i>
                     </button>
@@ -1174,6 +1177,9 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
         <button class="btn-primary" onclick="loadPontoReport()">
             <i class="fa-solid fa-search"></i> Gerar Relatório
         </button>
+        <button id="btn_print_ponto" class="btn-primary" style="background:#475569; display:none;" onclick="printPontoAdmin()">
+            <i class="fa-solid fa-download"></i> Download PDF
+        </button>
     </div>
 
     <!-- Container dos Resultados (Oculto Inicialmente) -->
@@ -1264,6 +1270,8 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
                 alert(data.error);
                 return;
             }
+
+            document.getElementById('btn_print_ponto').style.display = 'inline-block';
 
             document.getElementById('ponto_report_container').style.display = 'block';
             
@@ -1382,7 +1390,217 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
         
         html += `</div>`;
 
-        document.getElementById('ponto_detail_content').innerHTML = html;
         document.getElementById('pontoDetailModal').style.display = 'flex';
     }
+
+    // Modal de Timesheet no Card do Usuário
+    let currentTimesheetUserId = null;
+    
+    function openUserTimesheetModal(userId, userName) {
+        currentTimesheetUserId = userId;
+        document.getElementById('ts_modal_title').innerText = 'Registro de Ponto - ' + userName;
+        document.getElementById('timesheetModal').style.display = 'flex';
+        
+        // Define o mês/ano atual por padrão se estiverem vazios
+        const d = new Date();
+        document.getElementById('ts_month').value = String(d.getMonth() + 1).padStart(2, '0');
+        document.getElementById('ts_year').value = d.getFullYear();
+        
+        // Oculta o relatório até carregar
+        document.getElementById('ts_report_container').style.display = 'none';
+        document.getElementById('btn_print_ts').style.display = 'none';
+        
+        // Dispara a busca automaticamente
+        loadUserTimesheetReport();
+    }
+
+    function printPontoAdmin() {
+        const userId = document.getElementById('ponto_user_select').value;
+        const month = document.getElementById('ponto_month').value;
+        const year = document.getElementById('ponto_year').value;
+        window.open(`print_ponto.php?user_id=${userId}&month=${month}&year=${year}`, '_blank');
+    }
+
+    function printUserTimesheet() {
+        if(!currentTimesheetUserId) return;
+        const month = document.getElementById('ts_month').value;
+        const year = document.getElementById('ts_year').value;
+        window.open(`print_ponto.php?user_id=${currentTimesheetUserId}&month=${month}&year=${year}`, '_blank');
+    }
+
+    function loadUserTimesheetReport() {
+        if(!currentTimesheetUserId) return;
+        
+        const month = document.getElementById('ts_month').value;
+        const year = document.getElementById('ts_year').value;
+        const btn = document.getElementById('btn_load_ts');
+        
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        fetch(`api_rh_ponto.php?action=get_monthly_report&user_id=${currentTimesheetUserId}&month=${month}&year=${year}`)
+        .then(res => res.json())
+        .then(data => {
+            btn.innerHTML = '<i class="fa-solid fa-search"></i> Filtrar';
+            btn.disabled = false;
+            
+            if(data.error) {
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById('ts_report_container').style.display = 'block';
+            document.getElementById('btn_print_ts').style.display = 'inline-block';
+            
+            // Preencher Resumos
+            document.getElementById('ts_lbl_total_worked').innerText = data.summary.total_worked_hours;
+            document.getElementById('ts_lbl_daily_goal').innerText = data.daily_goal;
+            document.getElementById('ts_lbl_days_worked').innerText = data.summary.days_worked;
+            
+            const balDiv = document.getElementById('ts_lbl_total_balance');
+            balDiv.innerText = data.summary.total_balance;
+            
+            const cardBal = document.getElementById('ts_card_balance');
+            if(data.summary.is_balance_positive && data.summary.total_balance !== '00:00') {
+                balDiv.style.color = '#10b981'; // verde
+                cardBal.style.border = '1px solid #10b981';
+            } else if (!data.summary.is_balance_positive) {
+                balDiv.style.color = '#ef4444'; // vermelho
+                cardBal.style.border = '1px solid #ef4444';
+            } else {
+                balDiv.style.color = '#64748b'; // gris
+                cardBal.style.border = '1px solid #e2e8f0';
+            }
+
+            // Preencher Tabela
+            const tbody = document.getElementById('ts_table_body');
+            tbody.innerHTML = '';
+            
+            if(data.days.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:3rem; color:#94a3b8;">Nenhuma batida registrada neste mês.</td></tr>`;
+                return;
+            }
+
+            window.pontoCurrentRecords = {};
+            data.days.forEach(d => {
+                const parts = d.date.split('-');
+                const displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                
+                let punchesHtml = '<div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap;">';
+                d.punches.forEach(p => {
+                    window.pontoCurrentRecords[p.id] = p; 
+                    const timeOnly = p.record_time.split(' ')[1].substring(0, 5);
+                    let color = '#3b82f6';
+                    if (p.record_type === 'Entrada') color = '#10b981';
+                    if (p.record_type === 'Saida Almoco') color = '#f59e0b';
+                    if (p.record_type === 'Retorno Almoco') color = '#f59e0b';
+                    if (p.record_type === 'Saida') color = '#ef4444';
+                    
+                    punchesHtml += `
+                        <div onclick="openPontoDetail(${p.id})" style="background:${color}; color:white; padding:4px 10px; border-radius:99px; font-size:0.75rem; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 4px rgba(0,0,0,0.1); transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Clique para ver Detalhes">
+                            ${p.record_type}: ${timeOnly}
+                        </div>
+                    `;
+                });
+                punchesHtml += '</div>';
+
+                const ws = d.worked_seconds;
+                const wh = Math.floor(ws / 3600);
+                const wm = Math.floor((ws % 3600) / 60);
+                const workedStr = `${wh.toString().padStart(2, '0')}:${wm.toString().padStart(2, '0')}`;
+                
+                const bs = d.balance_seconds;
+                const sign = bs < 0 ? '-' : (bs > 0 ? '+' : '');
+                const absBs = Math.abs(bs);
+                const bh = Math.floor(absBs / 3600);
+                const bm = Math.floor((absBs % 3600) / 60);
+                const balStr = `${sign}${bh.toString().padStart(2, '0')}:${bm.toString().padStart(2, '0')}`;
+                const balColor = bs > 0 ? '#10b981' : (bs < 0 ? '#ef4444' : '#64748b');
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="padding:1rem; font-weight:800; color:#1e293b;">${displayDate}</td>
+                        <td style="padding:1rem;">${punchesHtml}</td>
+                        <td style="padding:1rem; text-align:center; font-weight:700; color:#334155;">${workedStr}</td>
+                        <td style="padding:1rem; text-align:center; font-weight:800; color:${balColor};">${balStr}</td>
+                    </tr>
+                `;
+            });
+        })
+        .catch(err => {
+            btn.innerHTML = '<i class="fa-solid fa-search"></i> Filtrar';
+            btn.disabled = false;
+            alert('Erro de conexão com o servidor.');
+        });
+    }
 </script>
+
+<!-- Modal de Timesheet do Funcionario -->
+<div id="timesheetModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
+    <div class="glass-panel" style="max-width: 900px; width: 100%; max-height:90vh; overflow-y:auto; background:#f8fafc;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h3 id="ts_modal_title" style="font-size: 1.25rem; font-weight: 900; color: var(--crm-black);">Registro de Ponto</h3>
+            <button onclick="document.getElementById('timesheetModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.5rem;">&times;</button>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background:white; padding:1rem; border-radius:12px; border:1px solid #e2e8f0;">
+            <div style="flex: 1;">
+                <label class="form-label">Mês</label>
+                <select id="ts_month" class="form-select">
+                    <?php for($m=1; $m<=12; $m++): ?>
+                        <option value="<?= str_pad($m, 2, '0', STR_PAD_LEFT) ?>"><?= str_pad($m, 2, '0', STR_PAD_LEFT) ?></option>
+                    <?php endfor; ?>
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label class="form-label">Ano</label>
+                <select id="ts_year" class="form-select">
+                    <option value="<?= date('Y') ?>"><?= date('Y') ?></option>
+                    <option value="<?= date('Y') - 1 ?>"><?= date('Y') - 1 ?></option>
+                </select>
+            </div>
+            <button id="btn_load_ts" class="btn-primary" onclick="loadUserTimesheetReport()">
+                <i class="fa-solid fa-search"></i> Filtrar
+            </button>
+            <button id="btn_print_ts" class="btn-primary" style="background:#475569; display:none;" onclick="printUserTimesheet()">
+                <i class="fa-solid fa-download"></i> Download PDF
+            </button>
+        </div>
+
+        <div id="ts_report_container" style="display: none;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center;">
+                    <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Total Trabalhado</h4>
+                    <div id="ts_lbl_total_worked" style="font-size: 2rem; font-weight: 900; color: var(--crm-purple);">00:00</div>
+                </div>
+                <div style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center;">
+                    <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Meta Diária do Contrato</h4>
+                    <div id="ts_lbl_daily_goal" style="font-size: 2rem; font-weight: 900; color: #3b82f6;">00:00</div>
+                </div>
+                <div id="ts_card_balance" style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center;">
+                    <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Saldo do Mês (Ext/Def)</h4>
+                    <div id="ts_lbl_total_balance" style="font-size: 2rem; font-weight: 900;">00:00</div>
+                </div>
+                <div style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center;">
+                    <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Dias Trabalhados</h4>
+                    <div id="ts_lbl_days_worked" style="font-size: 2rem; font-weight: 900; color: #10b981;">0</div>
+                </div>
+            </div>
+
+            <div class="glass-panel" style="padding:0; overflow:hidden;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="background: #f8fafc; padding: 1rem; text-align: left; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Data</th>
+                            <th style="background: #f8fafc; padding: 1rem; text-align: center; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Registro de Batidas</th>
+                            <th style="background: #f8fafc; padding: 1rem; text-align: center; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Horas Feitas</th>
+                            <th style="background: #f8fafc; padding: 1rem; text-align: center; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Saldo Diário (Extra/Déficit)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ts_table_body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
