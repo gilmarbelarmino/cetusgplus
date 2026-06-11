@@ -319,132 +319,144 @@ try {
             <nav class="sidebar-nav">
                 <?php if ($user['login_name'] !== 'superadmin'): ?>
                 <div class="sidebar-group">
-                    <span class="sidebar-category">Principal</span>
-                    <a href="index.php?page=dashboard" class="sidebar-item <?= $page === 'dashboard' ? 'sidebar-active' : '' ?>">
-                        <i class="fa-solid fa-house"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    <?php if (in_array('pesquisa', $user_menus)): ?>
-                    <a href="index.php?page=pesquisa" class="sidebar-item <?= $page === 'pesquisa' ? 'sidebar-active' : '' ?>">
-                        <i class="fa-solid fa-poll"></i>
-                        <span>Pesquisa</span>
-                        <span class="badge" style="background: var(--brand-primary); color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 4px; margin-left: auto;">NOVO</span>
-                    </a>
-                    <?php endif; ?>
+                    <span class="sidebar-category <?= in_array($page, ['dashboard', 'pesquisa']) ? 'open' : '' ?>" onclick="toggleSidebarGroup(this)">Principal <i class="fa-solid fa-chevron-down chevron"></i></span>
+                    <div class="sidebar-group-items <?= in_array($page, ['dashboard', 'pesquisa']) ? 'open' : '' ?>">
+                        <a href="index.php?page=dashboard" class="sidebar-item <?= $page === 'dashboard' ? 'sidebar-active' : '' ?>">
+                            <i class="fa-solid fa-house"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <?php if (in_array('pesquisa', $user_menus)): ?>
+                        <a href="index.php?page=pesquisa" class="sidebar-item <?= $page === 'pesquisa' ? 'sidebar-active' : '' ?>">
+                            <i class="fa-solid fa-poll"></i>
+                            <span>Pesquisa</span>
+                            <span class="badge" style="background: var(--brand-primary); color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 4px; margin-left: auto;">NOVO</span>
+                        </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <?php if (in_array('rh', $user_menus) || in_array('voluntariado', $user_menus) || in_array('semanada', $user_menus)): ?>
                 <div class="sidebar-group">
-                    <span class="sidebar-category">Operacional</span>
-                    <?php if (in_array('rh', $user_menus)): ?>
-                        <a href="index.php?page=rh" class="sidebar-item <?= $page === 'rh' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-users"></i>
-                            <span>Recursos Humanos</span>
+                    <span class="sidebar-category <?= in_array($page, ['rh', 'ponto', 'voluntariado', 'semanada']) ? 'open' : '' ?>" onclick="toggleSidebarGroup(this)">Operacional <i class="fa-solid fa-chevron-down chevron"></i></span>
+                    <div class="sidebar-group-items <?= in_array($page, ['rh', 'ponto', 'voluntariado', 'semanada']) ? 'open' : '' ?>">
+                        <?php if (in_array('rh', $user_menus)): ?>
+                            <a href="index.php?page=rh" class="sidebar-item <?= $page === 'rh' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-users"></i>
+                                <span>Recursos Humanos</span>
+                            </a>
+                        <?php endif; ?>
+                        <a href="index.php?page=ponto" class="sidebar-item <?= $page === 'ponto' ? 'sidebar-active' : '' ?>">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>Ponto Eletrônico</span>
                         </a>
-                    <?php endif; ?>
-                    <a href="index.php?page=ponto" class="sidebar-item <?= $page === 'ponto' ? 'sidebar-active' : '' ?>">
-                        <i class="fa-solid fa-clock"></i>
-                        <span>Ponto Eletrônico</span>
-                    </a>
-                    <?php if (in_array('voluntariado', $user_menus)): ?>
-                        <a href="index.php?page=voluntariado" class="sidebar-item <?= $page === 'voluntariado' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-heart"></i>
-                            <span>Voluntariado</span>
-                        </a>
-                    <?php endif; ?>
-                    <?php if (in_array('semanada', $user_menus)): ?>
-                        <a href="index.php?page=semanada" class="sidebar-item <?= $page === 'semanada' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-calendar-check"></i>
-                            <span>Semanada</span>
-                        </a>
-                    <?php endif; ?>
+                        <?php if (in_array('voluntariado', $user_menus)): ?>
+                            <a href="index.php?page=voluntariado" class="sidebar-item <?= $page === 'voluntariado' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-heart"></i>
+                                <span>Voluntariado</span>
+                            </a>
+                        <?php endif; ?>
+                        <?php if (in_array('semanada', $user_menus)): ?>
+                            <a href="index.php?page=semanada" class="sidebar-item <?= $page === 'semanada' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-calendar-check"></i>
+                                <span>Semanada</span>
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <?php endif; ?>
 
                 <?php if (in_array('patrimonio', $user_menus) || in_array('emprestimos', $user_menus) || in_array('chamados', $user_menus)): ?>
                 <div class="sidebar-group">
-                    <span class="sidebar-category">Gestão de Ativos</span>
-                    <?php if (in_array('patrimonio', $user_menus)): ?>
-                        <a href="index.php?page=patrimonio" class="sidebar-item <?= $page === 'patrimonio' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-box-archive"></i>
-                            <span>Patrimônio</span>
-                        </a>
-                    <?php endif; ?>
-                    <?php if (in_array('emprestimos', $user_menus)): ?>
-                        <a href="index.php?page=emprestimos" class="sidebar-item <?= $page === 'emprestimos' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-handshake"></i>
-                            <span>Empréstimos</span>
-                        </a>
-                    <?php endif; ?>
-                    <?php if (in_array('chamados', $user_menus)): ?>
-                        <a href="index.php?page=chamados" class="sidebar-item <?= $page === 'chamados' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-ticket"></i>
-                            <span>Chamados</span>
-                            <?php if ($openTickets > 0): ?>
-                                <span class="nav-badge"><?= $openTickets ?></span>
-                            <?php endif; ?>
-                        </a>
-                    <?php endif; ?>
+                    <span class="sidebar-category <?= in_array($page, ['patrimonio', 'emprestimos', 'chamados']) ? 'open' : '' ?>" onclick="toggleSidebarGroup(this)">Gestão de Ativos <i class="fa-solid fa-chevron-down chevron"></i></span>
+                    <div class="sidebar-group-items <?= in_array($page, ['patrimonio', 'emprestimos', 'chamados']) ? 'open' : '' ?>">
+                        <?php if (in_array('patrimonio', $user_menus)): ?>
+                            <a href="index.php?page=patrimonio" class="sidebar-item <?= $page === 'patrimonio' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-box-archive"></i>
+                                <span>Patrimônio</span>
+                            </a>
+                        <?php endif; ?>
+                        <?php if (in_array('emprestimos', $user_menus)): ?>
+                            <a href="index.php?page=emprestimos" class="sidebar-item <?= $page === 'emprestimos' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-handshake"></i>
+                                <span>Empréstimos</span>
+                            </a>
+                        <?php endif; ?>
+                        <?php if (in_array('chamados', $user_menus)): ?>
+                            <a href="index.php?page=chamados" class="sidebar-item <?= $page === 'chamados' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-ticket"></i>
+                                <span>Chamados</span>
+                                <?php if ($openTickets > 0): ?>
+                                    <span class="nav-badge"><?= $openTickets ?></span>
+                                <?php endif; ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <?php endif; ?>
 
                 <?php if ($user['login_name'] === 'superadmin' || $user['role'] === 'Administrador' || $user['role'] === 'Suporte Técnico' || in_array('usuarios', $user_menus) || in_array('configuracoes', $user_menus)): ?>
                 <div class="sidebar-group">
-                    <span class="sidebar-category">Ajustes & Estrutura</span>
-                    <?php if ($user['login_name'] === 'superadmin' || $user['role'] === 'Administrador' || $user['role'] === 'Suporte Técnico' || in_array('usuarios', $user_menus)): ?>
-                        <a href="index.php?page=usuarios" class="sidebar-item <?= $page === 'usuarios' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-user-gear"></i>
-                            <span>Gerenciar Usuários</span>
-                        </a>
-                    <?php endif; ?>
-                    <?php if ($user['login_name'] === 'superadmin' || $user['role'] === 'Administrador' || $user['role'] === 'Suporte Técnico' || in_array('configuracoes', $user_menus)): ?>
-                        <a href="index.php?page=configuracoes" class="sidebar-item <?= $page === 'configuracoes' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-gear"></i>
-                            <span>Configurações</span>
-                        </a>
-                    <?php endif; ?>
+                    <span class="sidebar-category <?= in_array($page, ['usuarios', 'configuracoes']) ? 'open' : '' ?>" onclick="toggleSidebarGroup(this)">Ajustes & Estrutura <i class="fa-solid fa-chevron-down chevron"></i></span>
+                    <div class="sidebar-group-items <?= in_array($page, ['usuarios', 'configuracoes']) ? 'open' : '' ?>">
+                        <?php if ($user['login_name'] === 'superadmin' || $user['role'] === 'Administrador' || $user['role'] === 'Suporte Técnico' || in_array('usuarios', $user_menus)): ?>
+                            <a href="index.php?page=usuarios" class="sidebar-item <?= $page === 'usuarios' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-user-gear"></i>
+                                <span>Gerenciar Usuários</span>
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($user['login_name'] === 'superadmin' || $user['role'] === 'Administrador' || $user['role'] === 'Suporte Técnico' || in_array('configuracoes', $user_menus)): ?>
+                            <a href="index.php?page=configuracoes" class="sidebar-item <?= $page === 'configuracoes' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-gear"></i>
+                                <span>Configurações</span>
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <?php endif; ?>
 
                 <?php if (in_array('orcamentos', $user_menus) || in_array('locacao_salas', $user_menus)): ?>
                 <div class="sidebar-group">
-                    <span class="sidebar-category">Infraestrutura</span>
-                    <?php if (in_array('orcamentos', $user_menus)): ?>
-                        <a href="index.php?page=orcamentos" class="sidebar-item <?= $page === 'orcamentos' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-receipt"></i>
-                            <span>Orçamentos</span>
-                        </a>
-                    <?php endif; ?>
-                    <?php if (in_array('locacao_salas', $user_menus)): ?>
-                        <a href="index.php?page=locacao_salas" class="sidebar-item <?= $page === 'locacao_salas' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-door-closed"></i>
-                            <span>Salas</span>
-                        </a>
-                    <?php endif; ?>
+                    <span class="sidebar-category <?= in_array($page, ['orcamentos', 'locacao_salas']) ? 'open' : '' ?>" onclick="toggleSidebarGroup(this)">Infraestrutura <i class="fa-solid fa-chevron-down chevron"></i></span>
+                    <div class="sidebar-group-items <?= in_array($page, ['orcamentos', 'locacao_salas']) ? 'open' : '' ?>">
+                        <?php if (in_array('orcamentos', $user_menus)): ?>
+                            <a href="index.php?page=orcamentos" class="sidebar-item <?= $page === 'orcamentos' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-receipt"></i>
+                                <span>Orçamentos</span>
+                            </a>
+                        <?php endif; ?>
+                        <?php if (in_array('locacao_salas', $user_menus)): ?>
+                            <a href="index.php?page=locacao_salas" class="sidebar-item <?= $page === 'locacao_salas' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-door-closed"></i>
+                                <span>Salas</span>
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <?php endif; ?>
 
                 <?php if (in_array('relatorios', $user_menus) || in_array('tecnologia', $user_menus) || in_array('informacoes', $user_menus)): ?>
                 <div class="sidebar-group">
-                    <span class="sidebar-category">Sistemas</span>
-                    <?php if (in_array('relatorios', $user_menus)): ?>
-                        <a href="index.php?page=relatorios" class="sidebar-item <?= $page === 'relatorios' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-chart-line"></i>
-                            <span>Relatórios</span>
-                        </a>
-                    <?php endif; ?>
-                    <?php if (in_array('tecnologia', $user_menus)): ?>
-                        <a href="index.php?page=tecnologia" class="sidebar-item <?= $page === 'tecnologia' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-laptop-code"></i>
-                            <span>Tecnologia</span>
-                        </a>
-                    <?php endif; ?>
-                    <?php if (in_array('informacoes', $user_menus)): ?>
-                        <a href="index.php?page=informacoes" class="sidebar-item <?= $page === 'informacoes' ? 'sidebar-active' : '' ?>">
-                            <i class="fa-solid fa-circle-info"></i>
-                            <span>Informações</span>
-                        </a>
-                    <?php endif; ?>
+                    <span class="sidebar-category <?= in_array($page, ['relatorios', 'tecnologia', 'informacoes']) ? 'open' : '' ?>" onclick="toggleSidebarGroup(this)">Sistemas <i class="fa-solid fa-chevron-down chevron"></i></span>
+                    <div class="sidebar-group-items <?= in_array($page, ['relatorios', 'tecnologia', 'informacoes']) ? 'open' : '' ?>">
+                        <?php if (in_array('relatorios', $user_menus)): ?>
+                            <a href="index.php?page=relatorios" class="sidebar-item <?= $page === 'relatorios' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-chart-line"></i>
+                                <span>Relatórios</span>
+                            </a>
+                        <?php endif; ?>
+                        <?php if (in_array('tecnologia', $user_menus)): ?>
+                            <a href="index.php?page=tecnologia" class="sidebar-item <?= $page === 'tecnologia' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-laptop-code"></i>
+                                <span>Tecnologia</span>
+                            </a>
+                        <?php endif; ?>
+                        <?php if (in_array('informacoes', $user_menus)): ?>
+                            <a href="index.php?page=informacoes" class="sidebar-item <?= $page === 'informacoes' ? 'sidebar-active' : '' ?>">
+                                <i class="fa-solid fa-circle-info"></i>
+                                <span>Informações</span>
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <?php endif; ?>
                 <?php endif; // Fim do bloqueio do superadmin ?>
@@ -452,11 +464,13 @@ try {
 
                 <?php if (in_array('super_admin', $user_menus)): ?>
                 <div class="sidebar-group">
-                    <span class="sidebar-category">Administrador Master</span>
-                    <a href="index.php?page=super_admin" class="sidebar-item <?= $page === 'super_admin' ? 'sidebar-active' : '' ?>" style="color: #FBBF24;">
-                        <i class="fa-solid fa-crown" style="color: #FBBF24;"></i>
-                        <span>Gestão SaaS</span>
-                    </a>
+                    <span class="sidebar-category <?= in_array($page, ['super_admin']) ? 'open' : '' ?>" onclick="toggleSidebarGroup(this)">Administrador Master <i class="fa-solid fa-chevron-down chevron"></i></span>
+                    <div class="sidebar-group-items <?= in_array($page, ['super_admin']) ? 'open' : '' ?>">
+                        <a href="index.php?page=super_admin" class="sidebar-item <?= $page === 'super_admin' ? 'sidebar-active' : '' ?>" style="color: #FBBF24;">
+                            <i class="fa-solid fa-crown" style="color: #FBBF24;"></i>
+                            <span>Gestão SaaS</span>
+                        </a>
+                    </div>
                 </div>
                 <?php endif; ?>
             </nav>
@@ -746,5 +760,16 @@ try {
         </div>
     </div>
     <script src="assets/js/widget_assistant.js"></script>
+    <script>
+        function toggleSidebarGroup(element) {
+            // Toggle the open class on the category span (for chevron rotation)
+            element.classList.toggle('open');
+            // Toggle the open class on the next sibling which is the items container
+            const itemsContainer = element.nextElementSibling;
+            if(itemsContainer && itemsContainer.classList.contains('sidebar-group-items')) {
+                itemsContainer.classList.toggle('open');
+            }
+        }
+    </script>
 </body>
 </html>
