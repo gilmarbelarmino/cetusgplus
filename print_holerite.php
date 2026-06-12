@@ -16,7 +16,7 @@ $compId = getCurrentUserCompanyId();
 // Fetch Employee
 $stmt = $pdo->prepare("SELECT u.name, u.role, u.unit_id, rh.salary, rh.start_date, rh.use_transport, rh.transport_value 
                        FROM users u 
-                       LEFT JOIN rh_employee_details rh ON u.id = rh.user_id 
+                       LEFT JOIN rh_employee_details rh ON u.id = rh.user_id COLLATE utf8mb4_unicode_ci
                        WHERE u.id = ? AND u.company_id = ?");
 $stmt->execute([$user_id, $compId]);
 $emp = $stmt->fetch(PDO::FETCH_ASSOC);
