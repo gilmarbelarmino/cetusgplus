@@ -62,6 +62,8 @@ if ($action === 'get_monthly_report') {
 
     $total_worked_month = 0;
     $total_balance_month = 0;
+    $total_extra_month = 0;
+    $total_negative_month = 0;
     $days_worked = count($days);
     $total_ocorrencias = 0;
 
@@ -106,13 +108,20 @@ if ($action === 'get_monthly_report') {
             if ($dayOfWeek == 7) $current_goal = 0; // Dom não tem meta
         }
 
-        // Se trabalhou, calculamos o saldo
-        if ($worked > 0) {
+        // Se trabalhou ou se tinha meta no dia, calculamos o saldo
+        $is_today = ($date === date('Y-m-d'));
+        if ($worked > 0 || ($current_goal > 0 && !$is_today)) {
             $balance = $worked - $current_goal;
             $dayData['balance_seconds'] = $balance;
             
             $total_worked_month += $worked;
             $total_balance_month += $balance;
+            
+            if ($balance > 0) {
+                $total_extra_month += $balance;
+            } else if ($balance < 0) {
+                $total_negative_month += abs($balance);
+            }
         }
     }
 
@@ -131,6 +140,8 @@ if ($action === 'get_monthly_report') {
         'summary' => [
             'total_worked_hours' => formatSecs($total_worked_month),
             'total_balance' => formatSecs($total_balance_month),
+            'extra_hours' => formatSecs($total_extra_month),
+            'negative_hours' => formatSecs($total_negative_month),
             'is_balance_positive' => $total_balance_month >= 0,
             'days_worked' => $days_worked,
             'ocorrencias' => $total_ocorrencias

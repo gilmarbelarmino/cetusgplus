@@ -6,6 +6,72 @@ try { $pdo->exec("ALTER TABLE assets ADD COLUMN image_url VARCHAR(255) DEFAULT N
 try { $pdo->exec("ALTER TABLE assets MODIFY responsible_id VARCHAR(50) NULL"); } catch(Exception $e) {}
 try { $pdo->exec("UPDATE assets SET responsible_id = NULL WHERE responsible_id = '0'"); } catch(Exception $e) {}
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'import_excel') {
+    $compId = getCurrentUserCompanyId();
+    if (isset($_FILES['excel_file']) && $_FILES['excel_file']['error'] == 0) {
+        require_once __DIR__ . '/../SimpleXLSX.php';
+        
+        try {
+            $xlsx = new SimpleXLSX($_FILES['excel_file']['tmp_name']);
+            $sheets = $xlsx->getSheets();
+            $pdo->beginTransaction();
+            
+            foreach ($sheets as $sheetName => $rows) {
+                if (strtoupper(trim($sheetName)) === 'RESULTADO FINAL') continue;
+                
+                $sectorName = $sheetName;
+                    
+                    // skip header
+                    for ($i = 1; $i < count($rows); $i++) {
+                        $row = $rows[$i];
+                        
+                        // Check if empty row or TOTAL DO SETOR
+                        if (empty($row[0]) && empty($row[1])) continue;
+                        if (strtoupper(trim($row[4] ?? '')) === 'TOTAL DO SETOR:') break;
+                        
+                        $pat_id = trim($row[0] ?? '');
+                        $name = trim($row[1] ?? '');
+                        $category = trim($row[2] ?? '');
+                        $resp_name = trim($row[3] ?? '');
+                        $status = trim($row[4] ?? 'Ativo');
+                        
+                        $val_str = trim($row[5] ?? '0');
+                        $val_str = str_replace(['R$', ' ', '.'], '', $val_str);
+                        $val_str = str_replace(',', '.', $val_str);
+                        $estimated_value = floatval($val_str);
+                        
+                        if (empty($name)) continue;
+                        
+                        $asset_id = null;
+                        if (!empty($pat_id)) {
+                            $stmt = $pdo->prepare("SELECT id FROM assets WHERE patrimony_id = ? AND company_id = ?");
+                            $stmt->execute([$pat_id, $compId]);
+                            $asset_id = $stmt->fetchColumn();
+                        }
+                        
+                        if ($asset_id) {
+                            $upd = $pdo->prepare("UPDATE assets SET name = ?, category = ?, sector = ?, status = ?, responsible_name = ?, estimated_value = ? WHERE id = ? AND company_id = ?");
+                            $upd->execute([$name, $category, $sectorName, $status, $resp_name, $estimated_value, $asset_id, $compId]);
+                        } else {
+                            $new_id = 'A' . uniqid();
+                            $ins = $pdo->prepare("INSERT INTO assets (id, name, category, patrimony_id, sector, status, responsible_name, estimated_value, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $ins->execute([$new_id, $name, $category, $pat_id, $sectorName, $status, $resp_name, $estimated_value, $compId]);
+                        }
+                    }
+                }
+                $pdo->commit();
+                header('Location: ?page=patrimonio&success=import');
+                exit;
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                header('Location: ?page=patrimonio&error=invalid_file');
+                exit;
+        }
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_asset') {
     $compId = getCurrentUserCompanyId();
 
@@ -150,24 +216,34 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.875rem;"></i>
             <input type="text" id="search-patrimonio" class="form-input" placeholder="Filtrar ativos..." style="padding-left: 2.5rem; border-radius: 0.75rem; background: #fff;" onkeyup="filterTable('search-patrimonio', 'table-patrimonio')" autocomplete="off">
         </div>
-        <button class="btn-primary" onclick="window.location.href='?page=patrimonio&action=novo'">
-            <i class="fa-solid fa-plus"></i>
-            Cadastrar Ativo
-        </button>
+        <div style="display: flex; gap: 1rem;">
+            <button class="btn-primary" style="background: #3b82f6; color: white;" onclick="document.getElementById('importModal').style.display='flex'">
+                <i class="fa-solid fa-file-import"></i>
+                Importar Excel
+            </button>
+            <a href="pages/export_patrimonio.php" target="_blank" class="btn-primary" style="background: #10b981; color: white; text-decoration: none;">
+                <i class="fa-solid fa-file-excel"></i>
+                Exportar Excel
+            </a>
+            <button class="btn-primary" onclick="window.location.href='?page=patrimonio&action=novo'">
+                <i class="fa-solid fa-plus"></i>
+                Cadastrar Ativo
+            </button>
+        </div>
     </div>
 </div>
 
 <?php if (isset($_GET['success'])): ?>
 <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%); border: 1px solid rgba(16, 185, 129, 0.3); color: #059669; padding: 1rem; border-radius: 1rem; margin-bottom: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
     <i class="fa-solid fa-circle-check"></i>
-    <?= $_GET['success'] == '1' ? 'Ativo cadastrado com sucesso!' : ($_GET['success'] == '2' ? 'Ativo atualizado com sucesso!' : ($_GET['success'] == 'deleted' ? 'Ativo excluído com sucesso!' : 'Categoria excluída com sucesso!')) ?>
+    <?= $_GET['success'] == '1' ? 'Ativo cadastrado com sucesso!' : ($_GET['success'] == '2' ? 'Ativo atualizado com sucesso!' : ($_GET['success'] == 'deleted' ? 'Ativo excluído com sucesso!' : ($_GET['success'] == 'import' ? 'Planilha importada e banco de dados atualizado com sucesso!' : 'Categoria excluída com sucesso!'))) ?>
 </div>
 <?php endif; ?>
 
-<?php if (isset($_GET['error']) && $_GET['error'] === 'duplicate_patrimony'): ?>
+<?php if (isset($_GET['error'])): ?>
 <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%); border: 1px solid rgba(239, 68, 68, 0.3); color: #dc2626; padding: 1rem; border-radius: 1rem; margin-bottom: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
     <i class="fa-solid fa-circle-exclamation"></i>
-    Erro: Já existe um ativo cadastrado com este Número de Acesso.
+    <?= $_GET['error'] === 'duplicate_patrimony' ? 'Erro: Já existe um ativo cadastrado com este Número de Acesso.' : ($_GET['error'] === 'invalid_file' ? 'Erro: O arquivo enviado não é um Excel válido ou está corrompido.' : 'Erro: Falha ao processar importação.') ?>
 </div>
 <?php endif; ?>
 
@@ -595,6 +671,32 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                 <?php endif; ?>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Modal de Importação Excel -->
+<div id="importModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 2000; align-items: center; justify-content: center; padding: 2rem;">
+    <div class="glass-panel" style="max-width: 500px; width: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 900;"><i class="fa-solid fa-file-import" style="color: #3b82f6;"></i> Importar Patrimônio</h3>
+            <button onclick="document.getElementById('importModal').style.display='none'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
+        </div>
+        
+        <p style="color: var(--text-soft); font-size: 0.875rem; margin-bottom: 1.5rem; line-height: 1.5;">
+            Anexe aqui a mesma planilha gerada pelo botão "Exportar Excel". O sistema identificará os setores pelas abas e usará a coluna "ID Patrimônio" para atualizar o que já existe ou cadastrar novos itens.
+        </p>
+
+        <form method="POST" enctype="multipart/form-data" onsubmit="return handleAssetSubmit(this);">
+            <input type="hidden" name="action" value="import_excel">
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label class="form-label">Arquivo Excel (.xlsx)</label>
+                <input type="file" name="excel_file" class="form-input" accept=".xlsx" required style="padding: 1rem;">
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" onclick="document.getElementById('importModal').style.display='none'" class="btn-secondary">Cancelar</button>
+                <button type="submit" class="btn-primary" style="background: #3b82f6;"><i class="fa-solid fa-upload"></i> Processar Importação</button>
+            </div>
+        </form>
     </div>
 </div>
 

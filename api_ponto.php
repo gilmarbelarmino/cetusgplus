@@ -28,14 +28,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $data['action'] ?? '';
     
     if ($action === 'register_punch') {
-        $type        = $data['type'] ?? 'Entrada';
+        $type        = $data['type'] ?? 'Auto';
         $lat         = $data['latitude'] ?? null;
         $lng         = $data['longitude'] ?? null;
         $accuracy    = $data['accuracy'] ?? null;
         $address     = $data['address'] ?? '';
+        $justification = $data['justification'] ?? null;
         $device      = $_SERVER['HTTP_USER_AGENT'] ?? '';
         $ip          = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
         $ip          = trim(explode(',', $ip)[0]); // pegar IP real atrás de proxy
+
+        if ($type === 'Auto') {
+            $stmt_count = $pdo->prepare("SELECT COUNT(*) FROM time_records WHERE user_id = ? AND company_id = ? AND DATE(record_time) = CURDATE()");
+            $stmt_count->execute([$user['id'], $compId]);
+            $count = $stmt_count->fetchColumn();
+            
+            if ($count == 0) $type = 'Entrada';
+            elseif ($count == 1) $type = 'Saida Almoco';
+            elseif ($count == 2) $type = 'Retorno Almoco';
+            elseif ($count % 2 == 1) $type = 'Saida';
+            else $type = 'Entrada';
+        }
 
         $stmt = $pdo->prepare("SELECT latitude, longitude, radius_meters, allow_remote_work FROM company_settings WHERE id = ?");
         $stmt->execute([$compId]);
@@ -57,9 +70,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try { $pdo->exec("ALTER TABLE time_records ADD COLUMN gps_accuracy FLOAT DEFAULT NULL"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE time_records ADD COLUMN facial_used TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
         try { $pdo->exec("ALTER TABLE time_records ADD COLUMN is_manual TINYINT(1) DEFAULT 0"); } catch(Exception $e){}
+        try { $pdo->exec("ALTER TABLE time_records ADD COLUMN justification TEXT DEFAULT NULL"); } catch(Exception $e){}
 
-        $stmt = $pdo->prepare("INSERT INTO time_records (user_id, company_id, record_type, record_time, latitude, longitude, address, ip_address, device_info, status, gps_accuracy, facial_used, is_manual) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, 0, 1)");
-        $stmt->execute([$user['id'], $compId, $type, $lat, $lng, $address, $ip, $device, $status, $accuracy]);
+        $stmt = $pdo->prepare("INSERT INTO time_records (user_id, company_id, record_type, record_time, latitude, longitude, address, ip_address, device_info, status, gps_accuracy, facial_used, is_manual, justification) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, 0, 1, ?)");
+        $stmt->execute([$user['id'], $compId, $type, $lat, $lng, $address, $ip, $device, $status, $accuracy, $justification]);
 
         $record_id = $pdo->lastInsertId();
 

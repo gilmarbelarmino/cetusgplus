@@ -31,7 +31,8 @@ try {
         "photo_base64 LONGTEXT DEFAULT NULL",
         "confidence_score FLOAT DEFAULT NULL",
         "facial_used TINYINT(1) DEFAULT 0",
-        "is_manual TINYINT(1) DEFAULT 0"
+        "is_manual TINYINT(1) DEFAULT 0",
+        "justification TEXT DEFAULT NULL"
     ];
     foreach($colunas as $col) {
         try {
@@ -79,48 +80,46 @@ $companySettings = $stmt_c->fetch(PDO::FETCH_ASSOC);
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-.ponto-wrap { display: grid; grid-template-columns: 1fr 380px; gap: 20px; max-width: 1280px; margin: 0 auto; }
-@media(max-width:1024px){ .ponto-wrap { grid-template-columns:1fr; } }
-
-.pt-card { background:var(--bg-card,#fff); border:1px solid var(--border-color,#e2e8f0); border-radius:16px; padding:20px; margin-bottom:16px; }
-.pt-title { font-size:.72rem; font-weight:900; text-transform:uppercase; letter-spacing:.1em; color:#64748b; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
-.pt-title i { color:#5B21B6; }
-
-/* Perfil */
-.user-bar { display:flex; align-items:center; gap:14px; padding:16px 20px; background:linear-gradient(135deg,rgba(91,33,182,.08),rgba(91,33,182,.02)); border:1px solid rgba(91,33,182,.15); border-radius:14px; margin-bottom:16px; }
-.user-bar-avatar { width:52px; height:52px; border-radius:12px; object-fit:cover; border:2px solid rgba(91,33,182,.25); flex-shrink:0; }
-.user-bar-init { width:52px; height:52px; border-radius:12px; background:linear-gradient(135deg,#5B21B6,#7C3AED); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:1.2rem; flex-shrink:0; }
-
-/* Punch buttons */
-.punch-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
-.punch-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:18px 10px; border-radius:12px; border:2px solid transparent; cursor:pointer; font-weight:800; font-size:.82rem; transition:all .2s; }
-.punch-btn:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.1); }
-.punch-btn i { font-size:1.5rem; }
-.punch-btn.entrada   { border-color:#10b981; color:#059669; background:#ecfdf5; }
-.punch-btn.entrada:hover   { background:#10b981; color:#fff; }
-.punch-btn.s-almoco  { border-color:#f59e0b; color:#d97706; background:#fffbeb; }
-.punch-btn.s-almoco:hover  { background:#f59e0b; color:#fff; }
-.punch-btn.r-almoco  { border-color:#3b82f6; color:#2563eb; background:#eff6ff; }
-.punch-btn.r-almoco:hover  { background:#3b82f6; color:#fff; }
-.punch-btn.saida     { border-color:#ef4444; color:#dc2626; background:#fef2f2; }
-.punch-btn.saida:hover     { background:#ef4444; color:#fff; }
-
-/* Registros */
-.rec-item { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; background:#f8fafc; border:1px solid #e2e8f0; margin-bottom:8px; }
-.rec-type { font-weight:800; font-size:.88rem; flex:1; }
-.rec-time { font-family:monospace; font-size:.88rem; color:#64748b; }
-
-/* Mapa */
-#pontoMap { width:100%; height:320px; border-radius:12px; border:1px solid #e2e8f0; }
-.gps-line { display:flex; align-items:flex-start; gap:8px; font-size:.8rem; color:#475569; padding:8px 12px; background:#f8fafc; border-radius:8px; margin-top:8px; border:1px solid #e2e8f0; }
-.gps-line i { color:#5B21B6; margin-top:1px; flex-shrink:0; }
+.ponto-wrap { max-width: 500px; margin: 0 auto; padding-bottom: 40px; font-family: 'Inter', sans-serif; }
 
 /* Loading */
 .ld-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.6); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
 .ld-overlay.show { display:flex; }
 .ld-box { background:#fff; border-radius:20px; padding:30px 40px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.3); }
-.spinner { width:48px; height:48px; border:4px solid #e2e8f0; border-top-color:#5B21B6; border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 16px; }
+.spinner { width:48px; height:48px; border:4px solid #e2e8f0; border-top-color:#4cd5ed; border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 16px; }
 @keyframes spin { to{transform:rotate(360deg)} }
+
+/* Map */
+#pontoMap { width: 100%; height: 260px; background: #e2e8f0; border: none; }
+
+/* Info Card */
+.info-card { background: #fff; text-align: center; padding: 20px 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.info-date { font-size: 1.2rem; color: #475569; margin-bottom: 8px; }
+.info-dist { font-size: 1.05rem; font-weight: 700; color: #64748b; margin-bottom: 8px; }
+.info-addr { font-size: 0.85rem; color: #94a3b8; margin-bottom: 24px; line-height: 1.4; min-height: 38px; }
+
+/* Justification */
+.just-input { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.95rem; margin-bottom: 16px; outline: none; transition: border-color 0.2s; resize: none; color: #475569; }
+.just-input:focus { border-color: #4cd5ed; }
+.just-input::placeholder { color: #94a3b8; }
+
+/* Button */
+.btn-incluir { width: 100%; background: #4cd5ed; color: #fff; padding: 16px; font-size: 1.1rem; font-weight: 600; border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+.btn-incluir:hover { background: #3bbed4; }
+
+/* History */
+.history-card { background: #fff; margin-top: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.history-title { font-size: 1.15rem; font-weight: 700; color: #475569; padding: 18px 20px; border-bottom: 1px solid #f1f5f9; }
+.rec-item { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; }
+.rec-item:last-child { border-bottom: none; }
+.rec-left { display: flex; align-items: center; gap: 14px; color: #475569; font-weight: 500; }
+.rec-icon { color: #64748b; font-size: 1.2rem; }
+.rec-right { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; color: #64748b; }
+.rec-status-icon { color: #22c55e; font-size: 1.2rem; }
+.rec-status-icon.ocorrencia { color: #ef4444; }
+
+/* Hide default page header if inside wrap */
+.page-header { display: none; }
 </style>
 
 <!-- LOADING -->
@@ -132,116 +131,61 @@ $companySettings = $stmt_c->fetch(PDO::FETCH_ASSOC);
     </div>
 </div>
 
-<!-- HEADER -->
-<div class="page-header" style="margin-bottom:16px;">
-    <div class="page-header-info">
-        <div class="page-header-icon"><i class="fa-solid fa-clock"></i></div>
-        <div class="page-header-text">
-            <h2>Ponto Eletrônico</h2>
-            <p id="ptClock">Carregando...</p>
-        </div>
-    </div>
-</div>
-
-<!-- BARRA DO USUÁRIO -->
-<div class="user-bar">
-    <?php if (!empty($userData['avatar_url'])): ?>
-        <img src="<?= htmlspecialchars($userData['avatar_url']) ?>" class="user-bar-avatar" alt="">
-    <?php else: ?>
-        <div class="user-bar-init"><?= strtoupper(substr($userData['name'] ?? 'U', 0, 2)) ?></div>
-    <?php endif; ?>
-    <div style="flex:1;">
-        <div style="font-weight:900;font-size:1rem;color:var(--crm-black,#0f172a);"><?= htmlspecialchars($userData['name'] ?? 'Usuário') ?></div>
-        <div style="font-size:.78rem;color:#64748b;margin-top:2px;">
-            <?= htmlspecialchars($userData['role_name'] ?? 'Cargo não definido') ?>
-            <?php if (!empty($userData['sector'])): ?> · <?= htmlspecialchars($userData['sector']) ?><?php endif; ?>
-        </div>
-    </div>
+<!-- TOP BAR (Simulada para parecer com o app) -->
+<div style="background: #4cd5ed; color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; font-size: 1.2rem; font-weight: 600; margin-bottom: 0;">
+    <i class="fa-solid fa-bars"></i>
+    <span>Incluir Ponto</span>
+    <i class="fa-regular fa-bell"></i>
 </div>
 
 <!-- LAYOUT -->
 <div class="ponto-wrap">
+    
+    <!-- MAPA -->
+    <div id="pontoMap"></div>
+    <div id="gpsSt" style="display:none;"></div> <!-- hidden state -->
 
-    <!-- COLUNA ESQUERDA -->
-    <div>
-        <!-- MAPA GPS -->
-        <div class="pt-card" style="padding:16px;">
-            <div class="pt-title">
-                <i class="fa-solid fa-map-location-dot"></i> Localização GPS — Dispositivo Real
-                <span id="gpsAccBadge" style="margin-left:auto;"></span>
-            </div>
-            <div id="pontoMap"></div>
-            <div class="gps-line" id="gpsAddrBox">
-                <i class="fa-solid fa-location-dot"></i>
-                <span id="gpsAddr">Aguardando GPS do dispositivo...</span>
-            </div>
-            <div class="gps-line" style="margin-top:4px;">
-                <i class="fa-solid fa-satellite-dish"></i>
-                <span id="gpsCrd">—</span>
-            </div>
-            <div class="gps-line" style="margin-top:4px;">
-                <i class="fa-solid fa-signal"></i>
-                <span id="gpsSt">Solicitando permissão de localização...</span>
-            </div>
-        </div>
+    <!-- INFO E BOTÃO -->
+    <div class="info-card">
+        <div class="info-date" id="ptClock">Carregando...</div>
+        <div class="info-dist" id="gpsDistBadge">Calculando distância...</div>
+        <div class="info-addr" id="gpsAddr">Aguardando GPS do dispositivo...</div>
+        
+        <textarea id="justification" class="just-input" rows="2" placeholder="Justificativa"></textarea>
+        
+        <button class="btn-incluir" onclick="execPunch('Auto')">Incluir Ponto</button>
     </div>
 
-    <!-- COLUNA DIREITA -->
-    <div>
-        <!-- BOTÕES DE PONTO -->
-        <div class="pt-card">
-            <div class="pt-title"><i class="fa-solid fa-hand-pointer"></i> Registrar Horário</div>
-            <div style="font-size:0.8rem;color:#64748b;margin-bottom:16px;line-height:1.5;">
-                Sua localização atual será vinculada ao registro. Confirme o tipo da batida de ponto abaixo:
+    <!-- HISTÓRICO HOJE -->
+    <div class="history-card">
+        <div class="history-title">Últimos Registros</div>
+        
+        <?php if (empty($todayRecords)): ?>
+            <div style="text-align:center;padding:30px;color:#94a3b8;">
+                <div style="font-weight:500;">Nenhum registro hoje</div>
             </div>
-            <div class="punch-grid" id="punchGrid">
-                <button class="punch-btn entrada"  onclick="execPunch('Entrada')"><i class="fa-solid fa-arrow-right-to-bracket"></i>Entrada</button>
-                <button class="punch-btn s-almoco" onclick="execPunch('Saida Almoco')"><i class="fa-solid fa-utensils"></i>Saída Almoço</button>
-                <button class="punch-btn r-almoco" onclick="execPunch('Retorno Almoco')"><i class="fa-solid fa-arrow-rotate-left"></i>Retorno Almoço</button>
-                <button class="punch-btn saida"    onclick="execPunch('Saida')"><i class="fa-solid fa-arrow-right-from-bracket"></i>Saída Final</button>
-            </div>
-        </div>
-
-        <!-- HISTÓRICO HOJE -->
-        <div class="pt-card">
-            <div class="pt-title">
-                <i class="fa-solid fa-list-check"></i> Registros de Hoje
-                <span style="margin-left:auto;background:#f1f5f9;border-radius:20px;padding:2px 10px;font-size:.7rem;font-weight:800;color:#5B21B6;"><?= date('d/m/Y') ?></span>
-            </div>
-            <?php if (empty($todayRecords)): ?>
-                <div style="text-align:center;padding:30px;color:#94a3b8;">
-                    <i class="fa-solid fa-clock" style="font-size:2.5rem;color:#e2e8f0;display:block;margin-bottom:10px;"></i>
-                    <div style="font-weight:700;">Nenhum registro hoje</div>
-                    <div style="font-size:.78rem;margin-top:4px;">Bata o ponto para iniciar o dia.</div>
+        <?php else:
+            // Reverse so newest is at top if needed, or keep order
+            $reversedRecords = array_reverse($todayRecords);
+            foreach ($reversedRecords as $rec):
+                $time  = date('d/m - H:i', strtotime($rec['record_time']));
+                $isOcorrencia = ($rec['status'] === 'Ocorrencia');
+                $statusText = $isOcorrencia ? 'Ocorrência' : 'Aceita';
+                $statusClass = $isOcorrencia ? 'ocorrencia' : '';
+                $statusIcon = $isOcorrencia ? 'fa-thumbs-down' : 'fa-thumbs-up';
+        ?>
+            <div class="rec-item">
+                <div class="rec-left">
+                    <i class="fa-regular fa-file-lines rec-icon"></i>
+                    <i class="fa-solid fa-location-dot rec-icon"></i>
+                    <span><?= $time ?></span>
                 </div>
-            <?php else:
-                $colorMap = ['Entrada'=>'#10b981','Saida Almoco'=>'#f59e0b','Retorno Almoco'=>'#3b82f6','Saida'=>'#ef4444'];
-                $iconMap  = ['Entrada'=>'fa-arrow-right-to-bracket','Saida Almoco'=>'fa-utensils','Retorno Almoco'=>'fa-arrow-rotate-left','Saida'=>'fa-arrow-right-from-bracket'];
-                foreach ($todayRecords as $rec):
-                    $color = $colorMap[$rec['record_type']] ?? '#64748b';
-                    $icon  = $iconMap[$rec['record_type']] ?? 'fa-clock';
-                    $time  = date('H:i', strtotime($rec['record_time']));
-            ?>
-                <div class="rec-item">
-                    <i class="fa-solid <?= $icon ?>" style="color:<?= $color ?>;font-size:1.1rem;width:20px;text-align:center;"></i>
-                    <div class="rec-type"><?= htmlspecialchars($rec['record_type']) ?></div>
-                    <?php if ($rec['status'] === 'Ocorrencia'): ?>
-                        <span style="font-size:.7rem;font-weight:700;color:#ef4444;">⚠ Ocorrência</span>
-                    <?php endif; ?>
-                    <div class="rec-time"><?= $time ?></div>
+                <div class="rec-right">
+                    <span><?= $statusText ?></span>
+                    <i class="fa-solid <?= $statusIcon ?> rec-status-icon <?= $statusClass ?>"></i>
                 </div>
-            <?php endforeach; endif; ?>
-        </div>
-
-        <!-- DADOS CAPTURADOS -->
-        <div class="pt-card" style="font-size:.78rem;color:#64748b;line-height:1.9;">
-            <div class="pt-title"><i class="fa-solid fa-shield-halved"></i> Dados Capturados</div>
-            <div><i class="fa-solid fa-check" style="color:#10b981;margin-right:6px;"></i>Data e Hora exata do Servidor</div>
-            <div><i class="fa-solid fa-check" style="color:#10b981;margin-right:6px;"></i>Coordenadas GPS (Lat/Lng)</div>
-            <div><i class="fa-solid fa-check" style="color:#10b981;margin-right:6px;"></i>Endereço via Mapa (O.S.M)</div>
-            <div><i class="fa-solid fa-check" style="color:#10b981;margin-right:6px;"></i>Precisão do Satélite (Metros)</div>
-            <div><i class="fa-solid fa-check" style="color:#10b981;margin-right:6px;"></i>IP e Dispositivo de Acesso</div>
-        </div>
+            </div>
+        <?php endforeach; endif; ?>
     </div>
 </div>
 
@@ -276,7 +220,8 @@ async function execPunch(type) {
                 latitude: curLat,
                 longitude: curLng,
                 accuracy: curAcc,
-                address: curAddr
+                address: curAddr,
+                justification: document.getElementById('justification') ? document.getElementById('justification').value : ''
             })
         });
         const d = await r.json(); 

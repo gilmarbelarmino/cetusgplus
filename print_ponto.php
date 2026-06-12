@@ -131,9 +131,13 @@ if (!$targetUser) {
                 <h4>Meta Diária</h4>
                 <div id="lbl_daily_goal" style="color: #3b82f6;">00:00</div>
             </div>
-            <div id="card_balance" class="summary-card">
-                <h4>Saldo do Mês (Ext/Def)</h4>
-                <div id="lbl_total_balance">00:00</div>
+            <div class="summary-card" style="border-color: #10b981;">
+                <h4 style="color: #10b981;">Horas Extras</h4>
+                <div id="lbl_extra_hours" style="color: #10b981;">00:00</div>
+            </div>
+            <div class="summary-card" style="border-color: #ef4444;">
+                <h4 style="color: #ef4444;">Horas Negativas</h4>
+                <div id="lbl_negative_hours" style="color: #ef4444;">00:00</div>
             </div>
             <div class="summary-card">
                 <h4>Dias Trabalhados</h4>
@@ -181,22 +185,8 @@ if (!$targetUser) {
             document.getElementById('lbl_daily_goal').innerText = data.daily_goal;
             document.getElementById('lbl_days_worked').innerText = data.summary.days_worked;
             
-            const balDiv = document.getElementById('lbl_total_balance');
-            balDiv.innerText = data.summary.total_balance;
-            
-            const cardBal = document.getElementById('card_balance');
-            if(data.summary.is_balance_positive && data.summary.total_balance !== '00:00') {
-                balDiv.style.color = '#10b981';
-                cardBal.style.borderColor = '#10b981';
-            } else if (!data.summary.is_balance_positive) {
-                balDiv.style.color = '#ef4444';
-                cardBal.style.borderColor = '#ef4444';
-            } else {
-                balDiv.style.color = '#64748b';
-            }
-
-            // Preencher Tabela
-            const tbody = document.getElementById('table_body');
+            document.getElementById('lbl_extra_hours').innerText = data.summary.extra_hours;
+            document.getElementById('lbl_negative_hours').innerText = data.summary.negative_hours;const tbody = document.getElementById('table_body');
             tbody.innerHTML = '';
             
             if(data.days.length === 0) {

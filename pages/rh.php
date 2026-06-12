@@ -1412,9 +1412,14 @@ function openDismissModal(userId, userName) {
                 <div id="lbl_daily_goal" style="font-size: 2rem; font-weight: 900; color: #3b82f6;">08:00</div>
             </div>
 
-            <div id="card_balance" style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Saldo (Banco de Horas)</h4>
-                <div id="lbl_total_balance" style="font-size: 2rem; font-weight: 900;">00:00</div>
+            <div style="background: white; border: 1px solid #10b981; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <h4 style="font-size: 0.75rem; color: #10b981; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Horas Extras</h4>
+                <div id="lbl_extra_hours" style="font-size: 2rem; font-weight: 900; color: #10b981;">00:00</div>
+            </div>
+
+            <div style="background: white; border: 1px solid #ef4444; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <h4 style="font-size: 0.75rem; color: #ef4444; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Horas Negativas</h4>
+                <div id="lbl_negative_hours" style="font-size: 2rem; font-weight: 900; color: #ef4444;">00:00</div>
             </div>
             
             <div style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
@@ -1495,20 +1500,8 @@ function openDismissModal(userId, userName) {
             document.getElementById('lbl_daily_goal').innerText = data.daily_goal;
             document.getElementById('lbl_days_worked').innerText = data.summary.days_worked;
             
-            const balDiv = document.getElementById('lbl_total_balance');
-            balDiv.innerText = data.summary.total_balance;
-            
-            const cardBal = document.getElementById('card_balance');
-            if(data.summary.is_balance_positive && data.summary.total_balance !== '00:00') {
-                balDiv.style.color = '#10b981'; // verde
-                cardBal.style.border = '1px solid #10b981';
-            } else if (!data.summary.is_balance_positive) {
-                balDiv.style.color = '#ef4444'; // vermelho
-                cardBal.style.border = '1px solid #ef4444';
-            } else {
-                balDiv.style.color = '#64748b'; // gris
-                cardBal.style.border = '1px solid #e2e8f0';
-            }
+            document.getElementById('lbl_extra_hours').innerText = data.summary.extra_hours;
+            document.getElementById('lbl_negative_hours').innerText = data.summary.negative_hours;
 
             // Preencher Tabela
             const tbody = document.getElementById('ponto_table_body');
@@ -1672,20 +1665,8 @@ function openDismissModal(userId, userName) {
             document.getElementById('ts_lbl_daily_goal').innerText = data.daily_goal;
             document.getElementById('ts_lbl_days_worked').innerText = data.summary.days_worked;
             
-            const balDiv = document.getElementById('ts_lbl_total_balance');
-            balDiv.innerText = data.summary.total_balance;
-            
-            const cardBal = document.getElementById('ts_card_balance');
-            if(data.summary.is_balance_positive && data.summary.total_balance !== '00:00') {
-                balDiv.style.color = '#10b981'; // verde
-                cardBal.style.border = '1px solid #10b981';
-            } else if (!data.summary.is_balance_positive) {
-                balDiv.style.color = '#ef4444'; // vermelho
-                cardBal.style.border = '1px solid #ef4444';
-            } else {
-                balDiv.style.color = '#64748b'; // gris
-                cardBal.style.border = '1px solid #e2e8f0';
-            }
+            document.getElementById('ts_lbl_extra_hours').innerText = data.summary.extra_hours;
+            document.getElementById('ts_lbl_negative_hours').innerText = data.summary.negative_hours;
 
             // Preencher Tabela
             const tbody = document.getElementById('ts_table_body');
@@ -1792,9 +1773,13 @@ function openDismissModal(userId, userName) {
                     <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Meta Diária do Contrato</h4>
                     <div id="ts_lbl_daily_goal" style="font-size: 2rem; font-weight: 900; color: #3b82f6;">00:00</div>
                 </div>
-                <div id="ts_card_balance" style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center;">
-                    <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Saldo do Mês (Ext/Def)</h4>
-                    <div id="ts_lbl_total_balance" style="font-size: 2rem; font-weight: 900;">00:00</div>
+                <div style="background: white; border: 1px solid #10b981; padding: 1.5rem; border-radius: 12px; text-align: center;">
+                    <h4 style="font-size: 0.75rem; color: #10b981; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Horas Extras</h4>
+                    <div id="ts_lbl_extra_hours" style="font-size: 2rem; font-weight: 900; color: #10b981;">00:00</div>
+                </div>
+                <div style="background: white; border: 1px solid #ef4444; padding: 1.5rem; border-radius: 12px; text-align: center;">
+                    <h4 style="font-size: 0.75rem; color: #ef4444; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Horas Negativas</h4>
+                    <div id="ts_lbl_negative_hours" style="font-size: 2rem; font-weight: 900; color: #ef4444;">00:00</div>
                 </div>
                 <div style="background: white; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 12px; text-align: center;">
                     <h4 style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Dias Trabalhados</h4>
