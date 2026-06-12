@@ -1489,10 +1489,48 @@ function openDismissModal(userId, userName) {
 
 <!-- ABA: HOLERITES -->
 <div id="tab-holerites" class="rh-tab-content">
-    <div class="glass-panel" style="padding: 3rem; text-align: center; color: #64748b;">
-        <i class="fa-solid fa-file-invoice-dollar" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem; display: block;"></i>
-        <h3 style="font-size: 1.5rem; font-weight: 800; color: #475569; margin-bottom: 0.5rem;">Holerites e Comprovantes</h3>
-        <p>A gestão de Holerites está planejada para a próxima grande atualização do sistema. Em breve você poderá anexar e gerenciar os arquivos por aqui.</p>
+    <div class="section-header" style="margin-bottom: 2rem;">
+        <div>
+            <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--crm-black);"><i class="fa-solid fa-file-invoice-dollar" style="color: #3b82f6;"></i> Emissão de Holerites</h2>
+            <p style="color: #64748b; margin-top: 0.5rem;">Gere e imprima os recibos de pagamento de salário dos colaboradores, calculados automaticamente.</p>
+        </div>
+    </div>
+
+    <div class="glass-panel" style="padding: 2rem;">
+        <form target="_blank" action="print_holerite.php" method="GET" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 1.5rem; align-items: end;">
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase;">Funcionário</label>
+                <select name="user_id" required class="form-input">
+                    <option value="">Selecione um funcionário...</option>
+                    <?php foreach ($users_data as $u): ?>
+                        <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['name'] ?? '') ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase;">Mês</label>
+                <select name="month" class="form-input">
+                    <?php 
+                    $meses = [
+                        '01' => 'Janeiro', '02' => 'Fevereiro', '03' => 'Março', '04' => 'Abril',
+                        '05' => 'Maio', '06' => 'Junho', '07' => 'Julho', '08' => 'Agosto',
+                        '09' => 'Setembro', '10' => 'Outubro', '11' => 'Novembro', '12' => 'Dezembro'
+                    ];
+                    $curMonth = date('m');
+                    foreach($meses as $num => $nome):
+                    ?>
+                        <option value="<?= $num ?>" <?= $num === $curMonth ? 'selected' : '' ?>><?= $nome ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase;">Ano</label>
+                <input type="number" name="year" class="form-input" value="<?= date('Y') ?>" min="2020" max="2050" required>
+            </div>
+            <div>
+                <button type="submit" class="btn-primary" style="background: #3b82f6; padding: 0.75rem 1.5rem; height: 42px; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-print"></i> Gerar Holerite</button>
+            </div>
+        </form>
     </div>
 </div>
 
