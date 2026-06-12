@@ -136,8 +136,12 @@ $companySettings = $stmt_c->fetch(PDO::FETCH_ASSOC);
 </div>
 
 <!-- TOP BAR -->
-<div style="background: #ffffff; text-align: center; padding: 16px 20px; margin-bottom: 0;">
-    <img src="<?= URL_BASE ?>/public/logo.png" alt="Cetusg" style="height: 40px; object-fit: contain;">
+<div style="background: #ffffff; text-align: center; padding: 16px 20px; margin-bottom: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <?php if (!empty($company['logo_url'])): ?>
+        <img src="<?= htmlspecialchars($company['logo_url']) ?>" alt="<?= htmlspecialchars($company['company_name'] ?? 'Empresa') ?>" style="height: 40px; object-fit: contain;">
+    <?php else: ?>
+        <h2 style="margin:0; font-size:1.5rem; color:#1e293b; font-weight:800;"><?= htmlspecialchars($company['company_name'] ?? 'Empresa') ?></h2>
+    <?php endif; ?>
 </div>
 
 <!-- LAYOUT -->

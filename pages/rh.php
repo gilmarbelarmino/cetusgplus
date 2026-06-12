@@ -816,6 +816,9 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
     <button class="rh-tab-btn" id="tab-btn-ponto" onclick="switchRhTab('ponto', this)">
         <i class="fa-solid fa-clock-rotate-left"></i> Ponto Administrativo
     </button>
+    <button class="rh-tab-btn" id="tab-btn-holerites" onclick="switchRhTab('holerites', this)">
+        <i class="fa-solid fa-file-invoice-dollar"></i> Holerites
+    </button>
 </div>
 
 <div id="tab-funcionarios" class="rh-tab-content active">
@@ -1086,8 +1089,8 @@ function openDismissModal(userId, userName) {
 
 
 <!-- ─── MODAL DE CONTRATOS E ADMISSÃO ────────────────────────────────────────────────── -->
-<div id="contractModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
-    <div class="glass-panel" style="max-width: 600px; width: 100%;">
+<div id="contractModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="glass-panel" style="max-width: 600px; width: 100%; max-height: 95vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h3 id="c_modal_title" style="font-size: 1.25rem; font-weight: 900; color: var(--crm-black);">Dados Contratuais</h3>
             <button onclick="document.getElementById('contractModal').style.display='none'" style="background: none; border: none; cursor: pointer; color: var(--text-soft); font-size: 1.5rem;">&times;</button>
@@ -1097,7 +1100,7 @@ function openDismissModal(userId, userName) {
             <input type="hidden" name="action" value="save_contract">
             <input type="hidden" name="user_id" id="c_user_id">
             
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem;">
                 
                 <div class="form-group">
                     <label class="form-label" style="display:flex; justify-content:space-between;">
@@ -1481,6 +1484,15 @@ function openDismissModal(userId, userName) {
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
+
+<!-- ABA: HOLERITES -->
+<div id="tab-holerites" class="rh-tab-content">
+    <div class="glass-panel" style="padding: 3rem; text-align: center; color: #64748b;">
+        <i class="fa-solid fa-file-invoice-dollar" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem; display: block;"></i>
+        <h3 style="font-size: 1.5rem; font-weight: 800; color: #475569; margin-bottom: 0.5rem;">Holerites e Comprovantes</h3>
+        <p>A gestão de Holerites está planejada para a próxima grande atualização do sistema. Em breve você poderá anexar e gerenciar os arquivos por aqui.</p>
     </div>
 </div>
 
