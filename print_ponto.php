@@ -20,6 +20,11 @@ $targetUser = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$targetUser) {
     die("Funcionário não encontrado.");
 }
+
+$stmtComp = $pdo->prepare("SELECT company_name FROM company_settings WHERE company_id = ?");
+$stmtComp->execute([$compId]);
+$comp = $stmtComp->fetch(PDO::FETCH_ASSOC);
+$companyName = $comp ? $comp['company_name'] : 'Empresa';
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -158,6 +163,21 @@ if (!$targetUser) {
             </tbody>
         </table>
         
+        <div style="margin-top: 5rem; display: flex; justify-content: space-around; text-align: center; page-break-inside: avoid;">
+            <div style="width: 40%;">
+                <div style="border-top: 1px solid #1e293b; margin-bottom: 0.5rem; padding-top: 0.5rem;">
+                    <strong style="color: #1e293b;"><?= htmlspecialchars($targetUser['name']) ?></strong><br>
+                    <span style="font-size: 0.8rem; color: #64748b;">Funcionário(a)</span>
+                </div>
+            </div>
+            <div style="width: 40%;">
+                <div style="border-top: 1px solid #1e293b; margin-bottom: 0.5rem; padding-top: 0.5rem;">
+                    <strong style="color: #1e293b;"><?= htmlspecialchars($companyName) ?></strong><br>
+                    <span style="font-size: 0.8rem; color: #64748b;">Responsável pela Empresa</span>
+                </div>
+            </div>
+        </div>
+
         <div style="margin-top:2rem; font-size:0.75rem; color:#94a3b8; text-align:center;">
             Relatório gerado em <?= date('d/m/Y \à\s H:i:s') ?> pelo sistema Cetusg Plus.
         </div>
