@@ -811,7 +811,7 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
         <input type="hidden" name="page" value="rh">
         <div style="flex: 1;">
             <label class="form-label">Buscar Funcionário</label>
-            <input type="text" name="search" class="form-input" placeholder="Buscar por Nome ou Setor..." value="<?= htmlspecialchars($search) ?>">
+            <input type="text" name="search" class="form-input" placeholder="Buscar por Nome ou Setor..." value="<?= htmlspecialchars($search ?? '') ?>">
         </div>
         <div>
             <label class="form-label">Status</label>
@@ -833,7 +833,7 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
     <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
         <div style="height: 2px; flex: 1; background: linear-gradient(90deg, transparent, var(--crm-purple), transparent);"></div>
         <h3 style="font-size: 0.75rem; font-weight: 900; color: var(--crm-purple); text-transform: uppercase; letter-spacing: 0.2em; padding: 0 1rem;">
-            <?= htmlspecialchars($sector) ?>
+            <?= htmlspecialchars($sector ?? '') ?>
         </h3>
         <div style="height: 2px; flex: 1; background: linear-gradient(90deg, transparent, var(--crm-purple), transparent);"></div>
     </div>
@@ -844,7 +844,7 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
             
             <div class="rh-employee-avatar" style="width: 58px; height: 58px; border-radius: 1rem; overflow: hidden; border: 2px solid rgba(91, 33, 182, 0.2); flex-shrink: 0;">
                 <?php if (!empty($usr['avatar_url'])): ?>
-                    <img src="<?= htmlspecialchars($usr['avatar_url']) ?>" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                    <img src="<?= htmlspecialchars($usr['avatar_url'] ?? '') ?>" alt="" style="width: 100%; height: 100%; object-fit: cover;">
                 <?php else: ?>
                     <div style="width: 100%; height: 100%; background: linear-gradient(135deg, rgba(91, 33, 182, 0.15), rgba(251, 191, 36, 0.1)); display: flex; align-items: center; justify-content: center; color: var(--crm-purple); font-weight: 900; font-size: 1.25rem;">
                         <?= strtoupper(substr($usr['name'], 0, 2)) ?>
@@ -855,13 +855,13 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
             <div class="user-grid-info">
                 <div>
                     <h4 style="font-weight: 900; color: var(--crm-black); font-size: 1.125rem;">
-                        <?= htmlspecialchars($usr['name']) ?>
+                        <?= htmlspecialchars($usr['name'] ?? '') ?>
                         <?php if (!empty($usr['end_date']) && $usr['end_date'] <= date('Y-m-d') && $usr['end_date'] !== '0000-00-00'): ?>
                             <span style="font-size: 0.65rem; background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; text-transform: uppercase;">Não Faz Mais Parte da Equipe</span>
                         <?php endif; ?>
                     </h4>
                     <p style="font-size: 0.75rem; color: var(--text-soft); font-weight: 600;">
-                        <i class="fa-regular fa-envelope"></i> <?= htmlspecialchars($usr['email']) ?>
+                        <i class="fa-regular fa-envelope"></i> <?= htmlspecialchars($usr['email'] ?? '') ?>
                     </p>
                 </div>
                 
@@ -869,7 +869,7 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
                 <div>
                     <p style="font-size:0.625rem; font-weight:900; color:#94a3b8; text-transform:uppercase; margin-bottom:0.25rem;">Contrato</p>
                     <p style="font-size:0.875rem; font-weight:700; color: <?= empty($usr['contract_type']) ? '#ef4444' : 'var(--crm-purple)' ?>;">
-                        <?= empty($usr['contract_type']) ? 'Não Configurado' : htmlspecialchars($usr['contract_type']) ?>
+                        <?= empty($usr['contract_type']) ? 'Não Configurado' : htmlspecialchars($usr['contract_type'] ?? '') ?>
                     </p>
                     <?php if(!empty($usr['start_date'])): ?>
                         <p style="font-size:0.7rem; color:#64748b;">Desde <?= date('d/m/Y', strtotime($usr['start_date'])) ?></p>
@@ -879,8 +879,8 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
                 <div>
                     <p style="font-size:0.625rem; font-weight:900; color:#94a3b8; text-transform:uppercase; margin-bottom:0.25rem;">Horários</p>
                     <p style="font-size:0.85rem; font-weight:700; color:#334155;">
-                        <?= empty($usr['work_days']) ? 'Sem escala' : htmlspecialchars($usr['work_days']) ?><br>
-                        <?= empty($usr['work_hours']) ? '' : htmlspecialchars($usr['work_hours']) ?>
+                        <?= empty($usr['work_days']) ? 'Sem escala' : htmlspecialchars($usr['work_days'] ?? '') ?><br>
+                        <?= empty($usr['work_hours']) ? '' : htmlspecialchars($usr['work_hours'] ?? '') ?>
                     </p>
                 </div>
                 
@@ -1017,11 +1017,11 @@ function openDismissModal(userId, userName) {
                         <div style="font-size: 0.75rem; color: var(--text-soft); margin-bottom: 0.5rem; font-weight: 700; display: flex; justify-content: space-between;">
                             <span>
                                 <i class="fa-solid fa-clock"></i> <?= date('d/m/Y H:i', strtotime($ann['created_at'])) ?> 
-                                &bull; <i class="fa-solid fa-user"></i> <?= htmlspecialchars($ann['created_by']) ?>
+                                &bull; <i class="fa-solid fa-user"></i> <?= htmlspecialchars($ann['created_by'] ?? '') ?>
                             </span>
                             <span style="color: var(--crm-purple);"><i class="fa-solid fa-eye"></i> <?= $ann['views'] ?> visualizações</span>
                         </div>
-                        <div style="color: var(--text-main); line-height: 1.6; white-space: pre-wrap; font-size: 0.95rem;"><?= htmlspecialchars($ann['message']) ?></div>
+                        <div style="color: var(--text-main); line-height: 1.6; white-space: pre-wrap; font-size: 0.95rem;"><?= htmlspecialchars($ann['message'] ?? '') ?></div>
                     </div>
                 </div>
                 <div style="position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem;">
@@ -1108,7 +1108,7 @@ function openDismissModal(userId, userName) {
                     <select name="role_name" id="c_role_name" class="form-select">
                         <option value="">-- Selecione --</option>
                         <?php foreach ($all_positions as $pos): ?>
-                            <option value="<?= htmlspecialchars($pos['name']) ?>"><?= htmlspecialchars($pos['name']) ?></option>
+                            <option value="<?= htmlspecialchars($pos['name'] ?? '') ?>"><?= htmlspecialchars($pos['name'] ?? '') ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -1370,7 +1370,7 @@ function openDismissModal(userId, userName) {
             <select id="ponto_user_select" class="form-select">
                 <option value="">-- Selecione um funcionário --</option>
                 <?php foreach ($users_data as $u): ?>
-                    <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['name']) ?> (<?= htmlspecialchars($u['email']) ?>)</option>
+                    <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['name'] ?? '') ?> (<?= htmlspecialchars($u['email'] ?? '') ?>)</option>
                 <?php endforeach; ?>
             </select>
         </div>
