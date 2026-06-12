@@ -82,7 +82,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$user['id'], $compId, $record_id, 'Fora do Raio', "Registro efetuado a " . round($distance, 2) . " metros da empresa."]);
         }
 
-        echo json_encode(['success' => true, 'record_id' => $record_id, 'status' => $status]);
+        $overtime_alert = null;
+        try {
+            $stmt_rh = $pdo->prepare("SELECT daily_work_hours, allow_overtime, overtime_message FROM rh_employee_details WHERE user_id = ? AND company_id = ?");
+            $stmt_rh->execute([$user['id'], $compId]);
+            $rhData = $stmt_rh->fetch();
+            
+            if ($rhData && $rhData['allow_overtime'] === 'Não' && !empty($rhData['overtime_message'])) {
+                $stmt_rec = $pdo->prepare("SELECT record_time FROM time_records WHERE user_id = ? AND company_id = ? AND DATE(record_time) = CURDATE() ORDER BY record_time ASC");
+                $stmt_rec->execute([$user['id'], $compId]);
+                $punches = $stmt_rec->fetchAll(PDO::FETCH_COLUMN);
+                
+                $worked_seconds = 0;
+                for ($i = 0; $i < count($punches); $i += 2) {
+                    if (isset($punches[$i + 1])) {
+                        $worked_seconds += strtotime($punches[$i + 1]) - strtotime($punches[$i]);
+                    } else {
+                        // Current ongoing punch
+                        $worked_seconds += time() - strtotime($punches[$i]);
+                    }
+                }
+                
+                $daily_target_parts = explode(':', $rhData['daily_work_hours'] ?? '08:00:00');
+                $daily_target_seconds = 0;
+                if(count($daily_target_parts) >= 2) {
+                    $daily_target_seconds = ($daily_target_parts[0] * 3600) + ($daily_target_parts[1] * 60);
+                }
+                
+                if ($daily_target_seconds > 0 && $worked_seconds > $daily_target_seconds) {
+                    $overtime_alert = $rhData['overtime_message'];
+                }
+            }
+        } catch(Exception $e) {}
+
+        echo json_encode(['success' => true, 'record_id' => $record_id, 'status' => $status, 'overtime_alert' => $overtime_alert]);
         exit;
     }
 }

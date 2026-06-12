@@ -78,9 +78,10 @@ $companySettings = $stmt_c->fetch(PDO::FETCH_ASSOC);
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-.ponto-wrap { max-width: 500px; margin: 0 auto; padding-bottom: 40px; font-family: 'Inter', sans-serif; }
+.ponto-wrap { max-width: 800px; margin: 0 auto; padding-bottom: 40px; font-family: 'Inter', sans-serif; }
 
 /* Loading */
 .ld-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.6); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
@@ -91,6 +92,9 @@ $companySettings = $stmt_c->fetch(PDO::FETCH_ASSOC);
 
 /* Map */
 #pontoMap { width: 100%; height: 260px; background: #e2e8f0; border: none; }
+@media (min-width: 768px) {
+    #pontoMap { height: 450px; border-radius: 8px 8px 0 0; }
+}
 
 /* Info Card */
 .info-card { background: #fff; text-align: center; padding: 20px 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
@@ -131,11 +135,9 @@ $companySettings = $stmt_c->fetch(PDO::FETCH_ASSOC);
     </div>
 </div>
 
-<!-- TOP BAR (Simulada para parecer com o app) -->
-<div style="background: #4cd5ed; color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; font-size: 1.2rem; font-weight: 600; margin-bottom: 0;">
-    <i class="fa-solid fa-bars"></i>
-    <span>Incluir Ponto</span>
-    <i class="fa-regular fa-bell"></i>
+<!-- TOP BAR -->
+<div style="background: #ffffff; text-align: center; padding: 16px 20px; margin-bottom: 0;">
+    <img src="<?= URL_BASE ?>/public/logo.png" alt="Cetusg" style="height: 40px; object-fit: contain;">
 </div>
 
 <!-- LAYOUT -->
@@ -151,7 +153,7 @@ $companySettings = $stmt_c->fetch(PDO::FETCH_ASSOC);
         <div class="info-dist" id="gpsDistBadge">Calculando distância...</div>
         <div class="info-addr" id="gpsAddr">Aguardando GPS do dispositivo...</div>
         
-        <textarea id="justification" class="just-input" rows="2" placeholder="Justificativa"></textarea>
+        <textarea id="justification" class="just-input" rows="2" placeholder="Escreva o periodo"></textarea>
         
         <button class="btn-incluir" onclick="execPunch('Auto')">Incluir Ponto</button>
     </div>
@@ -227,9 +229,26 @@ async function execPunch(type) {
         const d = await r.json(); 
         hideLd();
         if(d.success) {
-            if(d.status === 'Ocorrencia') alert('⚠ Ponto registrado com OCORRÊNCIA (fora do raio permitido). O RH foi notificado.');
-            else showToast(type);
-            setTimeout(() => window.location.reload(), 1500);
+            const proceedWithPonto = () => {
+                if(d.status === 'Ocorrencia') alert('⚠ Ponto registrado com OCORRÊNCIA (fora do raio permitido). O RH foi notificado.');
+                else showToast(type);
+                setTimeout(() => window.location.reload(), 1500);
+            };
+
+            if(d.overtime_alert) {
+                Swal.fire({
+                    title: 'Aviso do RH',
+                    text: d.overtime_alert,
+                    icon: 'info',
+                    confirmButtonText: 'Ciente',
+                    confirmButtonColor: '#4cd5ed',
+                    allowOutsideClick: false
+                }).then(() => {
+                    proceedWithPonto();
+                });
+            } else {
+                proceedWithPonto();
+            }
         } else {
             alert('Erro: ' + (d.error || 'Falha ao registrar, tente novamente'));
         }

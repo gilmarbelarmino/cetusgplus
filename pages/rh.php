@@ -23,6 +23,10 @@ try {
     try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN birth_date DATE NULL"); } catch(Exception $e){}
     try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN dismissal_reason TEXT"); } catch(Exception $e){}
     try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN benefits TEXT"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN lunch_start TIME NULL"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN lunch_end TIME NULL"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN allow_overtime VARCHAR(10) DEFAULT 'Sim'"); } catch(Exception $e){}
+    try { $pdo->exec("ALTER TABLE rh_employee_details ADD COLUMN overtime_message TEXT"); } catch(Exception $e){}
 
     try { $pdo->exec("ALTER TABLE rh_candidates ADD COLUMN birth_date DATE NULL"); } catch(Exception $e){}
     try { $pdo->exec("ALTER TABLE rh_candidates ADD COLUMN gender VARCHAR(20) DEFAULT ''"); } catch(Exception $e){}
@@ -116,11 +120,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $compId = getCurrentUserCompanyId();
         $stmt = $pdo->prepare("
             INSERT INTO rh_employee_details 
-            (user_id, company_id, contract_type, role_name, work_days, work_hours, daily_work_hours, salary, use_transport, transport_value, gender, birth_date, start_date, end_date, dismissal_reason) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (user_id, company_id, contract_type, role_name, work_days, work_hours, daily_work_hours, lunch_start, lunch_end, allow_overtime, overtime_message, salary, use_transport, transport_value, gender, birth_date, start_date, end_date, dismissal_reason) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
             contract_type = VALUES(contract_type), role_name = VALUES(role_name), work_days = VALUES(work_days),
-            work_hours = VALUES(work_hours), daily_work_hours = VALUES(daily_work_hours), salary = VALUES(salary),
+            work_hours = VALUES(work_hours), daily_work_hours = VALUES(daily_work_hours), 
+            lunch_start = VALUES(lunch_start), lunch_end = VALUES(lunch_end), allow_overtime = VALUES(allow_overtime), overtime_message = VALUES(overtime_message),
+            salary = VALUES(salary),
             use_transport = VALUES(use_transport), transport_value = VALUES(transport_value), gender = VALUES(gender),
             birth_date = VALUES(birth_date), start_date = VALUES(start_date), end_date = VALUES(end_date),
             dismissal_reason = VALUES(dismissal_reason)
@@ -132,6 +138,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['work_days'], 
             $_POST['work_hours'], 
             $_POST['daily_work_hours'] ?? '08:00:00',
+            !empty($_POST['lunch_start']) ? $_POST['lunch_start'] : null,
+            !empty($_POST['lunch_end']) ? $_POST['lunch_end'] : null,
+            $_POST['allow_overtime'] ?? 'Sim',
+            $_POST['overtime_message'] ?? '',
             !empty($_POST['salary']) ? $_POST['salary'] : 0, 
             $_POST['use_transport'] ?? 'Não', 
             !empty($_POST['transport_value']) ? $_POST['transport_value'] : 0, 
@@ -352,7 +362,7 @@ $query = "
     SELECT 
         u.id, u.name, u.email, u.sector, u.unit_id, u.avatar_url, u.status, u.role, u.phone,
         un.name as unit_name,
-        rh.contract_type, rh.role_name, rh.work_days, rh.work_hours, rh.salary, rh.use_transport, rh.transport_value, rh.gender, rh.birth_date, rh.start_date, rh.end_date, rh.dismissal_reason, rh.benefits 
+        rh.contract_type, rh.role_name, rh.work_days, rh.work_hours, rh.daily_work_hours, rh.salary, rh.use_transport, rh.transport_value, rh.gender, rh.birth_date, rh.start_date, rh.end_date, rh.dismissal_reason, rh.benefits, rh.lunch_start, rh.lunch_end, rh.allow_overtime, rh.overtime_message
     FROM users u
     LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
     LEFT JOIN rh_employee_details rh ON CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(rh.user_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
@@ -434,6 +444,10 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
         document.getElementById('c_daily_work_hours').value = user.daily_work_hours || '08:00:00';
         document.getElementById('c_start_date').value = user.start_date || '';
         document.getElementById('c_end_date').value = user.end_date || '';
+        document.getElementById('c_lunch_start').value = user.lunch_start || '';
+        document.getElementById('c_lunch_end').value = user.lunch_end || '';
+        document.getElementById('c_allow_overtime').value = user.allow_overtime || 'Sim';
+        document.getElementById('c_overtime_message').value = user.overtime_message || '';
         if(document.getElementById('c_dismissal_reason')) {
             document.getElementById('c_dismissal_reason').value = user.dismissal_reason || '';
         }
@@ -1193,6 +1207,29 @@ function openDismissModal(userId, userName) {
                 <div class="form-group">
                     <label class="form-label">Data de Término <span style="font-weight:400;text-transform:none;font-size:.7rem;">(opcional/demissão)</span></label>
                     <input type="date" name="end_date" id="c_end_date" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Início Almoço <span style="font-weight:400;font-size:.7rem;">(Opcional)</span></label>
+                    <input type="time" name="lunch_start" id="c_lunch_start" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Retorno Almoço <span style="font-weight:400;font-size:.7rem;">(Opcional)</span></label>
+                    <input type="time" name="lunch_end" id="c_lunch_end" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Permite Hora Extra?</label>
+                    <select name="allow_overtime" id="c_allow_overtime" class="form-select">
+                        <option value="Sim">Sim</option>
+                        <option value="Não">Não</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Alerta Hora Extra (Pop-up)</label>
+                    <input type="text" name="overtime_message" id="c_overtime_message" class="form-input" placeholder="Ex: Cuidado, não é permitido HE.">
                 </div>
                 
                 <div class="form-group" style="grid-column: span 2;">
