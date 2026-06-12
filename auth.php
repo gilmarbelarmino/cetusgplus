@@ -44,13 +44,15 @@ function getCurrentUser() {
             $stmt_rh = $pdo->prepare("SELECT end_date FROM rh_employee_details WHERE user_id = ?");
             $stmt_rh->execute([$user['id']]);
             $end = $stmt_rh->fetchColumn();
-            if ($end && $end !== '0000-00-00') {
-                $dtEnd = new DateTime($end);
-                if ($hoje >= $dtEnd) {
-                    $pdo->prepare("UPDATE users SET status = 'Inativo' WHERE id = ?")->execute([$user['id']]);
-                    session_destroy();
-                    return null;
-                }
+            if ($end && $end !== '0000-00-00' && $end !== '1970-01-01' && strpos($end, '0000') === false) {
+                try {
+                    $dtEnd = new DateTime($end);
+                    if ($dtEnd->format('Y') > 2000 && $hoje >= $dtEnd) {
+                        $pdo->prepare("UPDATE users SET status = 'Inativo' WHERE id = ?")->execute([$user['id']]);
+                        session_destroy();
+                        return null;
+                    }
+                } catch (Exception $ex) {}
             }
         } catch(Exception $e) {}
     }
@@ -91,11 +93,18 @@ function login($loginName, $password) {
         $stmt_rh = $pdo->prepare("SELECT end_date FROM rh_employee_details WHERE user_id = ?");
         $stmt_rh->execute([$user['id']]);
         $end = $stmt_rh->fetchColumn();
-        if ($end && $end !== '0000-00-00') {
-            $dtEnd = new DateTime($end);
-            if ($hoje >= $dtEnd) {
-                $pdo->prepare("UPDATE users SET status = 'Inativo' WHERE id = ?")->execute([$user['id']]);
-                throw new Exception("Acesso Negado: Vínculo empregatício finalizado. (Data de término alcançada).");
+        if ($end && $end !== '0000-00-00' && $end !== '1970-01-01' && strpos($end, '0000') === false) {
+            try {
+                $dtEnd = new DateTime($end);
+                // Evita inativar caso a data seja muito antiga (indicando erro de preenchimento)
+                if ($dtEnd->format('Y') > 2000 && $hoje >= $dtEnd) {
+                    $pdo->prepare("UPDATE users SET status = 'Inativo' WHERE id = ?")->execute([$user['id']]);
+                    throw new Exception("Acesso Negado: Vínculo empregatício finalizado. (Data de término alcançada).");
+                }
+            } catch (Exception $ex) {
+                if (strpos($ex->getMessage(), 'Vínculo') !== false) {
+                    throw $ex;
+                }
             }
         }
 
