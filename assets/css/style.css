@@ -2084,3 +2084,14 @@ tr:hover td {
     right: 25px !important;
     z-index: 10000 !important;
 }
+
+@media (max-width: 768px) {
+    .chat-panel {
+        top: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        border-radius: 0 !important;
+    }
+}
