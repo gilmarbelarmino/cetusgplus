@@ -2092,6 +2092,7 @@ tr:hover td {
         bottom: 0 !important;
         left: 0 !important;
         width: 100% !important;
+        max-width: 100% !important;
         height: 100% !important;
         height: 100dvh !important;
         border-radius: 0 !important;
