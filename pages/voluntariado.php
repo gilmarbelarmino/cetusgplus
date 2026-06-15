@@ -274,7 +274,7 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
         <?php foreach ($volunteers as $v): ?>
             <tr>
                 <td style="text-align: center;">
-                    <?php if (!empty($v['avatar_url'])): ?>
+                    <?php if (!empty($v['avatar_url']) && file_exists(__DIR__ . '/../' . $v['avatar_url'])): ?>
                         <img src="<?= htmlspecialchars($v['avatar_url']) ?>" alt="Foto" style="width:48px;height:48px;border-radius:12px;object-fit:cover;border:2px solid var(--brand-soft); box-shadow: var(--shadow-sm);">
                     <?php else: ?>
                         <div style="width:48px;height:48px;border-radius:12px;background:var(--brand-soft);display:flex;align-items:center;justify-content:center;color:var(--brand-primary);font-size:1.2rem;font-weight:800;">
@@ -397,7 +397,7 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
                 <div style="width:24px; height:24px; background:var(--crm-purple); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; position:absolute; top:-8px; left:-8px; font-size:0.75rem; font-weight:900; z-index:2; border:2px solid white;">
                     <?=$rank?>º
                 </div>
-                <?php if (!empty($v['avatar_url'])): ?>
+                <?php if (!empty($v['avatar_url']) && file_exists(__DIR__ . '/../' . $v['avatar_url'])): ?>
                     <img src="<?= htmlspecialchars($v['avatar_url']) ?>" style="width:70px;height:70px;border-radius:1.25rem;object-fit:cover; border:3px solid #fff; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
                 <?php else: ?>
                     <div style="width:70px;height:70px;border-radius:1.25rem;background:var(--brand-soft);display:flex;align-items:center;justify-content:center;color:var(--brand-primary);font-size:1.8rem;font-weight:900;">
@@ -448,7 +448,7 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
                 <!-- Foto do Voluntário -->
                 <div class="form-group" style="grid-column: span 2; display:flex; align-items:center; gap:1.5rem; background:var(--crm-gray-light); padding:1.25rem; border-radius:1rem; border:1px solid #e2e8f0;">
                     <div style="width:70px; height:70px; border-radius:50%; overflow:hidden; border:3px solid #fff; box-shadow:0 8px 20px rgba(0,0,0,0.1); background:var(--crm-purple); display:flex; align-items:center; justify-content:center;">
-                        <?php if (!empty($editVol['avatar_url'])): ?>
+                        <?php if (!empty($editVol['avatar_url']) && file_exists(__DIR__ . '/../' . $editVol['avatar_url'])): ?>
                             <img src="<?= htmlspecialchars($editVol['avatar_url']) ?>" style="width:100%; height:100%; object-fit:cover;">
                         <?php else: ?>
                             <i class="fa-solid fa-user" style="font-size:1.8rem; color:white;"></i>
