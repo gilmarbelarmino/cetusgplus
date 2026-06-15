@@ -770,6 +770,20 @@ try {
                 itemsContainer.classList.toggle('open');
             }
         }
+
+        // Global Table Responsiveness Wrapper
+        document.addEventListener('DOMContentLoaded', function() {
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                // Ignore if already wrapped
+                if (!table.parentElement.classList.contains('table-responsive')) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'table-responsive';
+                    table.parentNode.insertBefore(wrapper, table);
+                    wrapper.appendChild(table);
+                }
+            });
+        });
     </script>
 </body>
 </html>
