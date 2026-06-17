@@ -71,10 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transform: translate(-50%, -50%);
             width: 90vw;
             max-width: 1000px;
-            opacity: 0.03;
+            opacity: 0.1;
             z-index: 0;
             pointer-events: none;
-            filter: brightness(0) invert(1);
         }
 
         /* The Main Card */
@@ -135,9 +134,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /* Typography & Forms */
         .login-logo {
-            max-height: 40px;
+            max-height: 80px;
             margin-bottom: 2rem;
-            filter: brightness(0) invert(1); /* Makes logo white if it's dark */
         }
         .login-title {
             font-size: 3rem;
@@ -246,8 +244,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Left Content: Login Form -->
         <div class="content-left">
             <?php if (!empty($company['logo_url'])): ?>
-                <!-- A img filter ensures dark logos become white on this dark theme -->
-                <img src="<?= htmlspecialchars($company['logo_url']) ?>" alt="Logo" class="login-logo" style="filter: brightness(0) invert(1);">
+                <img src="<?= htmlspecialchars($company['logo_url']) ?>" alt="Logo" class="login-logo">
             <?php endif; ?>
             
             <h1 class="login-title">Acesso Seguro</h1>
