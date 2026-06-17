@@ -69,9 +69,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 90vw;
-            max-width: 1000px;
-            opacity: 0.1;
+            width: auto;
+            height: auto;
+            max-width: 600px;
+            max-height: 50vh;
+            object-fit: contain;
+            opacity: 0.04;
             z-index: 0;
             pointer-events: none;
         }
@@ -132,9 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: none;
         }
 
-        /* Typography & Forms */
         .login-logo {
-            max-height: 80px;
+            max-height: 55px;
+            width: auto;
+            object-fit: contain;
             margin-bottom: 2rem;
         }
         .login-title {
