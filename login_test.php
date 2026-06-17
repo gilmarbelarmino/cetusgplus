@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once 'config.php';
 require_once 'auth.php';
 
@@ -62,6 +62,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             pointer-events: none;
             z-index: 0;
             transform: rotate(-15deg);
+        }
+
+        /* Background Watermark */
+        .bg-watermark {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90vw;
+            max-width: 1000px;
+            opacity: 0.03;
+            z-index: 0;
+            pointer-events: none;
+            filter: brightness(0) invert(1);
         }
 
         /* The Main Card */
@@ -220,6 +233,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Background global spotlight -->
     <div class="bg-spotlight"></div>
+
+    <?php if (!empty($company['logo_url'])): ?>
+        <img src="<?= htmlspecialchars($company['logo_url']) ?>" alt="Watermark" class="bg-watermark">
+    <?php endif; ?>
 
     <!-- Main Aceternity/Shadcn inspired Card -->
     <div class="card-container" id="interactive-card">
