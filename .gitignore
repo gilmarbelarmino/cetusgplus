@@ -1,6 +1,6 @@
 # Pastas de dependências
 node_modules/
-vendor/
+# vendor/ (comentado para versionar dependências críticas como o PhpSpreadsheet)
 
 # Arquivos de Sistema e Configuração Local
 .env
