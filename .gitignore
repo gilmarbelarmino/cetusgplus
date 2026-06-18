@@ -8,9 +8,9 @@ config.local.php
 .DS_Store
 Thumbs.db
 
-# Pastas de Upload (opcional, se quiser manter os anexos apenas no servidor)
-# uploads/chat_files/*
-# uploads/avatars/*
+# Pastas de Upload (Ignorar para não apagar arquivos do servidor ao atualizar o sistema)
+uploads/
+uploads/*
 
 # Logs e Cache
 *.log
