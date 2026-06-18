@@ -841,7 +841,7 @@ $all_announcements = $stmt_ann->fetchAll(PDO::FETCH_ASSOC);
             <i class="fa-solid fa-magnifying-glass"></i>
             Filtrar
         </button>
-        <button type="button" class="btn-primary" style="background: #10b981; margin-left: 10px;" onclick="window.location.href='export_rh_excel.php?search=' + encodeURIComponent(document.querySelector('input[name=\\'search\\']').value) + '&status_filter=' + encodeURIComponent(document.querySelector('select[name=\\'status_filter\\']').value)">
+        <button type="button" class="btn-primary" style="background: #10b981; margin-left: 10px;" onclick="window.location.href='export_rh_excel.php?search=' + encodeURIComponent(document.querySelector('input[name=search]').value) + '&status_filter=' + encodeURIComponent(document.querySelector('select[name=status_filter]').value)">
             <i class="fa-solid fa-file-excel"></i>
             Download
         </button>
