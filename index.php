@@ -717,8 +717,36 @@ try {
             const container = document.getElementById('bdContentContainer');
             if (!container) return;
             const isMyBirthday = birthdayPeople.some(p => String(p.id) === String(currentUserId));
-            let message = isMyBirthday ? '<h2>Feliz Aniversário! 🥳</h2>' : '<h2>Hoje temos aniversariantes! 🎉</h2>';
-            container.innerHTML = `<div style="padding: 1rem;">${message}<button onclick="closeBirthdayModal()" class="btn-primary">FECHAR</button></div>`;
+            
+            let message = isMyBirthday ? '<h2>Feliz Aniversário! 🥳</h2><p style="margin-bottom: 20px; color: #64748b;">Hoje é o seu dia especial!</p>' : '<h2>Hoje temos aniversariantes! 🎉</h2><p style="margin-bottom: 20px; color: #64748b;">Deixe uma mensagem para desejar um feliz aniversário!</p>';
+            
+            let avatarsHtml = '<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-bottom: 25px;">';
+            
+            birthdayPeople.forEach(p => {
+                let initial = p.name ? p.name.substring(0, 1).toUpperCase() : 'U';
+                let avatarContent = '';
+                
+                if (p.avatar_url) {
+                    avatarContent = `<img src="${p.avatar_url}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--brand-soft); box-shadow: 0 4px 10px rgba(0,0,0,0.1);" onerror="this.outerHTML='<div style=\\'width: 80px; height: 80px; border-radius: 50%; background: var(--brand-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; border: 3px solid var(--brand-soft); box-shadow: 0 4px 10px rgba(0,0,0,0.1);\\'>${initial}</div>'">`;
+                } else {
+                    avatarContent = `<div style="width: 80px; height: 80px; border-radius: 50%; background: var(--brand-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; border: 3px solid var(--brand-soft); box-shadow: 0 4px 10px rgba(0,0,0,0.1);">${initial}</div>`;
+                }
+                
+                avatarsHtml += `
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        ${avatarContent}
+                        <span style="margin-top: 8px; font-weight: 600; font-size: 0.95rem; color: #1e293b;">${p.name}</span>
+                    </div>
+                `;
+            });
+            
+            avatarsHtml += '</div>';
+
+            container.innerHTML = `<div style="padding: 2rem 1rem; text-align: center;">
+                ${message}
+                ${avatarsHtml}
+                <button onclick="closeBirthdayModal()" class="btn-primary" style="padding: 10px 30px; font-weight: bold; border-radius: 9999px;">FECHAR</button>
+            </div>`;
         };
 
         window.closeBirthdayModal = () => {
