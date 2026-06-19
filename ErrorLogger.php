@@ -20,8 +20,10 @@ class ErrorLogger {
         
         file_put_contents(self::$logFile, $logMessage, FILE_APPEND);
         
-        // Envia para o Telegram em Background usando cURL non-blocking (se possível) ou simples
-        self::sendToTelegram($logMessage);
+        // Envia para o Telegram apenas erros graves para evitar spam (ignora warnings e notices)
+        if (in_array($level, ['ERROR', 'CRITICAL', 'FATAL'])) {
+            self::sendToTelegram($logMessage);
+        }
     }
 
     private static function sendToTelegram($message) {
