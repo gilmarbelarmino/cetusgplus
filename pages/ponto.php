@@ -229,6 +229,7 @@ async function execPunch(type) {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 action: 'register_punch',
+                csrf_token: window.CSRF_TOKEN,
                 type: type,
                 latitude: curLat,
                 longitude: curLng,

@@ -67,6 +67,13 @@ try {
     if ($method === 'POST') {
         $data = $json_data ?? $_POST;
 
+        // Validar CSRF
+        $clientToken = $data['csrf_token'] ?? $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        if (empty($clientToken) || $clientToken !== $_SESSION['csrf_token']) {
+            echo json_encode(['success' => false, 'error' => 'Falha de segurança (CSRF Token inválido ou expirado). Recarregue a página.']);
+            exit;
+        }
+
         if ($action === 'add_volunteer') {
             $vid = 'V' . time();
             $total_hours = 0;

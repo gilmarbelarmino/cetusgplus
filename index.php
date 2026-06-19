@@ -170,6 +170,9 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no">
     <title>Cetusg - <?= ucfirst($page) ?></title>
+    <script>
+        window.CSRF_TOKEN = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;
+    </script>
     <link rel="stylesheet" href="assets/css/style.css?v=<?= time() + 1 ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <?php if (!empty($company['logo_url'])): ?>

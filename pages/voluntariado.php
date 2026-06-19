@@ -331,6 +331,7 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
                         <?php if ($v['status'] == 'Ativo'): ?>
                         <!-- 🟠 Inativar — só ativo -->
                         <form method="POST" style="display:inline;" onsubmit="return confirm('Inativar voluntário \'<?= htmlspecialchars(addslashes($v['name'])) ?>\'?\nSeu certificado será gerado e o histórico registrado.')">
+                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                             <input type="hidden" name="action" value="inativar">
                             <input type="hidden" name="volunteer_id" value="<?= $v['id'] ?>">
                             <button type="submit" class="vol-btn vol-btn-inativ" title="Inativar e gerar certificado">
@@ -340,6 +341,7 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
                         <?php else: ?>
                         <!-- 🔁 Reativar — só inativo -->
                         <form method="POST" style="display:inline;" onsubmit="return confirm('Reativar \'<?= htmlspecialchars(addslashes($v['name'])) ?>\'?\nAs horas serão zeradas, mas o histórico anterior será preservado.')">
+                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                             <input type="hidden" name="action" value="reativar">
                             <input type="hidden" name="volunteer_id" value="<?= $v['id'] ?>">
                             <button type="submit" class="vol-btn vol-btn-react" title="Reativar voluntário">
@@ -350,6 +352,7 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
                         <?php if ($user['role'] === 'Administrador'): ?>
                         <form method="POST" style="display:inline;"
                             onsubmit="return confirm('⚠️ ATENÇÃO!\nExcluir PERMANENTEMENTE \'<?= htmlspecialchars(addslashes($v['name'])) ?>\'?\nTODO o histórico será apagado e não poderá ser recuperado.') && confirm('Confirmar exclusão permanente?')">
+                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                             <input type="hidden" name="action" value="excluir">
                             <input type="hidden" name="volunteer_id" value="<?= $v['id'] ?>">
                             <button type="submit" class="vol-btn vol-btn-del" title="Excluir permanentemente">
@@ -438,6 +441,7 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
             <a href="?page=voluntariado" style="background:none;border:none;cursor:pointer;font-size:1.5rem;text-decoration:none;color:#64748b;">&times;</a>
         </div>
         <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
             <input type="hidden" name="action" value="editar_volunteer">
             <input type="hidden" name="volunteer_id" value="<?= $editVol['id'] ?>">
             <input type="hidden" name="current_avatar" value="<?= $editVol['avatar_url'] ?>">
@@ -544,6 +548,7 @@ function calcEditTotal() {
             <button onclick="document.getElementById('volunteerModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:1.5rem;">&times;</button>
         </div>
         <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
             <input type="hidden" name="action" value="add_volunteer">
             <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;">
                 <!-- Foto do Voluntário -->

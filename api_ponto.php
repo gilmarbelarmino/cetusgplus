@@ -23,6 +23,13 @@ function getDistanceMeters($lat1, $lon1, $lat2, $lon2) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
+    
+    // Validar CSRF
+    $clientToken = $data['csrf_token'] ?? $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (empty($clientToken) || $clientToken !== $_SESSION['csrf_token']) {
+        echo json_encode(['success' => false, 'error' => 'Acesso negado: Falha de segurança (CSRF Token inválido ou expirado). Recarregue a página.']);
+        exit;
+    }
     if (!$data) $data = $_POST;
     
     $action = $data['action'] ?? '';
