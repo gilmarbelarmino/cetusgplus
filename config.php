@@ -8,6 +8,25 @@ if (session_status() === PHP_SESSION_NONE) {
 $httpHost = $_SERVER['HTTP_HOST'] ?? '';
 $isLocal = (strpos($httpHost, 'localhost') !== false || strpos($httpHost, '127.0.0.1') !== false || strpos($httpHost, '192.168.') !== false || PHP_SAPI === 'cli');
 
+// Gatilho remoto para Otimização de Banco de Dados (evita 404 se o deploy do script falhar)
+if (isset($_GET['run_index']) && $_GET['run_index'] === 'secret') {
+    $tables = ['users', 'volunteers', 'volunteer_history', 'time_records', 'time_incidents', 'company_settings', 'units', 'sectors'];
+    echo "<h3>Otimizando Banco de Dados...</h3><ul>";
+    foreach ($tables as $table) {
+        try {
+            $stmt = $pdo->query("SHOW INDEX FROM `$table` WHERE Key_name = 'idx_company_id'");
+            if ($stmt->rowCount() == 0) {
+                $pdo->exec("ALTER TABLE `$table` ADD INDEX `idx_company_id` (`company_id`)");
+                echo "<li>OK: Índice adicionado em $table</li>";
+            } else {
+                echo "<li>INFO: Índice já existia em $table</li>";
+            }
+        } catch (Exception $e) { echo "<li>ERRO em $table: " . $e->getMessage() . "</li>"; }
+    }
+    echo "</ul><p>Otimização concluída! Você já pode voltar a usar o sistema normalmente.</p>";
+    exit;
+}
+
 if ($isLocal) {
     define('DB_HOST', 'localhost');
     define('DB_NAME', 'cetusg_plus');
