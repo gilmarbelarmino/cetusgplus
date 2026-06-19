@@ -184,7 +184,14 @@ $companySettings = $stmt_c->fetch(PDO::FETCH_ASSOC);
                 <div class="rec-left">
                     <i class="fa-regular fa-file-lines rec-icon"></i>
                     <i class="fa-solid fa-location-dot rec-icon"></i>
-                    <span><?= $time ?></span>
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <span><?= $time ?></span>
+                        <?php if (!empty($rec['address']) && $rec['address'] !== '-'): ?>
+                            <small style="font-size:0.65rem; color:#94a3b8; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<?= htmlspecialchars($rec['address']) ?>">
+                                <?= htmlspecialchars($rec['address']) ?>
+                            </small>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <div class="rec-right">
                     <span><?= $statusText ?></span>

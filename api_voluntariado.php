@@ -14,6 +14,12 @@ require_once 'config.php';
 try {
     $compId = getCurrentUserCompanyId();
 
+    // Garantir que a coluna suporte Base64 (migração automática silenciosa)
+    try {
+        $pdo->exec("ALTER TABLE volunteers MODIFY avatar_url LONGTEXT");
+    } catch(Exception $e) {}
+
+
     // ─── GET: Listar ou Histórico ──────────────────────────────────────────
     if ($method === 'GET') {
         if ($action === 'list' || empty($action)) {
@@ -68,12 +74,11 @@ try {
             foreach ($months as $m) { $total_hours += floatval($data["hours_$m"] ?? 0); }
 
             $avatar_url = null;
-            if (isset($_FILES['avatar'])) {
+            if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
                 $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
-                $filename = 'avatar_vol_' . $vid . '.' . $ext;
-                if (move_uploaded_file($_FILES['avatar']['tmp_name'], __DIR__ . '/uploads/' . $filename)) {
-                    $avatar_url = 'uploads/' . $filename;
-                }
+                $mime = mime_content_type($_FILES['avatar']['tmp_name']);
+                $dataImg = file_get_contents($_FILES['avatar']['tmp_name']);
+                $avatar_url = 'data:' . $mime . ';base64,' . base64_encode($dataImg);
             }
 
             $stmt = $pdo->prepare("INSERT INTO volunteers (id, name, cpf, avatar_url, gender, email, phone, unit_id, sector_id, volunteering_sector, location, profession, hourly_rate, start_date, work_area, 
@@ -101,12 +106,11 @@ try {
             foreach ($months as $m) { $total_hours += floatval($data["hours_$m"] ?? 0); }
 
             $avatar_url = $data['current_avatar'] ?? null;
-            if (isset($_FILES['avatar'])) {
+            if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
                 $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
-                $filename = 'avatar_vol_' . $vid . '.' . $ext;
-                if (move_uploaded_file($_FILES['avatar']['tmp_name'], __DIR__ . '/uploads/' . $filename)) {
-                    $avatar_url = 'uploads/' . $filename;
-                }
+                $mime = mime_content_type($_FILES['avatar']['tmp_name']);
+                $dataImg = file_get_contents($_FILES['avatar']['tmp_name']);
+                $avatar_url = 'data:' . $mime . ';base64,' . base64_encode($dataImg);
             }
 
             $stmt = $pdo->prepare("UPDATE volunteers SET name=?, cpf=?, avatar_url=?, gender=?, email=?, phone=?, volunteering_sector=?, work_area=?, location=?, profession=?, hourly_rate=?,
