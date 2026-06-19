@@ -20,8 +20,32 @@ class ErrorLogger {
         
         file_put_contents(self::$logFile, $logMessage, FILE_APPEND);
         
-        // Futuro: Disparo pro Telegram
-        // self::sendToTelegram($logMessage);
+        // Envia para o Telegram em Background usando cURL non-blocking (se possível) ou simples
+        self::sendToTelegram($logMessage);
+    }
+
+    private static function sendToTelegram($message) {
+        $token = '8592205705:AAEqzgr-j6BBJzX32ceRhCDd9wB0edPNfl4';
+        $chat_id = '921302933'; // ID do Telegram do usuário
+        
+        if ($chat_id === 'YOUR_CHAT_ID_HERE') return; // Segurança caso não tenha configurado
+
+        $url = "https://api.telegram.org/bot{$token}/sendMessage";
+        $data = [
+            'chat_id' => $chat_id,
+            'text' => $message,
+            'parse_mode' => 'HTML'
+        ];
+
+        // Disparo cURL ignorando resposta para não travar o sistema
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 2); // Timeout de 2 segundos máximo
+        curl_exec($ch);
+        curl_close($ch);
     }
 
     public static function handleError($errno, $errstr, $errfile, $errline) {
