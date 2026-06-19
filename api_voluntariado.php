@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'config.php';
+require_once __DIR__ . '/app/Core/S3StorageService.php';
 
 try {
     $compId = getCurrentUserCompanyId();
@@ -82,10 +83,8 @@ try {
 
             $avatar_url = null;
             if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
-                $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
-                $mime = mime_content_type($_FILES['avatar']['tmp_name']);
-                $dataImg = file_get_contents($_FILES['avatar']['tmp_name']);
-                $avatar_url = 'data:' . $mime . ';base64,' . base64_encode($dataImg);
+                $s3 = new \App\Core\S3StorageService();
+                $avatar_url = $s3->uploadFile($_FILES['avatar'], 'volunteers');
             }
 
             $stmt = $pdo->prepare("INSERT INTO volunteers (id, name, cpf, avatar_url, gender, email, phone, unit_id, sector_id, volunteering_sector, location, profession, hourly_rate, start_date, work_area, 
@@ -114,10 +113,8 @@ try {
 
             $avatar_url = $data['current_avatar'] ?? null;
             if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
-                $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
-                $mime = mime_content_type($_FILES['avatar']['tmp_name']);
-                $dataImg = file_get_contents($_FILES['avatar']['tmp_name']);
-                $avatar_url = 'data:' . $mime . ';base64,' . base64_encode($dataImg);
+                $s3 = new \App\Core\S3StorageService();
+                $avatar_url = $s3->uploadFile($_FILES['avatar'], 'volunteers');
             }
 
             $stmt = $pdo->prepare("UPDATE volunteers SET name=?, cpf=?, avatar_url=?, gender=?, email=?, phone=?, volunteering_sector=?, work_area=?, location=?, profession=?, hourly_rate=?,

@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'config.php';
+require_once __DIR__ . '/app/Core/S3StorageService.php';
 
 try {
     $compId = getCurrentUserCompanyId();
@@ -66,13 +67,9 @@ try {
             $user_id = $is_edit ? $data['user_id'] : 'U' . time();
             
             $avatar_url = $data['current_avatar'] ?? null;
-            if (!empty($_FILES['avatar']['name'])) {
-                $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
-                $filename = 'avatar_' . $user_id . '_' . time() . '.' . $ext;
-                if (!is_dir(__DIR__ . '/uploads')) mkdir(__DIR__ . '/uploads', 0777, true);
-                if (move_uploaded_file($_FILES['avatar']['tmp_name'], __DIR__ . '/uploads/' . $filename)) {
-                    $avatar_url = 'uploads/' . $filename;
-                }
+            if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+                $s3 = new \App\Core\S3StorageService();
+                $avatar_url = $s3->uploadFile($_FILES['avatar'], 'avatars');
             }
 
             if ($is_edit) {
