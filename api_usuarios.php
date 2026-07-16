@@ -14,6 +14,9 @@ require_once __DIR__ . '/app/Core/S3StorageService.php';
 
 try {
     $compId = getCurrentUserCompanyId();
+    $method = $_SERVER['REQUEST_METHOD'];
+    $json_data = json_decode(file_get_contents('php://input'), true);
+    $action = $_POST['action'] ?? $_GET['action'] ?? $json_data['action'] ?? '';
 
     // ─── GET: Listar Usuários e Históricos ────────────────────────────────
     if ($method === 'GET') {
