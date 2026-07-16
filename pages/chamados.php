@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $statusColor = ($new_status === 'Concluído') ? '#10B981' : '#F59E0B';
                 $statusIcon = ($new_status === 'Concluído') ? '✅' : '⚠️';
                 
-                $subject = "Chamado [ {$companyName} ] e [ {$requesterName} ] e [ {$closedAt} ]";
+                $subject = "Chamado {$companyName} - {$requesterName} - {$closedAt}";
 
                 // Logo HTML (só exibe se tiver URL)
                 $logoHtml = '';
