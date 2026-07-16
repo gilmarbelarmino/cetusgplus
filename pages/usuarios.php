@@ -372,6 +372,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
     }
     $compId = getCurrentUserCompanyId();
+    $email = !empty($_POST['email']) ? $_POST['email'] : null;
+    $gender = $_POST['gender'] ?? '';
+    $position = $_POST['position'] ?? '';
+    $access_number = $_POST['access_number'] ?? '';
     $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ?, sector = ?, unit_id = ?, role = ?, phone = ?, avatar_url = ?, gender = ?, position = ?, access_number = ? WHERE id = ? AND company_id = ?");
     $stmt->execute([$_POST['name'], $email, $_POST['sector'], $_POST['unit_id'], $_POST['role'], $_POST['phone'], $avatar_url, $gender, $position, $access_number, $_POST['user_id'], $compId]);
     
