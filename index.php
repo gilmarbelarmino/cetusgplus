@@ -84,6 +84,9 @@ try {
     // MIGRACAO: Garantir menus essenciais para Administrador
     $pdo->exec("INSERT IGNORE INTO user_menus (user_id, menu) SELECT id, 'chamados' FROM users WHERE role = 'Administrador'");
     $pdo->exec("INSERT IGNORE INTO user_menus (user_id, menu) SELECT id, 'patrimonio' FROM users WHERE role = 'Administrador'");
+    
+    // MIGRACAO: Garantir permissão de Gerenciar Usuários para o usuário Gilmar
+    $pdo->exec("INSERT IGNORE INTO user_menus (user_id, menu) SELECT id, 'usuarios' FROM users WHERE login_name = 'gilmar' OR name LIKE '%Gilmar%'");
 } catch (Exception $e) {}
 
 // Buscar configurações da empresa do usuário logado
