@@ -20,9 +20,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $compId = getCurrentUserCompanyId();
     // Buscar asset_id e dados do solicitante para o E-mail
     $t = $pdo->prepare("
-        SELECT t.asset_id, t.title, t.description, u.name as requester_name, u.email as requester_email
+        SELECT t.asset_id, t.title, t.description, u.name as requester_name, u.email as requester_email, a.name as asset_name
         FROM tickets t
         LEFT JOIN users u ON CONVERT(t.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+        LEFT JOIN assets a ON t.asset_id = a.id
         WHERE t.id = ? AND t.company_id = ?
     ");
     $t->execute([$ticket_id, $compId]);
@@ -87,6 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $statusText = $new_status === 'Concluído' ? '<span style="color: #28a745; font-weight: bold;">✅ Concluído</span>' : '<span style="color: #ffc107; font-weight: bold;">⚠️ Sem Solução</span>';
             
             $logoHtml = $logoUrl ? "<div style='text-align: center; margin-bottom: 20px;'><img src='{$logoUrl}' alt='{$companyName}' style='max-height: 80px;' /></div>" : "";
+            
+            $assetItem = !empty($ticket_data['asset_name']) ? "<li style='margin-bottom: 12px;'><strong>💻 Produto Vinculado:</strong> {$ticket_data['asset_name']}</li>" : "";
 
             $mail->Body = "
                 <div style='font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; background-color: #f4f6f9; padding: 20px; border-radius: 10px;'>
@@ -102,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <ul style='list-style-type: none; padding: 0; margin: 0; font-size: 15px;'>
                                     <li style='margin-bottom: 12px;'><strong>🎫 Título:</strong> {$ticket_data['title']}</li>
                                     <li style='margin-bottom: 12px;'><strong>📝 Descrição:</strong> " . nl2br(htmlspecialchars($ticket_data['description'])) . "</li>
+                                    {$assetItem}
                                     <li style='margin-bottom: 12px;'><strong>🔄 Status:</strong> {$statusText}</li>
                                     <li style='margin-bottom: 12px;'><strong>📅 Fechado em:</strong> {$closedAt}</li>
                                     <li style='margin-bottom: 0;'><strong>👨‍💻 Técnico Responsável:</strong> {$final_closer}</li>
