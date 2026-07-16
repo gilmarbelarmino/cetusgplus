@@ -203,16 +203,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
                 $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
                 try {
+                    // Configurações do PHPMailer para Gmail
                     $mail->isSMTP();
-                    $mail->Host       = 'smtp.office365.com';
+                    $mail->Host       = 'smtp.gmail.com';
                     $mail->SMTPAuth   = true;
-                    $mail->Username   = 'adminrede@arrastao.org.br';
-                    $mail->Password   = 'Joviano@1968';
+                    $mail->Username   = 'tecnologia.arrastao@gmail.com';
+                    $mail->Password   = 'xjadihsbebkssjzh'; // Senha de App
                     $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port       = 587;
                     $mail->CharSet    = 'UTF-8';
 
-                    $mail->setFrom('adminrede@arrastao.org.br', $companyName);
+                    // Remetente e Destinatário
+                    $mail->setFrom('tecnologia.arrastao@gmail.com', $companyName . ' - Suporte');
                     $mail->addAddress($to, $requesterName);
 
                     $mail->isHTML(true);

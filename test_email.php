@@ -6,15 +6,15 @@ $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
 try {
     $mail->SMTPDebug = 3; // Enable verbose debug output
     $mail->isSMTP();
-    $mail->Host       = 'smtp.office365.com';
+    $mail->Host       = 'smtp.gmail.com';
     $mail->SMTPAuth   = true;
-    $mail->Username   = 'adminrede@arrastao.org.br';
-    $mail->Password   = 'Joviano@1968';
+    $mail->Username   = 'tecnologia.arrastao@gmail.com';
+    $mail->Password   = 'xjadihsbebkssjzh'; // Sem espaços
     $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port       = 587;
     $mail->CharSet    = 'UTF-8';
 
-    $mail->setFrom('adminrede@arrastao.org.br', 'Teste CetusG');
+    $mail->setFrom('tecnologia.arrastao@gmail.com', 'CetusG Support');
     $mail->addAddress('tecnologia.arrastao@gmail.com');
 
     $mail->isHTML(true);
