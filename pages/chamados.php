@@ -46,11 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $pdo->prepare("UPDATE assets SET status = 'Ativo' WHERE id = ? AND company_id = ?")->execute([$ticket_data['asset_id'], $compId]);
     }
 
-    // Disparo de E-mail de Conclusão de Chamado
+    // Disparo de Mensagem no WhatsApp (Forma Gratuita via WhatsApp Web)
     if ($new_status === 'Concluído' || $new_status === 'Sem Solução') {
         try {
             $q = "SELECT t.title, t.description, t.closed_at, 
-                         u.name as requester_name, u.email as requester_email, u.sector, u.role, 
+                         u.name as requester_name, u.phone as requester_phone, u.sector, u.role, 
                          un.name as unit_name, 
                          a.name as asset_name
                   FROM tickets t
@@ -62,172 +62,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $stmtDetails->execute([$ticket_id, $compId]);
             $details = $stmtDetails->fetch(PDO::FETCH_ASSOC);
 
-            if ($details && !empty($details['requester_email'])) {
-                $stmtC = $pdo->prepare("SELECT company_name, logo_url FROM company_settings WHERE id = ? OR company_id = ? LIMIT 1");
+            if ($details && !empty($details['requester_phone'])) {
+                $stmtC = $pdo->prepare("SELECT company_name FROM company_settings WHERE id = ? OR company_id = ? LIMIT 1");
                 $stmtC->execute([$compId, $compId]);
                 $companyRow = $stmtC->fetch(PDO::FETCH_ASSOC);
-                $companyName = $companyRow['company_name'] ?? 'Arrastão';
-                $logoUrl = $companyRow['logo_url'] ?? '';
+                $companyName = $companyRow['company_name'] ?? 'Empresa';
                 
-                $to = $details['requester_email'];
-                $requesterName = $details['requester_name'] ?? 'Usuário';
-                $closedAt = date('d/m/Y H:i', strtotime($details['closed_at'] ?? 'now'));
-                $statusColor = ($new_status === 'Concluído') ? '#10B981' : '#F59E0B';
-                $statusIcon = ($new_status === 'Concluído') ? '✅' : '⚠️';
-                
-                $subject = "Chamado {$companyName} - {$requesterName} - {$closedAt}";
-
-                // Logo HTML (só exibe se tiver URL)
-                $logoHtml = '';
-                if (!empty($logoUrl)) {
-                    // Se for URL relativa, converter para absoluta
-                    if (strpos($logoUrl, 'http') !== 0) {
-                        $logoUrl = 'https://support.cetusg.com/' . ltrim($logoUrl, '/');
+                $phone = preg_replace('/[^0-9]/', '', $details['requester_phone']); // Só números
+                if (strlen($phone) >= 10) { 
+                    if (substr($phone, 0, 2) !== '55' && strlen($phone) <= 11) {
+                        $phone = '55' . $phone; // Adiciona o DDI do Brasil
                     }
-                    $logoHtml = '<img src="' . htmlspecialchars($logoUrl) . '" alt="' . htmlspecialchars($companyName) . '" style="max-width:120px; max-height:60px; object-fit:contain;">';
-                }
-                
-                $message = '
-                <html>
-                <head><meta charset="UTF-8"><title>Chamado ' . $new_status . '</title></head>
-                <body style="margin:0; padding:0; background-color:#f4f6f9; font-family: Arial, Helvetica, sans-serif;">
-                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f9; padding:30px 0;">
-                        <tr><td align="center">
-                            <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:12px; overflow:hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-                                
-                                <!-- HEADER COM LOGO -->
-                                <tr>
-                                    <td style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); padding:24px 30px; text-align:center;">
-                                        ' . ($logoHtml ? '<div style="margin-bottom:10px;">' . $logoHtml . '</div>' : '') . '
-                                        <h1 style="color:#ffffff; font-size:18px; font-weight:800; margin:0; letter-spacing:0.5px;">' . htmlspecialchars($companyName) . '</h1>
-                                        <p style="color:rgba(255,255,255,0.8); font-size:12px; margin:4px 0 0; font-weight:600;">Central de Suporte Técnico</p>
-                                    </td>
-                                </tr>
-
-                                <!-- STATUS BADGE -->
-                                <tr>
-                                    <td style="padding:24px 30px 0; text-align:center;">
-                                        <div style="display:inline-block; background:' . $statusColor . '; color:#fff; font-size:13px; font-weight:800; padding:8px 24px; border-radius:50px; letter-spacing:0.5px;">
-                                            ' . $statusIcon . ' CHAMADO ' . mb_strtoupper($new_status) . '
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- SAUDAÇÃO -->
-                                <tr>
-                                    <td style="padding:20px 30px 8px;">
-                                        <p style="color:#1E293B; font-size:15px; margin:0;">Olá, <strong>' . htmlspecialchars($requesterName) . '</strong>!</p>
-                                        <p style="color:#64748B; font-size:13px; margin:6px 0 0;">O seu chamado foi finalizado. Confira os detalhes abaixo:</p>
-                                    </td>
-                                </tr>
-
-                                <!-- DADOS DO CHAMADO -->
-                                <tr>
-                                    <td style="padding:10px 30px 20px;">
-                                        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; overflow:hidden;">
-                                            <tr>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700; width:40%;">Solicitante</td>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:600;">' . htmlspecialchars($requesterName) . '</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700;">Unidade</td>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:600;">' . htmlspecialchars($details['unit_name'] ?? 'N/A') . '</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700;">Setor</td>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:600;">' . htmlspecialchars($details['sector'] ?? 'N/A') . '</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700;">Perfil</td>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:600;">' . htmlspecialchars($details['role'] ?? 'N/A') . '</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700;">Produto vinculado</td>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:600;">' . htmlspecialchars($details['asset_name'] ?? 'Nenhum') . '</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700;">Título</td>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:800;">' . htmlspecialchars($details['title']) . '</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700; vertical-align:top;">Descrição</td>
-                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B;">' . nl2br(htmlspecialchars($details['description'] ?? '')) . '</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:12px 16px; font-size:13px; color:#64748B; font-weight:700;">Data de conclusão</td>
-                                                <td style="padding:12px 16px; font-size:13px; color:' . $statusColor . '; font-weight:800;">' . $closedAt . '</td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-
-                                <!-- ASSINATURA DO TÉCNICO -->
-                                <tr>
-                                    <td style="padding:0 30px 24px;">
-                                        <table width="100%" cellpadding="0" cellspacing="0" style="border-top:2px solid #E2E8F0; padding-top:16px;">
-                                            <tr>
-                                                <td style="padding-top:16px;">
-                                                    <p style="color:#94A3B8; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px;">Atendimento realizado por</p>
-                                                    <table cellpadding="0" cellspacing="0">
-                                                        <tr>
-                                                            <td style="width:44px; height:44px; background:linear-gradient(135deg, #4F46E5, #7C3AED); border-radius:10px; text-align:center; vertical-align:middle; color:#fff; font-weight:900; font-size:16px;">
-                                                                ' . mb_strtoupper(mb_substr($final_closer, 0, 1)) . '
-                                                            </td>
-                                                            <td style="padding-left:12px;">
-                                                                <p style="margin:0; font-size:14px; font-weight:800; color:#1E293B;">' . htmlspecialchars($final_closer) . '</p>
-                                                                <p style="margin:2px 0 0; font-size:12px; color:#64748B; font-weight:600;">Suporte Técnico • ' . htmlspecialchars($companyName) . '</p>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-
-                                <!-- RODAPÉ -->
-                                <tr>
-                                    <td style="background:#F8FAFC; padding:16px 30px; text-align:center; border-top:1px solid #E2E8F0;">
-                                        <p style="color:#94A3B8; font-size:11px; margin:0; font-weight:600;">Este e-mail foi enviado automaticamente pelo sistema <strong style="color:#4F46E5;">CetusG</strong> • ' . htmlspecialchars($companyName) . '</p>
-                                        <p style="color:#CBD5E1; font-size:10px; margin:4px 0 0;">Por favor, não responda a esta mensagem.</p>
-                                    </td>
-                                </tr>
-
-                            </table>
-                        </td></tr>
-                    </table>
-                </body>
-                </html>';
-
-                require_once __DIR__ . '/../vendor/autoload.php';
-
-                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-                try {
-                    // Configurações do PHPMailer para Gmail
-                    $mail->isSMTP();
-                    $mail->Host       = 'smtp.gmail.com';
-                    $mail->SMTPAuth   = true;
-                    $mail->Username   = 'tecnologia.arrastao@gmail.com';
-                    $mail->Password   = 'xjadihsbebkssjzh'; // Senha de App
-                    $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-                    $mail->Port       = 587;
-                    $mail->CharSet    = 'UTF-8';
-
-                    // Remetente e Destinatário
-                    $mail->setFrom('tecnologia.arrastao@gmail.com', $companyName . ' - Suporte');
-                    $mail->addAddress($to, $requesterName);
-
-                    $mail->isHTML(true);
-                    $mail->Subject = $subject;
-                    $mail->Body    = $message;
-
-                    $mail->send();
-                } catch (Exception $e) {
-                    if(class_exists('ErrorLogger')) ErrorLogger::log("Erro PHPMailer: " . $mail->ErrorInfo, 'WARNING');
+                    
+                    $requesterName = $details['requester_name'] ?? 'Usuário';
+                    $closedAt = date('d/m/Y H:i', strtotime($details['closed_at'] ?? 'now'));
+                    $statusText = ($new_status === 'Concluído') ? '✅ Concluído' : '⚠️ Sem Solução';
+                    
+                    $msg = "Olá, *{$requesterName}*!\n\n";
+                    $msg .= "Seu chamado na *{$companyName}* foi atualizado.\n\n";
+                    $msg .= "🎫 *Título:* {$details['title']}\n";
+                    $msg .= "🔄 *Status:* {$statusText}\n";
+                    $msg .= "📅 *Data:* {$closedAt}\n";
+                    $msg .= "👨‍💻 *Técnico:* {$final_closer}\n\n";
+                    $msg .= "_Mensagem enviada automaticamente pelo sistema CetusG._";
+                    
+                    header('Location: ?page=chamados&success=' . ($new_status == 'Pendente' ? '3' : '2') . '&wa_phone=' . urlencode($phone) . '&wa_text=' . urlencode($msg));
+                    exit;
                 }
             }
         } catch (Exception $e) {
-            if(class_exists('ErrorLogger')) ErrorLogger::log("Erro ao enviar email de chamado: " . $e->getMessage(), 'WARNING');
+            if(class_exists('ErrorLogger')) ErrorLogger::log("Erro WhatsApp: " . $e->getMessage(), 'WARNING');
         }
     }
 
@@ -958,6 +822,21 @@ $assets = $assets_stmt->fetchAll();
                 }
             });
         }
+        // Disparo Automático do WhatsApp Web
+        const urlParams = new URLSearchParams(window.location.search);
+        const waPhone = urlParams.get('wa_phone');
+        const waText = urlParams.get('wa_text');
+        
+        if (waPhone && waText) {
+            // Abre o WhatsApp Web em uma nova guia
+            const waUrl = `https://web.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(waText)}`;
+            window.open(waUrl, '_blank');
+            
+            // Limpa os parâmetros da URL para não abrir novamente ao dar F5
+            urlParams.delete('wa_phone');
+            urlParams.delete('wa_text');
+            const newUrl = window.location.pathname + '?' + urlParams.toString();
+            window.history.replaceState({}, document.title, newUrl);
+        }
     });
 </script>
-
