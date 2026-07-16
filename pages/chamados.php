@@ -46,85 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $pdo->prepare("UPDATE assets SET status = 'Ativo' WHERE id = ? AND company_id = ?")->execute([$ticket_data['asset_id'], $compId]);
     }
 
-    // Disparo de Mensagem no WhatsApp (Forma Gratuita via WhatsApp Web)
-    $debug_log = __DIR__ . '/../wa_debug.log';
-    file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Início. Status: $new_status\n", FILE_APPEND);
-    
-    if ($new_status === 'Concluído' || $new_status === 'Sem Solução') {
-        file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Entrou no IF de status\n", FILE_APPEND);
-        try {
-            // Primeiro, verificar quais colunas existem na tabela users
-            $cols_stmt = $pdo->query("SHOW COLUMNS FROM users");
-            $columns = $cols_stmt->fetchAll(PDO::FETCH_COLUMN);
-            file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Colunas users: " . implode(', ', $columns) . "\n", FILE_APPEND);
-            
-            // Montar a query dinamicamente baseada nas colunas disponíveis
-            $phone_col = 'NULL';
-            if (in_array('access_number', $columns)) {
-                $phone_col = 'u.access_number';
-            } elseif (in_array('phone', $columns)) {
-                $phone_col = 'u.phone';
-            }
-            file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Coluna de telefone: $phone_col\n", FILE_APPEND);
-
-            $q = "SELECT t.title, t.description, t.closed_at, 
-                         u.name as requester_name, $phone_col as requester_phone, u.sector, u.role, 
-                         un.name as unit_name, 
-                         a.name as asset_name
-                  FROM tickets t
-                  LEFT JOIN users u ON CONVERT(t.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
-                  LEFT JOIN units un ON CONVERT(t.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
-                  LEFT JOIN assets a ON t.asset_id = a.id
-                  WHERE t.id = ? AND t.company_id = ?";
-            $stmtDetails = $pdo->prepare($q);
-            $stmtDetails->execute([$ticket_id, $compId]);
-            $details = $stmtDetails->fetch(PDO::FETCH_ASSOC);
-
-            file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Details: " . json_encode($details) . "\n", FILE_APPEND);
-            file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Phone encontrado: '" . ($details['requester_phone'] ?? 'VAZIO') . "'\n", FILE_APPEND);
-
-            if ($details && !empty($details['requester_phone'])) {
-                $stmtC = $pdo->prepare("SELECT company_name FROM company_settings WHERE id = ? OR company_id = ? LIMIT 1");
-                $stmtC->execute([$compId, $compId]);
-                $companyRow = $stmtC->fetch(PDO::FETCH_ASSOC);
-                $companyName = $companyRow['company_name'] ?? 'Empresa';
-                
-                $phone = preg_replace('/[^0-9]/', '', $details['requester_phone']); // Só números
-                file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Phone limpo: '$phone' (len=" . strlen($phone) . ")\n", FILE_APPEND);
-                
-                if (strlen($phone) >= 10) { 
-                    if (substr($phone, 0, 2) !== '55' && strlen($phone) <= 11) {
-                        $phone = '55' . $phone; // Adiciona o DDI do Brasil
-                    }
-                    
-                    $requesterName = $details['requester_name'] ?? 'Usuário';
-                    $closedAt = date('d/m/Y H:i', strtotime($details['closed_at'] ?? 'now'));
-                    $statusText = ($new_status === 'Concluído') ? '✅ Concluído' : '⚠️ Sem Solução';
-                    
-                    $msg = "Olá, *{$requesterName}*!\n\n";
-                    $msg .= "Seu chamado na *{$companyName}* foi atualizado.\n\n";
-                    $msg .= "🎫 *Título:* {$details['title']}\n";
-                    $msg .= "🔄 *Status:* {$statusText}\n";
-                    $msg .= "📅 *Data:* {$closedAt}\n";
-                    $msg .= "👨‍💻 *Técnico:* {$final_closer}\n\n";
-                    $msg .= "_Mensagem enviada automaticamente pelo sistema CetusG._";
-                    
-                    $redirect = '?page=chamados&success=' . ($new_status == 'Pendente' ? '3' : '2') . '&wa_phone=' . urlencode($phone) . '&wa_text=' . urlencode($msg);
-                    file_put_contents($debug_log, date('Y-m-d H:i:s') . " - SUCESSO! Redirect: $redirect\n", FILE_APPEND);
-                    
-                    header('Location: ' . $redirect);
-                    exit;
-                } else {
-                    file_put_contents($debug_log, date('Y-m-d H:i:s') . " - FALHOU: telefone muito curto\n", FILE_APPEND);
-                }
-            } else {
-                file_put_contents($debug_log, date('Y-m-d H:i:s') . " - FALHOU: telefone vazio ou details null\n", FILE_APPEND);
-            }
-        } catch (Exception $e) {
-            file_put_contents($debug_log, date('Y-m-d H:i:s') . " - EXCEPTION: " . $e->getMessage() . "\n", FILE_APPEND);
-            if(class_exists('ErrorLogger')) ErrorLogger::log("Erro WhatsApp: " . $e->getMessage(), 'WARNING');
-        }
-    }
+    // WhatsApp é tratado 100% via JavaScript no frontend
 
     header('Location: ?page=chamados&success=' . ($new_status == 'Pendente' ? '3' : '2'));
     exit;
@@ -178,7 +100,7 @@ if (!$show_all) {
 }
 
 $query = "SELECT t.*,
-          u.name as requester_name, u.avatar_url as requester_avatar,
+          u.name as requester_name, u.avatar_url as requester_avatar, u.access_number as requester_phone,
           un.name as unit_name, a.name as asset_name, c_user.avatar_url as closer_avatar,
           COALESCE(
             TIMESTAMPDIFF(MINUTE, t.created_at, t.closed_at)
@@ -430,7 +352,7 @@ $assets = $assets_stmt->fetchAll();
                             <?php endif; ?>
 
                             <!-- Fechar -->
-                            <button type="button" class="btn-icon" title="Fechar Chamado" onclick="openCloseModal('<?= $ticket['id'] ?>', '<?= htmlspecialchars(addslashes($ticket['title'])) ?>')">
+                            <button type="button" class="btn-icon" title="Fechar Chamado" onclick="openCloseModal('<?= $ticket['id'] ?>', '<?= htmlspecialchars(addslashes($ticket['title'])) ?>', '<?= htmlspecialchars($ticket['requester_phone'] ?? '') ?>', '<?= htmlspecialchars($ticket['requester_name'] ?? '') ?>')">
                                 <i class="fa-solid fa-circle-check"></i>
                             </button>
                         </div>
@@ -627,12 +549,17 @@ $assets = $assets_stmt->fetchAll();
 </div>
 
 <script>
-    function openCloseModal(id, title) {
+    var _waPhone = '';
+    var _waRequester = '';
+    var _waTitle = '';
+    function openCloseModal(id, title, phone, requester) {
         document.getElementById('closeTicketId').value = id;
         document.getElementById('closeTicketTitle').innerText = title;
-        // Auto-preencher o técnico logado. Se não foi ele, ele pode apagar e buscar por outro.
         document.getElementById('tech_autocomplete').value = <?= json_encode($user['name'] ?? '') ?>;
         document.getElementById('closeTicketModal').style.display = 'flex';
+        _waPhone = (phone || '').replace(/[^0-9]/g, '');
+        _waRequester = requester || '';
+        _waTitle = title || '';
     }
 
     function openPendenciarModal(id, title) {
@@ -649,6 +576,21 @@ $assets = $assets_stmt->fetchAll();
                 document.getElementById('tech_autocomplete').focus();
                 return;
             }
+        }
+        // Disparo do WhatsApp antes de submeter o formulário
+        if ((res === 'solucionado' || res === 'sem_solucao') && _waPhone.length >= 10) {
+            let phone = _waPhone;
+            if (phone.substring(0,2) !== '55' && phone.length <= 11) phone = '55' + phone;
+            const tech = document.getElementById('tech_autocomplete').value || 'Suporte';
+            const status = res === 'solucionado' ? '✅ Concluído' : '⚠️ Sem Solução';
+            let msg = 'Olá, *' + _waRequester + '*!\n\n';
+            msg += 'Seu chamado foi atualizado.\n\n';
+            msg += '🎫 *Título:* ' + _waTitle + '\n';
+            msg += '🔄 *Status:* ' + status + '\n';
+            msg += '👨‍💻 *Técnico:* ' + tech + '\n\n';
+            msg += '_Mensagem enviada automaticamente pelo sistema CetusG._';
+            const waUrl = 'https://web.whatsapp.com/send?phone=' + encodeURIComponent(phone) + '&text=' + encodeURIComponent(msg);
+            window.open(waUrl, '_blank');
         }
         document.getElementById('closeTicketResolution').value = res;
         document.getElementById('closeTicketForm').submit();
@@ -853,23 +795,6 @@ $assets = $assets_stmt->fetchAll();
                 }
             });
         }
-        // Disparo Automático do WhatsApp Web
-        const urlParams = new URLSearchParams(window.location.search);
-        const waPhone = urlParams.get('wa_phone');
-        const waText = urlParams.get('wa_text');
-        
-        if (waPhone && waText) {
-            const waUrl = `https://web.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(waText)}`;
-            
-            if (confirm("Deseja notificar o solicitante no WhatsApp sobre a conclusão deste chamado?")) {
-                window.open(waUrl, '_blank');
-            }
-            
-            // Limpa os parâmetros da URL para não abrir novamente ao dar F5
-            urlParams.delete('wa_phone');
-            urlParams.delete('wa_text');
-            const newUrl = window.location.pathname + '?' + urlParams.toString();
-            window.history.replaceState({}, document.title, newUrl);
-        }
+
     });
 </script>
