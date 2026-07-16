@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if ($new_status === 'Concluído' || $new_status === 'Sem Solução') {
         try {
             $q = "SELECT t.title, t.description, t.closed_at, 
-                         u.name as requester_name, u.phone as requester_phone, u.sector, u.role, 
+                         u.name as requester_name, COALESCE(u.access_number, u.phone) as requester_phone, u.sector, u.role, 
                          un.name as unit_name, 
                          a.name as asset_name
                   FROM tickets t
