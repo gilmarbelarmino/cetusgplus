@@ -207,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $mail->Host       = 'smtp.office365.com';
                     $mail->SMTPAuth   = true;
                     $mail->Username   = 'adminrede@arrastao.org.br';
-                    $mail->Password   = '1968@Projeto';
+                    $mail->Password   = 'Joviano@1968';
                     $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port       = 587;
                     $mail->CharSet    = 'UTF-8';
