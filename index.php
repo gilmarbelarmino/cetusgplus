@@ -80,6 +80,10 @@ try {
 
     // MIGRACAO: Garantir que usuários antigos sem ID de empresa pertençam ao Projeto Arrastão (ID 1)
     $pdo->exec("UPDATE users SET company_id = 1 WHERE company_id IS NULL OR company_id = 0");
+
+    // MIGRACAO: Garantir menus essenciais para Administrador
+    $pdo->exec("INSERT IGNORE INTO user_menus (user_id, menu) SELECT id, 'chamados' FROM users WHERE role = 'Administrador'");
+    $pdo->exec("INSERT IGNORE INTO user_menus (user_id, menu) SELECT id, 'patrimonio' FROM users WHERE role = 'Administrador'");
 } catch (Exception $e) {}
 
 // Buscar configurações da empresa do usuário logado
