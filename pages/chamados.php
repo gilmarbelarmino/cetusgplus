@@ -651,21 +651,6 @@ $assets = $assets_stmt->fetchAll();
                 return;
             }
         }
-        // Disparo do WhatsApp antes de submeter o formulário
-        if ((res === 'solucionado' || res === 'sem_solucao') && _waPhone && _waPhone.length >= 10) {
-            let phone = _waPhone;
-            if (phone.substring(0,2) !== '55' && phone.length <= 11) phone = '55' + phone;
-            const tech = document.getElementById('tech_autocomplete').value || 'Suporte';
-            const status = res === 'solucionado' ? '✅ Concluído' : '⚠️ Sem Solução';
-            let msg = 'Olá, *' + (_waRequester || 'Usuário') + '*!\n\n';
-            msg += 'Seu chamado foi atualizado.\n\n';
-            msg += '🎫 *Título:* ' + (_waTitle || '') + '\n';
-            msg += '🔄 *Status:* ' + status + '\n';
-            msg += '👨‍💻 *Técnico:* ' + tech + '\n\n';
-            msg += '_Mensagem enviada automaticamente pelo sistema CetusG._';
-            const waUrl = 'https://web.whatsapp.com/send?phone=' + encodeURIComponent(phone) + '&text=' + encodeURIComponent(msg);
-            window.open(waUrl, '_blank');
-        }
         document.getElementById('closeTicketResolution').value = res;
         document.getElementById('closeTicketForm').submit();
     }
