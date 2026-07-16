@@ -199,11 +199,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 </body>
                 </html>';
 
-                $headers = "MIME-Version: 1.0\r\n";
-                $headers .= "Content-type:text/html;charset=UTF-8\r\n";
-                $headers .= "From: adminrede@arrastao.org.br\r\n";
+                require_once __DIR__ . '/../vendor/autoload.php';
 
-                mail($to, $subject, $message, $headers);
+                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+                try {
+                    $mail->isSMTP();
+                    $mail->Host       = 'smtp.office365.com';
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = 'adminrede@arrastao.org.br';
+                    $mail->Password   = '1968@Projeto';
+                    $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->Port       = 587;
+                    $mail->CharSet    = 'UTF-8';
+
+                    $mail->setFrom('adminrede@arrastao.org.br', $companyName);
+                    $mail->addAddress($to, $requesterName);
+
+                    $mail->isHTML(true);
+                    $mail->Subject = $subject;
+                    $mail->Body    = $message;
+
+                    $mail->send();
+                } catch (Exception $e) {
+                    if(class_exists('ErrorLogger')) ErrorLogger::log("Erro PHPMailer: " . $mail->ErrorInfo, 'WARNING');
+                }
             }
         } catch (Exception $e) {
             if(class_exists('ErrorLogger')) ErrorLogger::log("Erro ao enviar email de chamado: " . $e->getMessage(), 'WARNING');
