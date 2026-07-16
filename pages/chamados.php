@@ -18,8 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $technician_name = $_POST['technician_name'] ?? '';
 
     $compId = getCurrentUserCompanyId();
-    // Buscar asset_id
-    $t = $pdo->prepare("SELECT asset_id FROM tickets WHERE id = ? AND company_id = ?");
+    // Buscar asset_id e dados do solicitante para o E-mail
+    $t = $pdo->prepare("
+        SELECT t.asset_id, t.title, u.name as requester_name, u.email as requester_email
+        FROM tickets t
+        LEFT JOIN users u ON CONVERT(t.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+        WHERE t.id = ? AND t.company_id = ?
+    ");
     $t->execute([$ticket_id, $compId]);
     $ticket_data = $t->fetch();
 
@@ -44,6 +49,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     if ($release_asset && $ticket_data && $ticket_data['asset_id']) {
         $pdo->prepare("UPDATE assets SET status = 'Ativo' WHERE id = ? AND company_id = ?")->execute([$ticket_data['asset_id'], $compId]);
+    }
+
+    // Disparo de E-mail Automático em Segundo Plano
+    if (($resolution === 'solucionado' || $resolution === 'sem_solucao') && $ticket_data && !empty($ticket_data['requester_email'])) {
+        try {
+            if(!class_exists('\PHPMailer\PHPMailer\PHPMailer')) {
+                require_once __DIR__ . '/../vendor/autoload.php';
+            }
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'tecnologia.arrastao@gmail.com';
+            $mail->Password   = 'xjadihsbebkssjzh'; // Senha de App
+            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+            $mail->CharSet    = 'UTF-8';
+
+            $mail->setFrom('tecnologia.arrastao@gmail.com', 'CetusG Support');
+            $mail->addAddress($ticket_data['requester_email'], $ticket_data['requester_name']);
+
+            $mail->isHTML(true);
+            $mail->Subject = "Atualização do Chamado: {$ticket_data['title']}";
+            
+            $statusText = $new_status === 'Concluído' ? '✅ Concluído' : '⚠️ Sem Solução';
+            $closedAt = date('d/m/Y H:i');
+            
+            $mail->Body = "
+                <div style='font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 8px; overflow: hidden;'>
+                    <div style='background-color: #4CAF50; color: white; padding: 15px 20px;'>
+                        <h2 style='margin: 0;'>Chamado Atualizado</h2>
+                    </div>
+                    <div style='padding: 20px;'>
+                        <p>Olá, <strong>{$ticket_data['requester_name']}</strong>!</p>
+                        <p>Seu chamado foi atualizado no sistema.</p>
+                        <ul style='list-style-type: none; padding: 0;'>
+                            <li style='margin-bottom: 10px;'><strong>🎫 Título:</strong> {$ticket_data['title']}</li>
+                            <li style='margin-bottom: 10px;'><strong>🔄 Status:</strong> {$statusText}</li>
+                            <li style='margin-bottom: 10px;'><strong>📅 Data:</strong> {$closedAt}</li>
+                            <li style='margin-bottom: 10px;'><strong>👨‍💻 Técnico:</strong> {$final_closer}</li>
+                        </ul>
+                    </div>
+                    <div style='background-color: #f9f9f9; padding: 10px 20px; text-align: center; font-size: 12px; color: #777;'>
+                        <p style='margin: 0;'>Mensagem enviada automaticamente pelo sistema CetusG. Por favor, não responda a este e-mail.</p>
+                    </div>
+                </div>
+            ";
+
+            $mail->send();
+        } catch (Exception $e) {
+            if(class_exists('ErrorLogger')) ErrorLogger::log("Erro E-mail: " . $mail->ErrorInfo, 'WARNING');
+        }
     }
 
     // WhatsApp é tratado 100% via JavaScript no frontend
