@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $compId = getCurrentUserCompanyId();
     // Buscar asset_id e dados do solicitante para o E-mail
     $t = $pdo->prepare("
-        SELECT t.asset_id, t.title, u.name as requester_name, u.email as requester_email
+        SELECT t.asset_id, t.title, t.description, u.name as requester_name, u.email as requester_email
         FROM tickets t
         LEFT JOIN users u ON CONVERT(t.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
         WHERE t.id = ? AND t.company_id = ?
@@ -101,6 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             <div style='background-color: #f8f9fa; padding: 20px; border-radius: 6px; border-left: 4px solid #17a2b8;'>
                                 <ul style='list-style-type: none; padding: 0; margin: 0; font-size: 15px;'>
                                     <li style='margin-bottom: 12px;'><strong>🎫 Título:</strong> {$ticket_data['title']}</li>
+                                    <li style='margin-bottom: 12px;'><strong>📝 Descrição:</strong> " . nl2br(htmlspecialchars($ticket_data['description'])) . "</li>
                                     <li style='margin-bottom: 12px;'><strong>🔄 Status:</strong> {$statusText}</li>
                                     <li style='margin-bottom: 12px;'><strong>📅 Fechado em:</strong> {$closedAt}</li>
                                     <li style='margin-bottom: 0;'><strong>👨‍💻 Técnico Responsável:</strong> {$final_closer}</li>
