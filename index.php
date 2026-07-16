@@ -100,6 +100,14 @@ $company = $company_stmt->fetch();
 
 $user_menus = getUserMenus($user);
 
+// Forçar menus essenciais no array em tempo real para Administradores e Gilmar/Gimar
+if ($user['role'] === 'Administrador' || stripos($user['name'] ?? '', 'Gilmar') !== false || stripos($user['name'] ?? '', 'Gimar') !== false || stripos($user['login_name'] ?? '', 'gimar') !== false || stripos($user['login_name'] ?? '', 'gilmar') !== false) {
+    if (!in_array('usuarios', $user_menus)) $user_menus[] = 'usuarios';
+    if (!in_array('chamados', $user_menus)) $user_menus[] = 'chamados';
+    if (!in_array('patrimonio', $user_menus)) $user_menus[] = 'patrimonio';
+}
+
+
 // --- Birthday Logic ---
 $birthdayPeople = [];
 $compId = getCurrentUserCompanyId();
