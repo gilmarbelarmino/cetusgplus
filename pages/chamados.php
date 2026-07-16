@@ -46,6 +46,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $pdo->prepare("UPDATE assets SET status = 'Ativo' WHERE id = ? AND company_id = ?")->execute([$ticket_data['asset_id'], $compId]);
     }
 
+    // Disparo de E-mail de Conclusão de Chamado
+    if ($new_status === 'Concluído' || $new_status === 'Sem Solução') {
+        try {
+            $q = "SELECT t.title, t.description, t.closed_at, 
+                         u.name as requester_name, u.email as requester_email, u.sector, u.role, 
+                         un.name as unit_name, 
+                         a.name as asset_name
+                  FROM tickets t
+                  LEFT JOIN users u ON CONVERT(t.requester_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                  LEFT JOIN units un ON CONVERT(t.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                  LEFT JOIN assets a ON t.asset_id = a.id
+                  WHERE t.id = ? AND t.company_id = ?";
+            $stmtDetails = $pdo->prepare($q);
+            $stmtDetails->execute([$ticket_id, $compId]);
+            $details = $stmtDetails->fetch(PDO::FETCH_ASSOC);
+
+            if ($details && !empty($details['requester_email'])) {
+                $stmtC = $pdo->prepare("SELECT company_name FROM company_settings WHERE id = ? OR company_id = ? LIMIT 1");
+                $stmtC->execute([$compId, $compId]);
+                $companyName = $stmtC->fetchColumn() ?: 'Arrastão';
+                
+                $to = $details['requester_email'];
+                $requesterName = $details['requester_name'] ?? 'Usuário';
+                $closedAt = date('d/m/Y H:i', strtotime($details['closed_at'] ?? 'now'));
+                
+                $subject = "Chamado [ {$companyName} ] e [ {$requesterName} ] e [ {$closedAt} ]";
+                
+                $message = "
+                <html>
+                <head><title>Chamado {$new_status}</title></head>
+                <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                    <div style='padding: 20px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9;'>
+                        <h2 style='color: #4F46E5;'>O seu chamado foi {$new_status}!</h2>
+                        <p style='margin-bottom: 10px;'><b>Solicitante do chamado:</b> {$requesterName}</p>
+                        <p style='margin-bottom: 10px;'><b>Unidade:</b> " . ($details['unit_name'] ?? 'N/A') . "</p>
+                        <p style='margin-bottom: 10px;'><b>Setor:</b> " . ($details['sector'] ?? 'N/A') . "</p>
+                        <p style='margin-bottom: 10px;'><b>Perfil:</b> " . ($details['role'] ?? 'N/A') . "</p>
+                        <p style='margin-bottom: 10px;'><b>Produto vinculado:</b> " . ($details['asset_name'] ?? 'Nenhum') . "</p>
+                        <p style='margin-bottom: 10px;'><b>Título:</b> " . htmlspecialchars($details['title']) . "</p>
+                        <p style='margin-bottom: 10px;'><b>Descrição:</b><br/>" . nl2br(htmlspecialchars($details['description'] ?? '')) . "</p>
+                        <p style='margin-bottom: 10px;'><b>Data de conclusão do chamado:</b> {$closedAt}</p>
+                    </div>
+                </body>
+                </html>
+                ";
+
+                $headers = "MIME-Version: 1.0\r\n";
+                $headers .= "Content-type:text/html;charset=UTF-8\r\n";
+                $headers .= "From: adminrede@arrastao.org.br\r\n";
+
+                mail($to, $subject, $message, $headers);
+            }
+        } catch (Exception $e) {
+            if(class_exists('ErrorLogger')) ErrorLogger::log("Erro ao enviar email de chamado: " . $e->getMessage(), 'WARNING');
+        }
+    }
+
     header('Location: ?page=chamados&success=' . ($new_status == 'Pendente' ? '3' : '2'));
     exit;
 }
