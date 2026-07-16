@@ -242,6 +242,26 @@ $assets = $assets_stmt->fetchAll();
     background-color: #cbd5e1;
     border-radius: 4px;
 }
+.table-chamados {
+    table-layout: auto;
+    width: 100%;
+}
+.table-chamados th, .table-chamados td {
+    vertical-align: middle;
+    padding: 0.75rem;
+}
+.col-id { width: 60px; white-space: nowrap; text-align: center; }
+.col-title { min-width: 220px; max-width: 350px; white-space: normal; word-wrap: break-word; }
+.col-requester { min-width: 150px; white-space: nowrap; }
+.col-unit { min-width: 100px; white-space: nowrap; }
+.col-priority { width: 110px; white-space: nowrap; }
+.col-status { width: 130px; white-space: nowrap; }
+.col-date { width: 180px; min-width: 160px; }
+.col-actions { width: 120px; white-space: nowrap; text-align: center; }
+
+@media (max-width: 768px) {
+    .col-unit, .col-priority { display: none; }
+}
 </style>
 
 <div class="page-header">
@@ -287,24 +307,24 @@ $assets = $assets_stmt->fetchAll();
 </div>
 
 <div class="table-responsive">
-    <table>
+    <table class="table-chamados">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Título</th>
-                <th>Solicitante</th>
-                <th>Unidade</th>
-                <th>Prioridade</th>
-                <th>Status</th>
-                <th>Data / Fechamento</th>
-                <th>Ações</th>
+                <th class="col-id">ID</th>
+                <th class="col-title">Título</th>
+                <th class="col-requester">Solicitante</th>
+                <th class="col-unit">Unidade</th>
+                <th class="col-priority">Prioridade</th>
+                <th class="col-status">Status</th>
+                <th class="col-date">Data / Fechamento</th>
+                <th class="col-actions">Ações</th>
             </tr>
         </thead>
         <tbody>
             <?php foreach ($tickets as $ticket): ?>
             <tr>
-                <td style="font-family: monospace; font-size: 0.75rem; color: var(--text-soft);"><?= htmlspecialchars($ticket['id']) ?></td>
-                <td style="font-weight: 700;">
+                <td class="col-id" style="font-family: monospace; font-size: 0.75rem; color: var(--text-soft);"><?= htmlspecialchars($ticket['id']) ?></td>
+                <td class="col-title" style="font-weight: 700;">
                     <?php if ($ticket['asset_id']): ?>
                         <i class="fa-solid fa-laptop-code" title="Equipamento Vinculado" style="color: var(--text-soft); font-size: 0.75rem; margin-right: 0.5rem;"></i>
                     <?php endif; ?>
@@ -312,7 +332,7 @@ $assets = $assets_stmt->fetchAll();
                         <?= htmlspecialchars($ticket['title']) ?>
                     </span>
                 </td>
-                <td>
+                <td class="col-requester">
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <?php if ($ticket['requester_avatar']): ?>
                             <img src="<?= htmlspecialchars($ticket['requester_avatar']) ?>" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
@@ -322,8 +342,8 @@ $assets = $assets_stmt->fetchAll();
                         <span style="font-weight: 600; color: var(--text-main);"><?= htmlspecialchars($ticket['requester_name']) ?></span>
                     </div>
                 </td>
-                <td style="font-size: 0.75rem; color: var(--text-soft);"><?= htmlspecialchars($ticket['unit_name']) ?></td>
-                <td>
+                <td class="col-unit" style="font-size: 0.75rem; color: var(--text-soft);"><?= htmlspecialchars($ticket['unit_name']) ?></td>
+                <td class="col-priority">
                     <span class="badge badge-<?= 
                         $ticket['priority'] == 'Crítica' ? 'danger' : 
                         ($ticket['priority'] == 'Alta' ? 'warning' : 'info') 
@@ -335,7 +355,7 @@ $assets = $assets_stmt->fetchAll();
                         <?= htmlspecialchars($ticket['priority']) ?>
                     </span>
                 </td>
-                <td>
+                <td class="col-status">
                     <span class="badge badge-<?= 
                         $ticket['status'] == 'Aberto' ? 'info' : 
                         ($ticket['status'] == 'Concluído' ? 'success' : 
@@ -349,7 +369,7 @@ $assets = $assets_stmt->fetchAll();
                         <?= htmlspecialchars($ticket['status']) ?>
                     </span>
                 </td>
-                <td>
+                <td class="col-date">
                     <?php if ($ticket['status'] !== 'Aberto'): ?>
                         <?php
                             $slaMin = $ticket['sla_minutes'];
@@ -403,7 +423,7 @@ $assets = $assets_stmt->fetchAll();
                     <?php endif; ?>
                 </td>
 
-                <td>
+                <td class="col-actions">
                     <?php if (($ticket['status'] == 'Aberto' || $ticket['status'] == 'Pendente') && ($user['role'] == 'Administrador' || $user['role'] == 'Suporte Técnico')): ?>
                         <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                             <?php if ($ticket['status'] == 'Aberto'): ?>
