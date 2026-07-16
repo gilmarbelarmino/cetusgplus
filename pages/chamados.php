@@ -828,9 +828,22 @@ $assets = $assets_stmt->fetchAll();
         const waText = urlParams.get('wa_text');
         
         if (waPhone && waText) {
-            // Abre o WhatsApp Web em uma nova guia
             const waUrl = `https://web.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(waText)}`;
-            window.open(waUrl, '_blank');
+            
+            Swal.fire({
+                title: 'WhatsApp do Solicitante',
+                text: "Deseja notificar o solicitante sobre a conclusão deste chamado?",
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonColor: '#10B981',
+                cancelButtonColor: '#64748B',
+                confirmButtonText: '<i class="fa-brands fa-whatsapp"></i> Enviar Mensagem',
+                cancelButtonText: 'Não enviar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.open(waUrl, '_blank');
+                }
+            });
             
             // Limpa os parâmetros da URL para não abrir novamente ao dar F5
             urlParams.delete('wa_phone');
