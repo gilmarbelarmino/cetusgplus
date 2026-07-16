@@ -63,34 +63,141 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $details = $stmtDetails->fetch(PDO::FETCH_ASSOC);
 
             if ($details && !empty($details['requester_email'])) {
-                $stmtC = $pdo->prepare("SELECT company_name FROM company_settings WHERE id = ? OR company_id = ? LIMIT 1");
+                $stmtC = $pdo->prepare("SELECT company_name, logo_url FROM company_settings WHERE id = ? OR company_id = ? LIMIT 1");
                 $stmtC->execute([$compId, $compId]);
-                $companyName = $stmtC->fetchColumn() ?: 'Arrastão';
+                $companyRow = $stmtC->fetch(PDO::FETCH_ASSOC);
+                $companyName = $companyRow['company_name'] ?? 'Arrastão';
+                $logoUrl = $companyRow['logo_url'] ?? '';
                 
                 $to = $details['requester_email'];
                 $requesterName = $details['requester_name'] ?? 'Usuário';
                 $closedAt = date('d/m/Y H:i', strtotime($details['closed_at'] ?? 'now'));
+                $statusColor = ($new_status === 'Concluído') ? '#10B981' : '#F59E0B';
+                $statusIcon = ($new_status === 'Concluído') ? '✅' : '⚠️';
                 
                 $subject = "Chamado [ {$companyName} ] e [ {$requesterName} ] e [ {$closedAt} ]";
+
+                // Logo HTML (só exibe se tiver URL)
+                $logoHtml = '';
+                if (!empty($logoUrl)) {
+                    // Se for URL relativa, converter para absoluta
+                    if (strpos($logoUrl, 'http') !== 0) {
+                        $logoUrl = 'https://support.cetusg.com/' . ltrim($logoUrl, '/');
+                    }
+                    $logoHtml = '<img src="' . htmlspecialchars($logoUrl) . '" alt="' . htmlspecialchars($companyName) . '" style="max-width:120px; max-height:60px; object-fit:contain;">';
+                }
                 
-                $message = "
+                $message = '
                 <html>
-                <head><title>Chamado {$new_status}</title></head>
-                <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                    <div style='padding: 20px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9;'>
-                        <h2 style='color: #4F46E5;'>O seu chamado foi {$new_status}!</h2>
-                        <p style='margin-bottom: 10px;'><b>Solicitante do chamado:</b> {$requesterName}</p>
-                        <p style='margin-bottom: 10px;'><b>Unidade:</b> " . ($details['unit_name'] ?? 'N/A') . "</p>
-                        <p style='margin-bottom: 10px;'><b>Setor:</b> " . ($details['sector'] ?? 'N/A') . "</p>
-                        <p style='margin-bottom: 10px;'><b>Perfil:</b> " . ($details['role'] ?? 'N/A') . "</p>
-                        <p style='margin-bottom: 10px;'><b>Produto vinculado:</b> " . ($details['asset_name'] ?? 'Nenhum') . "</p>
-                        <p style='margin-bottom: 10px;'><b>Título:</b> " . htmlspecialchars($details['title']) . "</p>
-                        <p style='margin-bottom: 10px;'><b>Descrição:</b><br/>" . nl2br(htmlspecialchars($details['description'] ?? '')) . "</p>
-                        <p style='margin-bottom: 10px;'><b>Data de conclusão do chamado:</b> {$closedAt}</p>
-                    </div>
+                <head><meta charset="UTF-8"><title>Chamado ' . $new_status . '</title></head>
+                <body style="margin:0; padding:0; background-color:#f4f6f9; font-family: Arial, Helvetica, sans-serif;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f9; padding:30px 0;">
+                        <tr><td align="center">
+                            <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:12px; overflow:hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                                
+                                <!-- HEADER COM LOGO -->
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); padding:24px 30px; text-align:center;">
+                                        ' . ($logoHtml ? '<div style="margin-bottom:10px;">' . $logoHtml . '</div>' : '') . '
+                                        <h1 style="color:#ffffff; font-size:18px; font-weight:800; margin:0; letter-spacing:0.5px;">' . htmlspecialchars($companyName) . '</h1>
+                                        <p style="color:rgba(255,255,255,0.8); font-size:12px; margin:4px 0 0; font-weight:600;">Central de Suporte Técnico</p>
+                                    </td>
+                                </tr>
+
+                                <!-- STATUS BADGE -->
+                                <tr>
+                                    <td style="padding:24px 30px 0; text-align:center;">
+                                        <div style="display:inline-block; background:' . $statusColor . '; color:#fff; font-size:13px; font-weight:800; padding:8px 24px; border-radius:50px; letter-spacing:0.5px;">
+                                            ' . $statusIcon . ' CHAMADO ' . mb_strtoupper($new_status) . '
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- SAUDAÇÃO -->
+                                <tr>
+                                    <td style="padding:20px 30px 8px;">
+                                        <p style="color:#1E293B; font-size:15px; margin:0;">Olá, <strong>' . htmlspecialchars($requesterName) . '</strong>!</p>
+                                        <p style="color:#64748B; font-size:13px; margin:6px 0 0;">O seu chamado foi finalizado. Confira os detalhes abaixo:</p>
+                                    </td>
+                                </tr>
+
+                                <!-- DADOS DO CHAMADO -->
+                                <tr>
+                                    <td style="padding:10px 30px 20px;">
+                                        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; overflow:hidden;">
+                                            <tr>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700; width:40%;">Solicitante</td>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:600;">' . htmlspecialchars($requesterName) . '</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700;">Unidade</td>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:600;">' . htmlspecialchars($details['unit_name'] ?? 'N/A') . '</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700;">Setor</td>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:600;">' . htmlspecialchars($details['sector'] ?? 'N/A') . '</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700;">Perfil</td>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:600;">' . htmlspecialchars($details['role'] ?? 'N/A') . '</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700;">Produto vinculado</td>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:600;">' . htmlspecialchars($details['asset_name'] ?? 'Nenhum') . '</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700;">Título</td>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B; font-weight:800;">' . htmlspecialchars($details['title']) . '</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#64748B; font-weight:700; vertical-align:top;">Descrição</td>
+                                                <td style="padding:12px 16px; border-bottom:1px solid #E2E8F0; font-size:13px; color:#1E293B;">' . nl2br(htmlspecialchars($details['description'] ?? '')) . '</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:12px 16px; font-size:13px; color:#64748B; font-weight:700;">Data de conclusão</td>
+                                                <td style="padding:12px 16px; font-size:13px; color:' . $statusColor . '; font-weight:800;">' . $closedAt . '</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                                <!-- ASSINATURA DO TÉCNICO -->
+                                <tr>
+                                    <td style="padding:0 30px 24px;">
+                                        <table width="100%" cellpadding="0" cellspacing="0" style="border-top:2px solid #E2E8F0; padding-top:16px;">
+                                            <tr>
+                                                <td style="padding-top:16px;">
+                                                    <p style="color:#94A3B8; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px;">Atendimento realizado por</p>
+                                                    <table cellpadding="0" cellspacing="0">
+                                                        <tr>
+                                                            <td style="width:44px; height:44px; background:linear-gradient(135deg, #4F46E5, #7C3AED); border-radius:10px; text-align:center; vertical-align:middle; color:#fff; font-weight:900; font-size:16px;">
+                                                                ' . mb_strtoupper(mb_substr($final_closer, 0, 1)) . '
+                                                            </td>
+                                                            <td style="padding-left:12px;">
+                                                                <p style="margin:0; font-size:14px; font-weight:800; color:#1E293B;">' . htmlspecialchars($final_closer) . '</p>
+                                                                <p style="margin:2px 0 0; font-size:12px; color:#64748B; font-weight:600;">Suporte Técnico • ' . htmlspecialchars($companyName) . '</p>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                                <!-- RODAPÉ -->
+                                <tr>
+                                    <td style="background:#F8FAFC; padding:16px 30px; text-align:center; border-top:1px solid #E2E8F0;">
+                                        <p style="color:#94A3B8; font-size:11px; margin:0; font-weight:600;">Este e-mail foi enviado automaticamente pelo sistema <strong style="color:#4F46E5;">CetusG</strong> • ' . htmlspecialchars($companyName) . '</p>
+                                        <p style="color:#CBD5E1; font-size:10px; margin:4px 0 0;">Por favor, não responda a esta mensagem.</p>
+                                    </td>
+                                </tr>
+
+                            </table>
+                        </td></tr>
+                    </table>
                 </body>
-                </html>
-                ";
+                </html>';
 
                 $headers = "MIME-Version: 1.0\r\n";
                 $headers .= "Content-type:text/html;charset=UTF-8\r\n";
