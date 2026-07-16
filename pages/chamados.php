@@ -47,10 +47,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     // Disparo de Mensagem no WhatsApp (Forma Gratuita via WhatsApp Web)
+    $debug_log = __DIR__ . '/../wa_debug.log';
+    file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Início. Status: $new_status\n", FILE_APPEND);
+    
     if ($new_status === 'Concluído' || $new_status === 'Sem Solução') {
+        file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Entrou no IF de status\n", FILE_APPEND);
         try {
+            // Primeiro, verificar quais colunas existem na tabela users
+            $cols_stmt = $pdo->query("SHOW COLUMNS FROM users");
+            $columns = $cols_stmt->fetchAll(PDO::FETCH_COLUMN);
+            file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Colunas users: " . implode(', ', $columns) . "\n", FILE_APPEND);
+            
+            // Montar a query dinamicamente baseada nas colunas disponíveis
+            $phone_col = 'NULL';
+            if (in_array('access_number', $columns)) {
+                $phone_col = 'u.access_number';
+            } elseif (in_array('phone', $columns)) {
+                $phone_col = 'u.phone';
+            }
+            file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Coluna de telefone: $phone_col\n", FILE_APPEND);
+
             $q = "SELECT t.title, t.description, t.closed_at, 
-                         u.name as requester_name, COALESCE(u.access_number, u.phone) as requester_phone, u.sector, u.role, 
+                         u.name as requester_name, $phone_col as requester_phone, u.sector, u.role, 
                          un.name as unit_name, 
                          a.name as asset_name
                   FROM tickets t
@@ -62,6 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $stmtDetails->execute([$ticket_id, $compId]);
             $details = $stmtDetails->fetch(PDO::FETCH_ASSOC);
 
+            file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Details: " . json_encode($details) . "\n", FILE_APPEND);
+            file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Phone encontrado: '" . ($details['requester_phone'] ?? 'VAZIO') . "'\n", FILE_APPEND);
+
             if ($details && !empty($details['requester_phone'])) {
                 $stmtC = $pdo->prepare("SELECT company_name FROM company_settings WHERE id = ? OR company_id = ? LIMIT 1");
                 $stmtC->execute([$compId, $compId]);
@@ -69,6 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $companyName = $companyRow['company_name'] ?? 'Empresa';
                 
                 $phone = preg_replace('/[^0-9]/', '', $details['requester_phone']); // Só números
+                file_put_contents($debug_log, date('Y-m-d H:i:s') . " - Phone limpo: '$phone' (len=" . strlen($phone) . ")\n", FILE_APPEND);
+                
                 if (strlen($phone) >= 10) { 
                     if (substr($phone, 0, 2) !== '55' && strlen($phone) <= 11) {
                         $phone = '55' . $phone; // Adiciona o DDI do Brasil
@@ -86,11 +109,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $msg .= "👨‍💻 *Técnico:* {$final_closer}\n\n";
                     $msg .= "_Mensagem enviada automaticamente pelo sistema CetusG._";
                     
-                    header('Location: ?page=chamados&success=' . ($new_status == 'Pendente' ? '3' : '2') . '&wa_phone=' . urlencode($phone) . '&wa_text=' . urlencode($msg));
+                    $redirect = '?page=chamados&success=' . ($new_status == 'Pendente' ? '3' : '2') . '&wa_phone=' . urlencode($phone) . '&wa_text=' . urlencode($msg);
+                    file_put_contents($debug_log, date('Y-m-d H:i:s') . " - SUCESSO! Redirect: $redirect\n", FILE_APPEND);
+                    
+                    header('Location: ' . $redirect);
                     exit;
+                } else {
+                    file_put_contents($debug_log, date('Y-m-d H:i:s') . " - FALHOU: telefone muito curto\n", FILE_APPEND);
                 }
+            } else {
+                file_put_contents($debug_log, date('Y-m-d H:i:s') . " - FALHOU: telefone vazio ou details null\n", FILE_APPEND);
             }
         } catch (Exception $e) {
+            file_put_contents($debug_log, date('Y-m-d H:i:s') . " - EXCEPTION: " . $e->getMessage() . "\n", FILE_APPEND);
             if(class_exists('ErrorLogger')) ErrorLogger::log("Erro WhatsApp: " . $e->getMessage(), 'WARNING');
         }
     }
