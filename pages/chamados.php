@@ -122,7 +122,7 @@ $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $tickets = $stmt->fetchAll();
 
-$users_stmt = $pdo->prepare("SELECT u.id, u.name, u.sector, u.role, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? ORDER BY u.name");
+$users_stmt = $pdo->prepare("SELECT u.id, u.name, u.email, u.sector, u.role, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? ORDER BY u.name");
 $users_stmt->execute([$compId]);
 $users = $users_stmt->fetchAll();
 
@@ -389,6 +389,10 @@ $assets = $assets_stmt->fetchAll();
             <div class="form-group">
                 <label class="form-label">Perfil de Acesso</label>
                 <input type="text" id="user_role" class="form-input" readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-envelope" style="color: var(--crm-purple); margin-right: 0.25rem;"></i> E-mail do Solicitante</label>
+                <input type="email" id="user_email" class="form-input" readonly style="background: var(--bg-main); color: var(--text-soft); cursor: default;">
             </div>
             <div class="form-group" style="position: relative;">
                 <label class="form-label">Produto Vinculado</label>
@@ -711,11 +715,13 @@ $assets = $assets_stmt->fetchAll();
             document.getElementById('user_role').value = item.role || '';
             document.getElementById('unit_id').value = item.unit_id || '';
             document.getElementById('unit_display').value = item.unit_name || '';
+            document.getElementById('user_email').value = item.email || '';
         } else {
             document.getElementById('sector').value = '';
             document.getElementById('user_role').value = '';
             document.getElementById('unit_id').value = '';
             document.getElementById('unit_display').value = '';
+            document.getElementById('user_email').value = '';
         }
     }
 
