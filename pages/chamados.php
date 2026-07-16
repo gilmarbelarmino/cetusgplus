@@ -57,6 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             if(!class_exists('\PHPMailer\PHPMailer\PHPMailer')) {
                 require_once __DIR__ . '/../vendor/autoload.php';
             }
+            
+            // Buscar informações da empresa
+            $stmtC = $pdo->prepare("SELECT company_name, logo_url FROM company_settings WHERE id = ?");
+            $stmtC->execute([$compId]);
+            $comp = $stmtC->fetch();
+            $companyName = $comp['company_name'] ?? 'CetusG';
+            $logoUrl = $comp['logo_url'] ? 'https://support.cetusg.com/' . ltrim($comp['logo_url'], '/') : '';
+
             $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
             $mail->isSMTP();
             $mail->Host       = 'smtp.gmail.com';
@@ -67,32 +75,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $mail->Port       = 587;
             $mail->CharSet    = 'UTF-8';
 
-            $mail->setFrom('tecnologia.arrastao@gmail.com', 'CetusG Support');
+            $mail->setFrom('tecnologia.arrastao@gmail.com', $companyName);
             $mail->addAddress($ticket_data['requester_email'], $ticket_data['requester_name']);
 
             $mail->isHTML(true);
-            $mail->Subject = "Atualização do Chamado: {$ticket_data['title']}";
-            
-            $statusText = $new_status === 'Concluído' ? '✅ Concluído' : '⚠️ Sem Solução';
             $closedAt = date('d/m/Y H:i');
             
+            // Assunto: Nome da pessoa - Chamado Tecnico - data terminação
+            $mail->Subject = "{$ticket_data['requester_name']} - Chamado Técnico - {$closedAt}";
+            
+            $statusText = $new_status === 'Concluído' ? '<span style="color: #28a745; font-weight: bold;">✅ Concluído</span>' : '<span style="color: #ffc107; font-weight: bold;">⚠️ Sem Solução</span>';
+            
+            $logoHtml = $logoUrl ? "<div style='text-align: center; margin-bottom: 20px;'><img src='{$logoUrl}' alt='{$companyName}' style='max-height: 80px;' /></div>" : "";
+
             $mail->Body = "
-                <div style='font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 8px; overflow: hidden;'>
-                    <div style='background-color: #4CAF50; color: white; padding: 15px 20px;'>
-                        <h2 style='margin: 0;'>Chamado Atualizado</h2>
-                    </div>
-                    <div style='padding: 20px;'>
-                        <p>Olá, <strong>{$ticket_data['requester_name']}</strong>!</p>
-                        <p>Seu chamado foi atualizado no sistema.</p>
-                        <ul style='list-style-type: none; padding: 0;'>
-                            <li style='margin-bottom: 10px;'><strong>🎫 Título:</strong> {$ticket_data['title']}</li>
-                            <li style='margin-bottom: 10px;'><strong>🔄 Status:</strong> {$statusText}</li>
-                            <li style='margin-bottom: 10px;'><strong>📅 Data:</strong> {$closedAt}</li>
-                            <li style='margin-bottom: 10px;'><strong>👨‍💻 Técnico:</strong> {$final_closer}</li>
-                        </ul>
-                    </div>
-                    <div style='background-color: #f9f9f9; padding: 10px 20px; text-align: center; font-size: 12px; color: #777;'>
-                        <p style='margin: 0;'>Mensagem enviada automaticamente pelo sistema CetusG. Por favor, não responda a este e-mail.</p>
+                <div style='font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; background-color: #f4f6f9; padding: 20px; border-radius: 10px;'>
+                    {$logoHtml}
+                    <div style='background-color: #ffffff; border-top: 4px solid #0056b3; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);'>
+                        <div style='padding: 30px;'>
+                            <h2 style='margin-top: 0; color: #333; font-size: 22px; text-align: center;'>Atualização de Chamado</h2>
+                            <hr style='border: 0; border-top: 1px solid #eee; margin: 20px 0;'>
+                            <p style='font-size: 16px; color: #555;'>Olá, <strong>{$ticket_data['requester_name']}</strong>!</p>
+                            <p style='font-size: 15px; color: #666; margin-bottom: 25px;'>O seu chamado no setor de tecnologia acaba de ser atualizado no nosso sistema. Confira os detalhes abaixo:</p>
+                            
+                            <div style='background-color: #f8f9fa; padding: 20px; border-radius: 6px; border-left: 4px solid #17a2b8;'>
+                                <ul style='list-style-type: none; padding: 0; margin: 0; font-size: 15px;'>
+                                    <li style='margin-bottom: 12px;'><strong>🎫 Título:</strong> {$ticket_data['title']}</li>
+                                    <li style='margin-bottom: 12px;'><strong>🔄 Status:</strong> {$statusText}</li>
+                                    <li style='margin-bottom: 12px;'><strong>📅 Fechado em:</strong> {$closedAt}</li>
+                                    <li style='margin-bottom: 0;'><strong>👨‍💻 Técnico Responsável:</strong> {$final_closer}</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div style='background-color: #e9ecef; padding: 15px 20px; text-align: center; font-size: 13px; color: #6c757d; border-top: 1px solid #dee2e6;'>
+                            <p style='margin: 0;'>Esta é uma mensagem automática do sistema <strong>{$companyName}</strong>.<br>Por favor, não responda a este e-mail.</p>
+                        </div>
                     </div>
                 </div>
             ";
