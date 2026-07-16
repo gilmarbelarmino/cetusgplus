@@ -102,13 +102,23 @@ $history_tickets = [];
     }
 
     // 3. PROCESSAMENTO FINAL
-    foreach ($all_users as $usr) {
+    foreach ($all_users as &$usr) {
         $usr['unit_name'] = ''; 
         $usr['tenant_name'] = '';
-        $usr['menus'] = getUserMenus($pdo, $usr['id'] ?? null);
+        
+        // Carregar menus individualmente do BD
+        $menus = [];
+        try {
+            $m_stmt = $pdo->prepare("SELECT menu FROM user_menus WHERE user_id = ?");
+            $m_stmt->execute([$usr['id']]);
+            $menus = $m_stmt->fetchAll(PDO::FETCH_COLUMN);
+        } catch (Exception $e) {}
+        
+        $usr['menus'] = $menus;
         $usr['accounts'] = $user_accounts_map[$usr['id']] ?? [];
         $sectors_list[$usr['sector'] ?? 'Sem Setor'][] = $usr;
     }
+    unset($usr); // Quebrar a referência
     echo "<!-- DEBUG: Total processado: " . count($all_users) . " usuários -->";
 
 try { 
