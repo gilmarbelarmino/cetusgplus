@@ -555,6 +555,7 @@ function calcEditTotal() {
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
             <input type="hidden" name="action" value="add_volunteer">
+            <input type="hidden" name="system_avatar" id="volunteerAvatarUrl" value="">
             <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;">
                 <!-- Foto do Voluntário -->
                 <div class="form-group" style="grid-column: span 2; display:flex; align-items:center; gap:1.5rem; background:var(--crm-gray-light); padding:1.25rem; border-radius:1rem; border:1px solid #e2e8f0;">
@@ -897,6 +898,7 @@ function fillUserData() {
         document.getElementById('volunteerSector').value      = opt.getAttribute('data-sector');
         document.getElementById('volunteerUnit').value        = opt.getAttribute('data-unit');
         document.getElementById('volunteerUnitDisplay').value = opt.getAttribute('data-unit-name');
+        document.getElementById('volunteerAvatarUrl').value   = opt.getAttribute('data-avatar');
     }
 }
 
