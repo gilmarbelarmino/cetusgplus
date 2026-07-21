@@ -18,6 +18,11 @@ try { $pdo->exec("ALTER TABLE volunteer_history ADD COLUMN company_id INT NOT NU
 
 // ─── Garantir colunas na tabela volunteers ──────────────────────────────
 try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
+
+// MIGRACAO AUTOMATICA: Sincronizar fotos dos voluntarios com os usuarios do sistema baseando no e-mail
+try {
+    $pdo->exec("UPDATE volunteers v JOIN users u ON v.email = u.email SET v.avatar_url = u.avatar_url WHERE (v.avatar_url IS NULL OR v.avatar_url = '') AND u.avatar_url IS NOT NULL AND u.avatar_url != ''");
+} catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN points INT DEFAULT 0"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN end_date DATE NULL"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE volunteer_history ADD COLUMN points INT DEFAULT 0"); } catch(Exception $e) {}
@@ -31,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_v
     foreach ($months as $m) { $total += floatval($_POST["hours_$m"] ?? 0); }
     
     $vid = 'V'.time();
-    $avatar_url = null;
+    $avatar_url = !empty($_POST['system_avatar']) ? $_POST['system_avatar'] : null;
     if (!empty($_FILES['avatar']['name'])) {
         $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
         $filename = 'avatar_vol_' . $vid . '.' . $ext;
@@ -136,7 +141,7 @@ $units_stmt = $pdo->prepare("SELECT * FROM units WHERE company_id = ?");
 $units_stmt->execute([$compId]);
 $units = $units_stmt->fetchAll();
 
-$users_stmt = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.unit_id, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? ORDER BY u.name");
+$users_stmt = $pdo->prepare("SELECT u.id, u.name, u.email, u.phone, u.sector, u.unit_id, u.avatar_url, un.name as unit_name FROM users u LEFT JOIN units un ON CONVERT(u.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(un.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE u.company_id = ? ORDER BY u.name");
 $users_stmt->execute([$compId]);
 $users = $users_stmt->fetchAll();
 
