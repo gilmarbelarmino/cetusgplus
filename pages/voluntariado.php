@@ -19,9 +19,14 @@ try { $pdo->exec("ALTER TABLE volunteer_history ADD COLUMN company_id INT NOT NU
 // ─── Garantir colunas na tabela volunteers ──────────────────────────────
 try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN company_id INT NOT NULL DEFAULT 1"); } catch(Exception $e) {}
 
+// MIGRACAO AUTOMATICA: Limpar avatares corrompidos no formato base64 que excedem o limite do campo VARCHAR(255)
+try {
+    $pdo->exec("UPDATE volunteers SET avatar_url = NULL WHERE avatar_url LIKE 'data:image%'");
+} catch(Exception $e) {}
+
 // MIGRACAO AUTOMATICA: Sincronizar fotos dos voluntarios com os usuarios do sistema baseando no e-mail
 try {
-    $pdo->exec("UPDATE volunteers v JOIN users u ON v.email = u.email SET v.avatar_url = u.avatar_url WHERE (v.avatar_url IS NULL OR v.avatar_url = '') AND u.avatar_url IS NOT NULL AND u.avatar_url != ''");
+    $pdo->exec("UPDATE volunteers v JOIN users u ON v.email = u.email SET v.avatar_url = u.avatar_url WHERE (v.avatar_url IS NULL OR v.avatar_url = '') AND u.avatar_url IS NOT NULL AND u.avatar_url != '' AND u.avatar_url NOT LIKE 'data:image%'");
 } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN points INT DEFAULT 0"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN end_date DATE NULL"); } catch(Exception $e) {}
@@ -30,7 +35,8 @@ try { $pdo->exec("ALTER TABLE volunteer_history ADD COLUMN points INT DEFAULT 0"
 // Helper para validar avatares
 function isValidAvatar($url) {
     if (empty(trim($url))) return false;
-    if (strpos($url, 'http') === 0 || strpos($url, 'data:image') === 0) return true;
+    if (strpos($url, 'data:image') === 0) return false;
+    if (strpos($url, 'http') === 0) return true;
     return file_exists(__DIR__ . '/../' . ltrim($url, '/'));
 }
 
@@ -64,18 +70,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_v
     header('Location: ?page=voluntariado&success=1'); exit;
 }
 
-// Inativar voluntário (salva histórico)
+// Excluir voluntário logicamente (Muda status para Inativo)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'inativar') {
     $compId = getCurrentUserCompanyId();
     $vid = $_POST['volunteer_id'];
-    $vol = $pdo->prepare("SELECT * FROM volunteers WHERE id = ? AND company_id = ?");
-    $vol->execute([$vid, $compId]);
-    $vol = $vol->fetch();
-    if ($vol) {
+    $pdo->prepare("UPDATE volunteers SET status = 'Inativo', end_date = CURDATE(), last_edited_by = ?, last_edited_at = NOW() WHERE id = ? AND company_id = ?")->execute([$user['id'], $vid, $compId]);
+    
+    // Calcular totais e registrar histórico de conclusão
+    $stmt = $pdo->prepare("SELECT start_date, total_hours, points FROM volunteers WHERE id = ? AND company_id = ?");
+    $stmt->execute([$vid, $compId]);
+    $volData = $stmt->fetch();
+    if ($volData) {
         $pdo->prepare("INSERT INTO volunteer_history (volunteer_id, start_date, end_date, total_hours, points, edited_by, edited_at, company_id) VALUES (?, ?, CURDATE(), ?, ?, ?, NOW(), ?)")
-            ->execute([$vid, $vol['start_date'], $vol['total_hours'], $vol['points'], $user['id'], $compId]);
-        $pdo->prepare("UPDATE volunteers SET status = 'Inativo', end_date = CURDATE() WHERE id = ? AND company_id = ?")
-            ->execute([$vid, $compId]);
+            ->execute([$vid, $volData['start_date'], $volData['total_hours'], $volData['points'], $user['id'], $compId]);
     }
     header('Location: ?page=voluntariado&cert='.$vid.'&inativado=1'); exit;
 }
@@ -118,9 +125,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
     $avatar_url = $_POST['current_avatar'] ?? null;
     if (!empty($_FILES['avatar']['name']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
         $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
-        $mime = mime_content_type($_FILES['avatar']['tmp_name']);
-        $dataImg = file_get_contents($_FILES['avatar']['tmp_name']);
-        $avatar_url = 'data:' . $mime . ';base64,' . base64_encode($dataImg);
+        $vid = $_POST['volunteer_id'];
+        $filename = 'avatar_vol_' . $vid . '_' . time() . '.' . $ext;
+        $dest = __DIR__ . '/../uploads/' . $filename;
+        if (move_uploaded_file($_FILES['avatar']['tmp_name'], $dest)) {
+            $avatar_url = 'uploads/' . $filename;
+        }
     }
 
     $compId = getCurrentUserCompanyId();
