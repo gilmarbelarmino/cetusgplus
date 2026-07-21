@@ -34,10 +34,11 @@ try { $pdo->exec("ALTER TABLE volunteer_history ADD COLUMN points INT DEFAULT 0"
 
 // Helper para validar avatares
 function isValidAvatar($url) {
-    if (empty(trim($url))) return false;
-    if (strpos($url, 'data:image') === 0) return false;
-    if (strpos($url, 'http') === 0) return true;
-    return file_exists(__DIR__ . '/../' . ltrim($url, '/'));
+    if (empty($url) || trim((string)$url) === '') return false;
+    $urlStr = (string)$url;
+    if (strpos($urlStr, 'data:image') === 0) return false;
+    if (strpos($urlStr, 'http') === 0) return true;
+    return file_exists(__DIR__ . '/../' . ltrim($urlStr, '/'));
 }
 
 // ─── AÇÕES POST ───────────────────────────────────────────────────────────────
