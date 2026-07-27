@@ -140,9 +140,22 @@ try {
     $slaBySector_stmt = $pdo->prepare("
         SELECT sector, 
                COUNT(*) as total,
-               ROUND(AVG($slaExpr) / 60, 1) as avg_hours
+               ROUND(AVG($slaExpr) / 60, 1) as avg_hours,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 1 THEN $slaExpr ELSE NULL END) / 60, 1) as m1,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 2 THEN $slaExpr ELSE NULL END) / 60, 1) as m2,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 3 THEN $slaExpr ELSE NULL END) / 60, 1) as m3,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 4 THEN $slaExpr ELSE NULL END) / 60, 1) as m4,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 5 THEN $slaExpr ELSE NULL END) / 60, 1) as m5,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 6 THEN $slaExpr ELSE NULL END) / 60, 1) as m6,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 7 THEN $slaExpr ELSE NULL END) / 60, 1) as m7,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 8 THEN $slaExpr ELSE NULL END) / 60, 1) as m8,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 9 THEN $slaExpr ELSE NULL END) / 60, 1) as m9,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 10 THEN $slaExpr ELSE NULL END) / 60, 1) as m10,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 11 THEN $slaExpr ELSE NULL END) / 60, 1) as m11,
+               ROUND(AVG(CASE WHEN MONTH(closed_at) = 12 THEN $slaExpr ELSE NULL END) / 60, 1) as m12
         FROM tickets
         WHERE closed_at IS NOT NULL AND status IN ('Concluído','Solucionado','Finalizado','Fechado')
+          AND YEAR(closed_at) = YEAR(CURDATE())
           AND sector IS NOT NULL AND TRIM(sector) != ''
           AND company_id = ?
         GROUP BY sector ORDER BY avg_hours ASC
@@ -953,13 +966,19 @@ function printCurrentTab() {
         <!-- Tabela detalhada por setor -->
         <?php if (!empty($slaBySector)): ?>
         <div style="margin-top:2rem;overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;min-width:1000px;">
                 <thead>
                     <tr style="background:#f8fafc;">
-                        <th style="text-align:left;padding:.75rem 1rem;font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Setor</th>
-                        <th style="text-align:center;padding:.75rem 1rem;font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Chamados Fechados</th>
+                        <th style="text-align:left;padding:.75rem 1rem;font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:2px solid #e2e8f0;position:sticky;left:0;background:#f8fafc;z-index:2;">Setor</th>
+                        <th style="text-align:center;padding:.75rem 1rem;font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Fechados</th>
                         <th style="text-align:center;padding:.75rem 1rem;font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Média SLA</th>
-                        <th style="text-align:left;padding:.75rem 1rem;font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Performance</th>
+                        <?php 
+                        $monthsLabels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                        foreach($monthsLabels as $ml): 
+                        ?>
+                        <th style="text-align:center;padding:.75rem 0.5rem;font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:2px solid #e2e8f0;"><?= $ml ?></th>
+                        <?php endforeach; ?>
+                        <th style="text-align:left;padding:.75rem 1rem;font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:2px solid #e2e8f0;min-width:150px;">Performance</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -970,11 +989,19 @@ function printCurrentTab() {
                     $barColor = $sl['avg_hours'] <= 4 ? '#10b981' : ($sl['avg_hours'] <= 12 ? '#f59e0b' : '#ef4444');
                 ?>
                 <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="padding:.75rem 1rem;font-weight:700;color:#1e293b;"><?= htmlspecialchars($sl['sector']) ?></td>
+                    <td style="padding:.75rem 1rem;font-weight:700;color:#1e293b;position:sticky;left:0;background:#fff;z-index:1;"><?= htmlspecialchars($sl['sector']) ?></td>
                     <td style="padding:.75rem 1rem;text-align:center;font-weight:700;color:#475569;"><?= $sl['total'] ?></td>
                     <td style="padding:.75rem 1rem;text-align:center;">
                         <span style="font-size:1rem;font-weight:900;color:<?= $barColor ?>;"><?= $sl['avg_hours'] ?>h</span>
                     </td>
+                    <?php for($i=1; $i<=12; $i++): 
+                        $mVal = $sl["m$i"];
+                        $mColor = $mVal === null ? '#cbd5e1' : ($mVal <= 4 ? '#10b981' : ($mVal <= 12 ? '#f59e0b' : '#ef4444'));
+                    ?>
+                    <td style="padding:.75rem 0.5rem;text-align:center;font-weight:700;color:<?= $mColor ?>;font-size:0.8rem;">
+                        <?= $mVal !== null ? $mVal.'h' : '-' ?>
+                    </td>
+                    <?php endfor; ?>
                     <td style="padding:.75rem 1rem;">
                         <div style="display:flex;align-items:center;gap:.75rem;">
                             <div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
