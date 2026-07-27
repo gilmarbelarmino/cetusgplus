@@ -65,7 +65,25 @@ try {
     $chSolucionados= ($chAllStatus['Concluído'] ?? 0) + ($chAllStatus['Concluido'] ?? 0) + ($chAllStatus['Solucionado'] ?? 0) + ($chAllStatus['Solucionados'] ?? 0) + ($chAllStatus['Finalizado'] ?? 0) + ($chAllStatus['Fechado'] ?? 0);
     $chSemSolucao  = ($chAllStatus['Sem Solução'] ?? 0) + ($chAllStatus['Sem Solucao'] ?? 0);
 
-    $chBySector_stmt = $pdo->prepare("SELECT sector, COUNT(*) as count FROM tickets WHERE company_id = ? GROUP BY sector ORDER BY count DESC");
+    $chBySector_stmt = $pdo->prepare("
+        SELECT sector, 
+               COUNT(*) as count,
+               COUNT(CASE WHEN MONTH(created_at) = 1 THEN 1 END) as m1,
+               COUNT(CASE WHEN MONTH(created_at) = 2 THEN 1 END) as m2,
+               COUNT(CASE WHEN MONTH(created_at) = 3 THEN 1 END) as m3,
+               COUNT(CASE WHEN MONTH(created_at) = 4 THEN 1 END) as m4,
+               COUNT(CASE WHEN MONTH(created_at) = 5 THEN 1 END) as m5,
+               COUNT(CASE WHEN MONTH(created_at) = 6 THEN 1 END) as m6,
+               COUNT(CASE WHEN MONTH(created_at) = 7 THEN 1 END) as m7,
+               COUNT(CASE WHEN MONTH(created_at) = 8 THEN 1 END) as m8,
+               COUNT(CASE WHEN MONTH(created_at) = 9 THEN 1 END) as m9,
+               COUNT(CASE WHEN MONTH(created_at) = 10 THEN 1 END) as m10,
+               COUNT(CASE WHEN MONTH(created_at) = 11 THEN 1 END) as m11,
+               COUNT(CASE WHEN MONTH(created_at) = 12 THEN 1 END) as m12
+        FROM tickets 
+        WHERE company_id = ? AND YEAR(created_at) = YEAR(CURDATE()) 
+        GROUP BY sector ORDER BY count DESC
+    ");
     $chBySector_stmt->execute([$compId]);
     $chBySector = $chBySector_stmt->fetchAll();
 } catch(Exception $e) {
@@ -861,6 +879,40 @@ function printCurrentTab() {
     <div class="glass-panel">
         <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.5rem;"><i class="fa-solid fa-building-user"></i> Requisições por Departamento (Setor)</h3>
         <div style="height: <?= max(250, count($chBySector) * 40) ?>px;"><canvas id="chamadosSectorChart"></canvas></div>
+        
+        <?php if (!empty($chBySector)): ?>
+        <div style="margin-top:2rem;overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;min-width:900px;">
+                <thead>
+                    <tr style="background:#f8fafc;">
+                        <th style="text-align:left;padding:.75rem 1rem;font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:2px solid #e2e8f0;position:sticky;left:0;background:#f8fafc;z-index:2;">Setor</th>
+                        <th style="text-align:center;padding:.75rem 1rem;font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:2px solid #e2e8f0;">Total Ano</th>
+                        <?php 
+                        $monthsLabels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                        foreach($monthsLabels as $ml): 
+                        ?>
+                        <th style="text-align:center;padding:.75rem 0.5rem;font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;border-bottom:2px solid #e2e8f0;"><?= $ml ?></th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($chBySector as $ch): ?>
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:.75rem 1rem;font-weight:700;color:#1e293b;position:sticky;left:0;background:#fff;z-index:1;"><?= htmlspecialchars($ch['sector'] ?: 'Sem Setor') ?></td>
+                    <td style="padding:.75rem 1rem;text-align:center;font-weight:900;color:#6366F1;"><?= $ch['count'] ?></td>
+                    <?php for($i=1; $i<=12; $i++): 
+                        $mVal = $ch["m$i"];
+                    ?>
+                    <td style="padding:.75rem 0.5rem;text-align:center;font-weight:700;color:<?= $mVal > 0 ? '#475569' : '#cbd5e1' ?>;font-size:0.8rem;">
+                        <?= $mVal > 0 ? $mVal : '-' ?>
+                    </td>
+                    <?php endfor; ?>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
     </div>
 
     <div class="glass-panel" style="margin-top: 2rem;">
