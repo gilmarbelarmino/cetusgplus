@@ -219,7 +219,7 @@ try {
     $assetsBySector_stmt->execute([$compId]);
     $assetsBySector = $assetsBySector_stmt->fetchAll();
 
-    $assetsByCategory_stmt = $pdo->prepare("SELECT category, COUNT(*) as count FROM assets WHERE company_id = ? GROUP BY category ORDER BY count DESC LIMIT 8");
+    $assetsByCategory_stmt = $pdo->prepare("SELECT category, COUNT(*) as count FROM assets WHERE company_id = ? GROUP BY category ORDER BY count DESC");
     $assetsByCategory_stmt->execute([$compId]);
     $assetsByCategory = $assetsByCategory_stmt->fetchAll();
 
@@ -1104,7 +1104,29 @@ function printCurrentTab() {
         </div>
         <div class="glass-panel">
             <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.5rem;"><i class="fa-solid fa-tags"></i> Equipamentos por Categoria</h3>
-            <div style="height: 300px;"><canvas id="patrimonioCategoryChart"></canvas></div>
+            <div style="height: 300px; overflow-y: auto; padding-right: 0.5rem;">
+                <?php 
+                $colors = ['#5B21B6','#3B82F6','#10B981','#F59E0B','#EF4444','#6366F1','#EC4899','#14B8A6','#8B5CF6','#06B6D4','#F97316','#84CC16'];
+                $totalAss = array_sum(array_column($assetsByCategory, 'count')) ?: 1;
+                foreach ($assetsByCategory as $idx => $cat): 
+                    $c = $cat['count'];
+                    $pct = ($c / $totalAss) * 100;
+                    $color = $colors[$idx % count($colors)];
+                ?>
+                <div style="margin-bottom: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.4rem;">
+                        <span style="font-size: 0.85rem; font-weight: 700; color: #475569; text-transform: uppercase;"><?= htmlspecialchars($cat['category'] ?: 'Sem Categoria') ?></span>
+                        <div style="text-align:right;">
+                            <span style="font-size: 0.9rem; font-weight: 900; color: #1e293b;"><?= $c ?></span>
+                            <span style="font-size: 0.75rem; font-weight: 800; color: <?= $color ?>; margin-left: 0.25rem;">(<?= number_format($pct, 1, ',', '.') ?>%)</span>
+                        </div>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                        <div style="height: 100%; width: <?= $pct ?>%; background: <?= $color ?>; border-radius: 4px; transition: width 0.5s;"></div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
         </div>
     </div>
 
@@ -1918,27 +1940,7 @@ function printCurrentTab() {
         }
     });
 
-    if(document.getElementById('patrimonioCategoryChart')) new Chart(document.getElementById('patrimonioCategoryChart'), {
-        type: 'doughnut',
-        data: {
-            labels: <?= json_encode(array_column($assetsByCategory, 'category')) ?>,
-            datasets: [{ data: <?= json_encode(array_column($assetsByCategory, 'count')) ?>, backgroundColor: ['#5B21B6','#3B82F6','#10B981','#F59E0B','#EF4444','#6366F1','#EC4899','#14B8A6'] }]
-        },
-        options: {
-            ...chartOptions,
-            plugins: {
-                ...chartOptions.plugins,
-                datalabels: {
-                    ...chartOptions.plugins.datalabels,
-                    formatter: (value, ctx) => {
-                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                        let percentage = (value * 100 / sum).toFixed(1) + "%";
-                        return percentage;
-                    }
-                }
-            }
-        }
-    });
+
 
     if(document.getElementById('patrimonioSectorChart')) new Chart(document.getElementById('patrimonioSectorChart'), {
         type: 'bar',
