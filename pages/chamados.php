@@ -6,8 +6,9 @@ try { $pdo->exec("ALTER TABLE ticket_pauses ADD COLUMN company_id INT NOT NULL D
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_ticket') {
     $compId = getCurrentUserCompanyId();
-    $stmt = $pdo->prepare("INSERT INTO tickets (id, asset_id, title, description, priority, requester_id, sector, unit_id, status, company_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Aberto', ?, NOW())");
-    $stmt->execute(['T' . time(), $_POST['asset_id'] ?: null, $_POST['title'], $_POST['description'], $_POST['priority'], $_POST['requester_id'], $_POST['sector'], $_POST['unit_id'], $compId]);
+    $customDate = !empty($_POST['created_at']) ? $_POST['created_at'] : date('Y-m-d H:i:s');
+    $stmt = $pdo->prepare("INSERT INTO tickets (id, asset_id, title, description, priority, requester_id, sector, unit_id, status, company_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Aberto', ?, ?)");
+    $stmt->execute(['T' . time(), $_POST['asset_id'] ?: null, $_POST['title'], $_POST['description'], $_POST['priority'], $_POST['requester_id'], $_POST['sector'], $_POST['unit_id'], $compId, $customDate]);
     header('Location: ?page=chamados&success=1');
     exit;
 }
@@ -505,6 +506,11 @@ $assets = $assets_stmt->fetchAll();
             <div class="form-group">
                 <label class="form-label">Título *</label>
                 <input type="text" name="title" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><i class="fa-regular fa-calendar" style="color: var(--text-soft); margin-right: 0.25rem;"></i> Data do Chamado (Opcional)</label>
+                <input type="datetime-local" name="created_at" class="form-input" style="color: var(--text-main);">
+                <small style="color: var(--text-soft); font-size: 0.75rem; margin-top: 0.25rem; display: block;">Se deixar em branco, preencheremos com a data e hora atual.</small>
             </div>
             <div class="form-group">
                 <label class="form-label">Descrição *</label>
