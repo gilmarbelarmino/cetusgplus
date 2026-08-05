@@ -425,7 +425,7 @@ $assets = $assets_stmt->fetchAll();
                 </td>
 
                 <td class="col-actions">
-                    <?php if (($ticket['status'] == 'Aberto' || $ticket['status'] == 'Pendente') && ($user['role'] == 'Administrador' || $user['role'] == 'Suporte Técnico')): ?>
+                    <?php if ($ticket['status'] == 'Aberto' || $ticket['status'] == 'Pendente'): ?>
                         <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                             <?php if ($ticket['status'] == 'Aberto'): ?>
                                 <!-- Editar -->
