@@ -229,79 +229,38 @@ $assets = $assets_stmt->fetchAll();
     transition: background-color 0.2s, color 0.2s;
     border-bottom: 1px solid rgba(226, 232, 240, 0.5);
 }
-.autocomplete-suggestion-item:last-child {
-    border-bottom: none;
-}
+.autocomplete-suggestion-item:last-child { border-bottom: none; }
 .autocomplete-suggestion-item:hover {
     background-color: rgba(91, 33, 182, 0.05);
     color: var(--crm-purple, #5B21B6);
 }
-.autocomplete-suggestions::-webkit-scrollbar {
-    width: 6px;
-}
-.autocomplete-suggestions::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
-    border-radius: 4px;
-}
+.autocomplete-suggestions::-webkit-scrollbar { width: 6px; }
+.autocomplete-suggestions::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
 
-/* --- Novo Layout de Chamados --- */
-.ch-stats-bar { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
-.ch-stat-card { flex:1; min-width: 120px; background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e2e8f0); border-radius: 1rem; padding: 1rem 1.25rem; text-align: center; transition: all 0.2s; cursor: pointer; }
-.ch-stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-.ch-stat-card.active { border-width: 2px; }
-.ch-stat-num { font-size: 1.75rem; font-weight: 900; line-height: 1; }
-.ch-stat-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.25rem; }
+.table-chamados { table-layout: auto; width: 100%; }
+.table-chamados th, .table-chamados td { vertical-align: middle; padding: 0.75rem; }
+.col-id { width: 60px; white-space: nowrap; text-align: center; }
+.col-title { min-width: 220px; max-width: 350px; white-space: normal; word-wrap: break-word; }
+.col-requester { min-width: 150px; white-space: nowrap; }
+.col-unit { min-width: 100px; white-space: nowrap; }
+.col-priority { width: 110px; white-space: nowrap; }
+.col-status { width: 130px; white-space: nowrap; }
+.col-date { width: 180px; min-width: 160px; }
+.col-actions { width: 120px; white-space: nowrap; text-align: center; }
 
-.ch-search-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
-.ch-search-input { flex: 1; min-width: 200px; padding: 0.65rem 1rem 0.65rem 2.5rem; border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.75rem; font-size: 0.85rem; background: var(--bg-card, #fff); color: var(--text-main); outline: none; transition: border-color 0.2s; }
+.ch-search-wrap { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+.ch-search-input { flex: 1; min-width: 180px; padding: 0.6rem 1rem 0.6rem 2.5rem; border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.75rem; font-size: 0.85rem; background: var(--bg-card, #fff); color: var(--text-main); outline: none; transition: border-color 0.2s; }
 .ch-search-input:focus { border-color: #5B21B6; }
-.ch-filter-select { padding: 0.65rem 1rem; border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.75rem; font-size: 0.8rem; background: var(--bg-card, #fff); color: var(--text-main); cursor: pointer; min-width: 130px; }
-
-.ch-ticket-list { display: flex; flex-direction: column; gap: 0.5rem; }
-.ch-ticket-row { display: grid; grid-template-columns: 50px 1fr 180px 110px 130px 180px 100px; gap: 0.75rem; align-items: center; background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.85rem; padding: 0.85rem 1rem; transition: all 0.15s; }
-.ch-ticket-row:hover { border-color: #c4b5fd; box-shadow: 0 2px 8px rgba(91, 33, 182, 0.06); }
-.ch-ticket-row.status-concluido { opacity: 0.7; }
-.ch-ticket-row.status-concluido:hover { opacity: 1; }
-
-.ch-ticket-id { font-family: monospace; font-size: 0.7rem; color: var(--text-soft); text-align: center; background: var(--bg-main, #f8fafc); padding: 0.3rem; border-radius: 0.4rem; }
-.ch-ticket-title { font-weight: 700; font-size: 0.88rem; color: var(--text-main); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ch-ticket-title small { display: block; font-weight: 500; font-size: 0.72rem; color: var(--text-soft); margin-top: 0.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ch-ticket-requester { display: flex; align-items: center; gap: 0.5rem; }
-.ch-ticket-requester img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color); flex-shrink:0; }
-.ch-ticket-requester .ch-avatar-placeholder { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-main); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-main); border: 1px solid var(--border-color); flex-shrink:0; }
-.ch-ticket-requester span { font-weight: 600; font-size: 0.8rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.ch-badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.65rem; border-radius: 0.5rem; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
-.ch-badge-aberto { background: #EEF2FF; color: #4F46E5; }
-.ch-badge-concluido { background: #ECFDF5; color: #059669; }
-.ch-badge-pendente { background: #FFF7ED; color: #D97706; }
-.ch-badge-semsolucao { background: #FEF2F2; color: #DC2626; }
-.ch-badge-baixa { background: #F0FDF4; color: #16A34A; }
-.ch-badge-media { background: #EFF6FF; color: #2563EB; }
-.ch-badge-alta { background: #FFF7ED; color: #EA580C; }
-.ch-badge-critica { background: #FEF2F2; color: #DC2626; }
-
-.ch-ticket-date { font-size: 0.72rem; color: var(--text-soft); line-height: 1.4; }
-.ch-ticket-date strong { color: var(--text-main); font-weight: 700; }
-.ch-ticket-actions { display: flex; gap: 0.3rem; justify-content: center; }
+.ch-filter-select { padding: 0.6rem 0.75rem; border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.75rem; font-size: 0.8rem; background: var(--bg-card, #fff); color: var(--text-main); cursor: pointer; }
 
 .ch-pagination { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
 .ch-page-btn { padding: 0.4rem 0.85rem; border: 1px solid var(--border-color, #e2e8f0); border-radius: 0.5rem; background: var(--bg-card, #fff); color: var(--text-main); font-size: 0.8rem; cursor: pointer; font-weight: 600; transition: all 0.15s; }
 .ch-page-btn:hover { border-color: #5B21B6; color: #5B21B6; }
 .ch-page-btn.active { background: #5B21B6; color: #fff; border-color: #5B21B6; }
 .ch-page-info { font-size: 0.78rem; color: var(--text-soft); font-weight: 600; }
-.ch-empty { text-align: center; padding: 3rem; color: var(--text-soft); font-size: 0.9rem; }
 
-.ch-thead { display: grid; grid-template-columns: 50px 1fr 180px 110px 130px 180px 100px; gap: 0.75rem; padding: 0.5rem 1rem; font-size: 0.68rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
-
-@media (max-width: 1200px) {
-    .ch-ticket-row, .ch-thead { grid-template-columns: 45px 1fr 160px 95px 110px 160px 90px; }
-}
-@media (max-width: 900px) {
-    .ch-ticket-row, .ch-thead { grid-template-columns: 1fr; }
-    .ch-thead { display: none; }
-    .ch-ticket-row { gap: 0.5rem; padding: 1rem; }
-    .ch-ticket-id { justify-self: start; display: inline-block; }
+@media (max-width: 768px) {
+    .col-unit, .col-priority { display: none; }
 }
 </style>
 
@@ -333,50 +292,33 @@ $assets = $assets_stmt->fetchAll();
 </div>
 <?php endif; ?>
 
-<?php
-// Contadores por status
-$countAberto = 0; $countConcluido = 0; $countPendente = 0; $countSemSol = 0;
-foreach ($tickets as $tk) {
-    if ($tk['status'] == 'Aberto') $countAberto++;
-    elseif ($tk['status'] == 'Concluído' || $tk['status'] == 'Solucionado' || $tk['status'] == 'Finalizado' || $tk['status'] == 'Fechado') $countConcluido++;
-    elseif ($tk['status'] == 'Pendente') $countPendente++;
-    else $countSemSol++;
-}
-$countTotal = count($tickets);
-?>
-
-<!-- Contadores -->
-<div class="ch-stats-bar">
-    <div class="ch-stat-card active" style="border-color: #6366F1;" onclick="filterByStatus('todos')">
-        <div class="ch-stat-num" style="color: #6366F1;"><?= $countTotal ?></div>
-        <div class="ch-stat-label" style="color: #6366F1;">Total</div>
-    </div>
-    <div class="ch-stat-card" style="border-color: #4F46E5;" onclick="filterByStatus('Aberto')">
-        <div class="ch-stat-num" style="color: #4F46E5;"><?= $countAberto ?></div>
-        <div class="ch-stat-label" style="color: #4F46E5;">Abertos</div>
-    </div>
-    <div class="ch-stat-card" style="border-color: #D97706;" onclick="filterByStatus('Pendente')">
-        <div class="ch-stat-num" style="color: #D97706;"><?= $countPendente ?></div>
-        <div class="ch-stat-label" style="color: #D97706;">Pendentes</div>
-    </div>
-    <div class="ch-stat-card" style="border-color: #059669;" onclick="filterByStatus('Concluído')">
-        <div class="ch-stat-num" style="color: #059669;"><?= $countConcluido ?></div>
-        <div class="ch-stat-label" style="color: #059669;">Concluídos</div>
-    </div>
-    <?php if ($countSemSol > 0): ?>
-    <div class="ch-stat-card" style="border-color: #DC2626;" onclick="filterByStatus('Sem Solução')">
-        <div class="ch-stat-num" style="color: #DC2626;"><?= $countSemSol ?></div>
-        <div class="ch-stat-label" style="color: #DC2626;">Sem Solução</div>
-    </div>
-    <?php endif; ?>
+<!-- Botões de ação (mesmo padrão do sistema) -->
+<div style="margin-bottom: 2rem; display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; align-items: center;">
+    <button class="btn-primary" onclick="document.getElementById('ticketModal').style.display='flex'">
+        <i class="fa-solid fa-plus"></i>
+        Novo Chamado
+    </button>
+    <a href="?page=chamados" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem; <?= !$show_all ? 'border-color: #5B21B6; color: #5B21B6;' : '' ?>">
+        <i class="fa-solid fa-filter"></i> Chamados Abertos
+    </a>
+    <a href="?page=chamados&all=1" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem; <?= $show_all ? 'border-color: #5B21B6; color: #5B21B6;' : '' ?>">
+        <i class="fa-solid fa-list"></i> Todo o Histórico
+    </a>
 </div>
 
-<!-- Barra de ações -->
-<div class="ch-search-bar">
-    <div style="position: relative; flex: 1; min-width: 200px;">
+<!-- Busca e filtros -->
+<div class="ch-search-wrap">
+    <div style="position: relative; flex: 1; min-width: 180px;">
         <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-soft); font-size: 0.8rem;"></i>
         <input type="text" class="ch-search-input" id="chSearchInput" placeholder="Buscar por título, solicitante ou ID..." oninput="applyFilters()">
     </div>
+    <select class="ch-filter-select" id="chFilterStatus" onchange="applyFilters()">
+        <option value="">Todos Status</option>
+        <option value="Aberto">Aberto</option>
+        <option value="Pendente">Pendente</option>
+        <option value="Concluído">Concluído</option>
+        <option value="Sem Solução">Sem Solução</option>
+    </select>
     <select class="ch-filter-select" id="chFilterPriority" onchange="applyFilters()">
         <option value="">Prioridade</option>
         <option value="Baixa">Baixa</option>
@@ -397,168 +339,187 @@ $countTotal = count($tickets);
         <option value="<?= htmlspecialchars($s) ?>"><?= htmlspecialchars($s) ?></option>
         <?php endforeach; ?>
     </select>
-    <button class="btn-primary" onclick="document.getElementById('ticketModal').style.display='flex'" style="white-space: nowrap;">
-        <i class="fa-solid fa-plus"></i> Novo Chamado
-    </button>
-    <a href="?page=chamados" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; <?= !$show_all ? 'border-color: #5B21B6; color: #5B21B6;' : '' ?>">
-        <i class="fa-solid fa-filter"></i> Abertos
-    </a>
-    <a href="?page=chamados&all=1" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; <?= $show_all ? 'border-color: #5B21B6; color: #5B21B6;' : '' ?>">
-        <i class="fa-solid fa-list"></i> Histórico
-    </a>
 </div>
 
-<!-- Cabeçalho da lista -->
-<div class="ch-thead">
-    <span>ID</span>
-    <span>Título / Descrição</span>
-    <span>Solicitante</span>
-    <span>Prioridade</span>
-    <span>Status</span>
-    <span>Data / SLA</span>
-    <span style="text-align:center;">Ações</span>
+<div class="table-responsive">
+    <table class="table-chamados">
+        <thead>
+            <tr>
+                <th class="col-id">ID</th>
+                <th class="col-title">Título</th>
+                <th class="col-requester">Solicitante</th>
+                <th class="col-unit">Unidade</th>
+                <th class="col-priority">Prioridade</th>
+                <th class="col-status">Status</th>
+                <th class="col-date">Data / Fechamento</th>
+                <th class="col-actions">Ações</th>
+            </tr>
+        </thead>
+        <tbody id="chTicketList">
+            <?php foreach ($tickets as $ticket): ?>
+            <tr class="ch-row"
+                data-title="<?= htmlspecialchars(strtolower($ticket['title'])) ?>"
+                data-requester="<?= htmlspecialchars(strtolower($ticket['requester_name'] ?? '')) ?>"
+                data-id="<?= htmlspecialchars(strtolower($ticket['id'])) ?>"
+                data-status="<?= htmlspecialchars($ticket['status']) ?>"
+                data-priority="<?= htmlspecialchars($ticket['priority']) ?>"
+                data-sector="<?= htmlspecialchars($ticket['sector'] ?? '') ?>">
+                <td class="col-id" style="font-family: monospace; font-size: 0.75rem; color: var(--text-soft);"><?= htmlspecialchars($ticket['id']) ?></td>
+                <td class="col-title" style="font-weight: 700;">
+                    <?php if ($ticket['asset_id']): ?>
+                        <i class="fa-solid fa-laptop-code" title="Equipamento Vinculado" style="color: var(--text-soft); font-size: 0.75rem; margin-right: 0.5rem;"></i>
+                    <?php endif; ?>
+                    <span title="<?= htmlspecialchars($ticket['description']) ?>" style="cursor: help; border-bottom: 1px dotted #cbd5e1;">
+                        <?= htmlspecialchars($ticket['title']) ?>
+                    </span>
+                </td>
+                <td class="col-requester">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <?php if ($ticket['requester_avatar']): ?>
+                            <img src="<?= htmlspecialchars($ticket['requester_avatar']) ?>" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+                        <?php else: ?>
+                            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-main); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-main); border: 1px solid var(--border-color);">👤</div>
+                        <?php endif; ?>
+                        <span style="font-weight: 600; color: var(--text-main);"><?= htmlspecialchars($ticket['requester_name']) ?></span>
+                    </div>
+                </td>
+                <td class="col-unit" style="font-size: 0.75rem; color: var(--text-soft);"><?= htmlspecialchars($ticket['unit_name']) ?></td>
+                <td class="col-priority">
+                    <span class="badge badge-<?= 
+                        $ticket['priority'] == 'Crítica' ? 'danger' : 
+                        ($ticket['priority'] == 'Alta' ? 'warning' : 'info') 
+                    ?>">
+                        <i class="fa-solid <?= 
+                            $ticket['priority'] == 'Crítica' ? 'fa-fire-flame-curved' : 
+                            ($ticket['priority'] == 'Alta' ? 'fa-triangle-exclamation' : 'fa-circle-info') 
+                        ?>"></i>
+                        <?= htmlspecialchars($ticket['priority']) ?>
+                    </span>
+                </td>
+                <td class="col-status">
+                    <span class="badge badge-<?= 
+                        $ticket['status'] == 'Aberto' ? 'info' : 
+                        ($ticket['status'] == 'Concluído' ? 'success' : 
+                        ($ticket['status'] == 'Pendente' ? 'danger' : 'warning')) 
+                    ?>">
+                        <i class="fa-solid <?= 
+                            $ticket['status'] == 'Aberto' ? 'fa-envelope-open' : 
+                            ($ticket['status'] == 'Concluído' ? 'fa-check-double' : 
+                            ($ticket['status'] == 'Pendente' ? 'fa-triangle-exclamation' : 'fa-circle-xmark')) 
+                        ?>"></i>
+                        <?= htmlspecialchars($ticket['status']) ?>
+                    </span>
+                </td>
+                <td class="col-date">
+                    <?php if ($ticket['status'] !== 'Aberto'): ?>
+                        <?php
+                            $slaMin = $ticket['sla_minutes'];
+                            if ($slaMin !== null) {
+                                $slaH = floor(abs($slaMin) / 60);
+                                $slaM = abs($slaMin) % 60;
+                                if ($slaH >= 24) { $slaDays = floor($slaH/24); $slaHRem = $slaH % 24; $slaStr = "{$slaDays}d {$slaHRem}h"; }
+                                else { $slaStr = "{$slaH}h {$slaM}min"; }
+                            } else { $slaStr = null; }
+                        ?>
+                        <?php if ($ticket['status'] === 'Pendente'): ?>
+                            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:0.5rem;padding:0.4rem 0.6rem;display:inline-flex;flex-direction:column;gap:0.3rem;min-width:140px;">
+                                <span style="font-size:0.65rem;font-weight:800;color:#F59E0B;">⏸ PENDENTE</span>
+                                <?php if ($ticket['pending_reason']): ?>
+                                    <span style="font-size:0.65rem;color:#92400e;font-weight:600;"><?= htmlspecialchars($ticket['pending_reason']) ?></span>
+                                <?php endif; ?>
+                                <?php if ($ticket['pending_since']): ?>
+                                    <span style="font-size:0.6rem;color:#64748b;">Desde <?= date('d/m H:i', strtotime($ticket['pending_since'])) ?></span>
+                                <?php endif; ?>
+                                <span style="font-size:0.6rem;color:#94a3b8;border-top:1px dashed rgba(245,158,11,0.3);padding-top:0.2rem;"><i class="fa-regular fa-clock" style="color:#f59e0b;"></i> SLA pausado</span>
+                            </div>
+                        <?php else: ?>
+                            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 0.5rem; padding: 0.35rem 0.5rem; display: inline-flex; flex-direction: column; gap: 0.35rem; min-width: 140px;">
+                                <span style="font-size: 0.65rem; font-weight: 800; color: #10B981; letter-spacing: 0.05em; line-height: 1;">FECHADO</span>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <?php if ($ticket['closer_avatar']): ?>
+                                        <img src="<?= htmlspecialchars($ticket['closer_avatar']) ?>" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(16, 185, 129, 0.4);">
+                                    <?php else: ?>
+                                        <div style="width: 24px; height: 24px; border-radius: 50%; background: #10B981; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: 700;">
+                                            <?= strtoupper(substr($ticket['closed_by'], 0, 1)) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div style="display: flex; flex-direction: column;">
+                                        <span style="font-size: 0.70rem; font-weight: 700; color: #334155; line-height: 1.2; text-wrap: nowrap;"><?= htmlspecialchars(explode(' ', $ticket['closed_by'])[0]) ?></span>
+                                        <span style="font-size: 0.65rem; color: var(--text-soft); line-height: 1.2;"><?= $ticket['closed_at'] ? date('d/m/y H:i', strtotime($ticket['closed_at'])) : '' ?></span>
+                                    </div>
+                                </div>
+                                <?php if ($slaStr): ?>
+                                <div style="display:flex; align-items:center; gap:0.3rem; border-top: 1px dashed rgba(16,185,129,0.3); padding-top:0.25rem; margin-top:0.1rem;">
+                                    <i class="fa-regular fa-clock" style="color:#f59e0b; font-size:0.65rem;"></i>
+                                    <span style="font-size:0.65rem; font-weight:800; color:#f59e0b;">Resolvido em: <?= $slaStr ?></span>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <div style="font-size: 0.75rem; color: var(--text-soft); font-weight: 600; padding: 0.5rem 0;">    
+                            <div>Criado em</div>
+                            <div style="color: #334155;"><?= date('d/m/Y H:i', strtotime($ticket['created_at'])) ?></div>
+                        </div>
+                    <?php endif; ?>
+                </td>
+
+                <td class="col-actions">
+                    <?php if ($ticket['status'] == 'Aberto' || $ticket['status'] == 'Pendente'): ?>
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                            <?php if ($ticket['status'] == 'Aberto'): ?>
+                                <button type="button" class="btn-icon" style="background: #EEF2FF; color: #4F46E5;" title="Editar Chamado" 
+                                    onclick="openEditModal('<?= $ticket['id'] ?>', '<?= htmlspecialchars(addslashes($ticket['title'])) ?>', '<?= htmlspecialchars(addslashes($ticket['description'])) ?>', '<?= $ticket['priority'] ?>', '<?= $ticket['asset_id'] ?>', '<?= htmlspecialchars(addslashes($ticket['asset_name'] ?? '')) ?>')">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button type="button" class="btn-icon" style="background: #FFF7ED; color: #F59E0B; border:1px solid #FDE68A;" title="Pendenciar (pausar SLA)"
+                                    onclick="openPendenciarModal('<?= $ticket['id'] ?>', '<?= htmlspecialchars(addslashes($ticket['title'])) ?>')">
+                                    <i class="fa-solid fa-clock"></i>
+                                </button>
+                            <?php endif; ?>
+
+                            <?php if ($ticket['status'] == 'Pendente'): ?>
+                                <form method="POST" style="display:inline;">
+                                    <input type="hidden" name="action" value="reativar_ticket">
+                                    <input type="hidden" name="ticket_id" value="<?= $ticket['id'] ?>">
+                                    <button type="submit" class="btn-icon" style="background: #F5F3FF; color: #7C3AED; border:1px solid #DDD6FE;" title="Reativar (retomar SLA)">
+                                        <i class="fa-solid fa-circle-play"></i>
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+
+                            <button type="button" class="btn-icon" title="Fechar Chamado" onclick="openCloseModal('<?= $ticket['id'] ?>', '<?= htmlspecialchars(addslashes($ticket['title'])) ?>', '<?= htmlspecialchars($ticket['requester_phone'] ?? '') ?>', '<?= htmlspecialchars($ticket['requester_name'] ?? '') ?>')">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </button>
+                        </div>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
 </div>
 
-<!-- Lista de chamados -->
-<div class="ch-ticket-list" id="chTicketList">
-    <?php foreach ($tickets as $ticket):
-        $statusClass = '';
-        if (in_array($ticket['status'], ['Concluído','Solucionado','Finalizado','Fechado'])) $statusClass = 'status-concluido';
-
-        $statusBadge = 'ch-badge-aberto';
-        if (in_array($ticket['status'], ['Concluído','Solucionado','Finalizado','Fechado'])) $statusBadge = 'ch-badge-concluido';
-        elseif ($ticket['status'] == 'Pendente') $statusBadge = 'ch-badge-pendente';
-        elseif ($ticket['status'] == 'Sem Solução') $statusBadge = 'ch-badge-semsolucao';
-
-        $prioBadge = 'ch-badge-media';
-        if ($ticket['priority'] == 'Baixa') $prioBadge = 'ch-badge-baixa';
-        elseif ($ticket['priority'] == 'Alta') $prioBadge = 'ch-badge-alta';
-        elseif ($ticket['priority'] == 'Crítica') $prioBadge = 'ch-badge-critica';
-
-        $statusIcon = 'fa-envelope-open';
-        if (in_array($ticket['status'], ['Concluído','Solucionado','Finalizado','Fechado'])) $statusIcon = 'fa-check-double';
-        elseif ($ticket['status'] == 'Pendente') $statusIcon = 'fa-pause-circle';
-        elseif ($ticket['status'] == 'Sem Solução') $statusIcon = 'fa-circle-xmark';
-
-        $slaStr = null;
-        $slaMin = $ticket['sla_minutes'];
-        if ($slaMin !== null) {
-            $slaH = floor(abs($slaMin) / 60);
-            $slaM = abs($slaMin) % 60;
-            if ($slaH >= 24) { $slaDays = floor($slaH/24); $slaHRem = $slaH % 24; $slaStr = "{$slaDays}d {$slaHRem}h"; }
-            else { $slaStr = "{$slaH}h {$slaM}min"; }
-        }
-    ?>
-    <div class="ch-ticket-row <?= $statusClass ?>"
-         data-title="<?= htmlspecialchars(strtolower($ticket['title'])) ?>"
-         data-requester="<?= htmlspecialchars(strtolower($ticket['requester_name'] ?? '')) ?>"
-         data-id="<?= htmlspecialchars(strtolower($ticket['id'])) ?>"
-         data-status="<?= htmlspecialchars($ticket['status']) ?>"
-         data-priority="<?= htmlspecialchars($ticket['priority']) ?>"
-         data-sector="<?= htmlspecialchars($ticket['sector'] ?? '') ?>">
-        <!-- ID -->
-        <div class="ch-ticket-id"><?= htmlspecialchars($ticket['id']) ?></div>
-        <!-- Título -->
-        <div class="ch-ticket-title" title="<?= htmlspecialchars($ticket['description']) ?>">
-            <?php if ($ticket['asset_id']): ?><i class="fa-solid fa-laptop-code" style="color: var(--text-soft); font-size: 0.7rem; margin-right: 0.3rem;" title="Equipamento vinculado"></i><?php endif; ?>
-            <?= htmlspecialchars($ticket['title']) ?>
-            <small><?= htmlspecialchars($ticket['sector'] ?? '') ?><?= $ticket['unit_name'] ? ' · ' . htmlspecialchars($ticket['unit_name']) : '' ?></small>
-        </div>
-        <!-- Solicitante -->
-        <div class="ch-ticket-requester">
-            <?php if ($ticket['requester_avatar']): ?>
-                <img src="<?= htmlspecialchars($ticket['requester_avatar']) ?>" alt="">
-            <?php else: ?>
-                <div class="ch-avatar-placeholder">👤</div>
-            <?php endif; ?>
-            <span><?= htmlspecialchars($ticket['requester_name'] ?? '') ?></span>
-        </div>
-        <!-- Prioridade -->
-        <div><span class="ch-badge <?= $prioBadge ?>"><?= htmlspecialchars($ticket['priority']) ?></span></div>
-        <!-- Status -->
-        <div><span class="ch-badge <?= $statusBadge ?>"><i class="fa-solid <?= $statusIcon ?>"></i> <?= htmlspecialchars($ticket['status']) ?></span></div>
-        <!-- Data / SLA -->
-        <div class="ch-ticket-date">
-            <?php if ($ticket['status'] == 'Pendente'): ?>
-                <div style="color: #D97706; font-weight: 700;"><i class="fa-solid fa-pause"></i> Pendente</div>
-                <?php if ($ticket['pending_reason']): ?>
-                    <div style="font-size: 0.68rem; color: #92400e;"><?= htmlspecialchars($ticket['pending_reason']) ?></div>
-                <?php endif; ?>
-                <?php if ($ticket['pending_since']): ?>
-                    <div>Desde <?= date('d/m H:i', strtotime($ticket['pending_since'])) ?></div>
-                <?php endif; ?>
-            <?php elseif (in_array($ticket['status'], ['Concluído','Solucionado','Finalizado','Fechado','Sem Solução'])): ?>
-                <div><strong><?= htmlspecialchars(explode(' ', $ticket['closed_by'] ?? '')[0]) ?></strong></div>
-                <div><?= $ticket['closed_at'] ? date('d/m/y H:i', strtotime($ticket['closed_at'])) : '' ?></div>
-                <?php if ($slaStr): ?>
-                    <div style="color: #F59E0B; font-weight: 700;"><i class="fa-regular fa-clock"></i> <?= $slaStr ?></div>
-                <?php endif; ?>
-            <?php else: ?>
-                <div>Criado em</div>
-                <div><strong><?= date('d/m/Y H:i', strtotime($ticket['created_at'])) ?></strong></div>
-            <?php endif; ?>
-        </div>
-        <!-- Ações -->
-        <div class="ch-ticket-actions">
-            <?php if ($ticket['status'] == 'Aberto' || $ticket['status'] == 'Pendente'): ?>
-                <?php if ($ticket['status'] == 'Aberto'): ?>
-                    <button type="button" class="btn-icon" style="background: #EEF2FF; color: #4F46E5;" title="Editar"
-                        onclick="openEditModal('<?= $ticket['id'] ?>', '<?= htmlspecialchars(addslashes($ticket['title'])) ?>', '<?= htmlspecialchars(addslashes($ticket['description'])) ?>', '<?= $ticket['priority'] ?>', '<?= $ticket['asset_id'] ?>', '<?= htmlspecialchars(addslashes($ticket['asset_name'] ?? '')) ?>')">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button type="button" class="btn-icon" style="background: #FFF7ED; color: #F59E0B; border:1px solid #FDE68A;" title="Pendenciar"
-                        onclick="openPendenciarModal('<?= $ticket['id'] ?>', '<?= htmlspecialchars(addslashes($ticket['title'])) ?>')">
-                        <i class="fa-solid fa-clock"></i>
-                    </button>
-                <?php endif; ?>
-                <?php if ($ticket['status'] == 'Pendente'): ?>
-                    <form method="POST" style="display:inline;">
-                        <input type="hidden" name="action" value="reativar_ticket">
-                        <input type="hidden" name="ticket_id" value="<?= $ticket['id'] ?>">
-                        <button type="submit" class="btn-icon" style="background: #F5F3FF; color: #7C3AED; border:1px solid #DDD6FE;" title="Reativar">
-                            <i class="fa-solid fa-circle-play"></i>
-                        </button>
-                    </form>
-                <?php endif; ?>
-                <button type="button" class="btn-icon" title="Fechar Chamado" onclick="openCloseModal('<?= $ticket['id'] ?>', '<?= htmlspecialchars(addslashes($ticket['title'])) ?>', '<?= htmlspecialchars($ticket['requester_phone'] ?? '') ?>', '<?= htmlspecialchars($ticket['requester_name'] ?? '') ?>')">
-                    <i class="fa-solid fa-circle-check"></i>
-                </button>
-            <?php endif; ?>
-        </div>
-    </div>
-    <?php endforeach; ?>
-</div>
-
-<div class="ch-empty" id="chEmptyMsg" style="display:none;">
+<div style="text-align: center; padding: 2rem; color: var(--text-soft); font-size: 0.9rem; display: none;" id="chEmptyMsg">
     <i class="fa-solid fa-inbox" style="font-size: 2rem; margin-bottom: 0.75rem; display: block; opacity: 0.4;"></i>
     Nenhum chamado encontrado com os filtros selecionados.
 </div>
 
-<!-- Paginação -->
 <div class="ch-pagination" id="chPagination"></div>
 
 <script>
 (function(){
     const perPage = 20;
     let currentPage = 1;
-    let currentStatusFilter = 'todos';
     let filteredRows = [];
 
     function getRows() {
-        return Array.from(document.querySelectorAll('.ch-ticket-row'));
+        return Array.from(document.querySelectorAll('#chTicketList .ch-row'));
     }
-
-    window.filterByStatus = function(status) {
-        currentStatusFilter = status;
-        currentPage = 1;
-        // Update stat card active states
-        document.querySelectorAll('.ch-stat-card').forEach(c => c.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-        applyFilters();
-    };
 
     window.applyFilters = function() {
         const search = (document.getElementById('chSearchInput').value || '').toLowerCase();
+        const statusF = document.getElementById('chFilterStatus').value;
         const prio = document.getElementById('chFilterPriority').value;
         const setor = document.getElementById('chFilterSetor').value;
         const rows = getRows();
@@ -571,19 +532,15 @@ $countTotal = count($tickets);
             const priority = r.dataset.priority || '';
             const sector = r.dataset.sector || '';
 
-            // Search filter
             if (search && !title.includes(search) && !requester.includes(search) && !id.includes(search)) return false;
-            // Status filter
-            if (currentStatusFilter !== 'todos') {
-                if (currentStatusFilter === 'Concluído') {
+            if (statusF) {
+                if (statusF === 'Concluído') {
                     if (!['Concluído','Solucionado','Finalizado','Fechado'].includes(status)) return false;
                 } else {
-                    if (status !== currentStatusFilter) return false;
+                    if (status !== statusF) return false;
                 }
             }
-            // Priority filter
             if (prio && priority !== prio) return false;
-            // Setor filter
             if (setor && sector !== setor) return false;
             return true;
         });
@@ -601,16 +558,13 @@ $countTotal = count($tickets);
         const start = (currentPage - 1) * perPage;
         const end = start + perPage;
 
-        // Hide all, show only filtered & paginated
         rows.forEach(r => r.style.display = 'none');
         filteredRows.forEach((r, i) => {
             r.style.display = (i >= start && i < end) ? '' : 'none';
         });
 
-        // Empty message
         document.getElementById('chEmptyMsg').style.display = total === 0 ? '' : 'none';
 
-        // Pagination
         const pag = document.getElementById('chPagination');
         if (totalPages <= 1) { pag.innerHTML = '<span class="ch-page-info">Mostrando ' + total + ' chamado(s)</span>'; return; }
 
@@ -630,14 +584,14 @@ $countTotal = count($tickets);
     window.goToPage = function(p) {
         currentPage = p;
         renderPage();
-        document.getElementById('chTicketList').scrollIntoView({behavior:'smooth', block:'start'});
+        document.querySelector('.table-responsive').scrollIntoView({behavior:'smooth', block:'start'});
     };
 
-    // Initial render
     filteredRows = getRows();
     renderPage();
 })();
 </script>
+
 
 <div id="ticketModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
     <div class="glass-panel" style="max-width: 650px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 2rem;">
