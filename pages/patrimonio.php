@@ -137,10 +137,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_asset') {
     $compId = getCurrentUserCompanyId();
-    $stmt = $pdo->prepare("DELETE FROM assets WHERE id = ? AND company_id = ?");
-    $stmt->execute([$_POST['asset_id'], $compId]);
-    header('Location: ?page=patrimonio&success=deleted');
-    exit;
+    try {
+        $stmt = $pdo->prepare("DELETE FROM assets WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['asset_id'], $compId]);
+        header('Location: ?page=patrimonio&success=deleted');
+        exit;
+    } catch (PDOException $e) {
+        $errorMsg = 'Erro: Este ativo não pode ser excluído pois está vinculado a chamados, histórico ou empréstimos.';
+        header('Location: ?page=patrimonio&error=' . urlencode($errorMsg));
+        exit;
+    }
 }
 
 $search = $_GET['search'] ?? '';
@@ -243,7 +249,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
 <?php if (isset($_GET['error'])): ?>
 <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%); border: 1px solid rgba(239, 68, 68, 0.3); color: #dc2626; padding: 1rem; border-radius: 1rem; margin-bottom: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
     <i class="fa-solid fa-circle-exclamation"></i>
-    <?= $_GET['error'] === 'duplicate_patrimony' ? 'Erro: Já existe um ativo cadastrado com este Número de Acesso.' : ($_GET['error'] === 'invalid_file' ? 'Erro: O arquivo enviado não é um Excel válido ou está corrompido.' : 'Erro: Falha ao processar importação.') ?>
+    <?= in_array($_GET['error'], ['duplicate_patrimony', 'invalid_file']) 
+        ? ($_GET['error'] === 'duplicate_patrimony' ? 'Erro: Já existe um ativo cadastrado com este Número de Acesso.' : 'Erro: O arquivo enviado não é um Excel válido ou está corrompido.') 
+        : htmlspecialchars($_GET['error']) ?>
 </div>
 <?php endif; ?>
 
