@@ -143,8 +143,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         header('Location: ?page=patrimonio&success=deleted');
         exit;
     } catch (PDOException $e) {
-        $errorMsg = 'Erro: Este ativo não pode ser excluído pois está vinculado a chamados, histórico ou empréstimos.';
-        header('Location: ?page=patrimonio&error=' . urlencode($errorMsg));
+        $stmt = $pdo->prepare("UPDATE assets SET status = 'Inativo' WHERE id = ? AND company_id = ?");
+        $stmt->execute([$_POST['asset_id'], $compId]);
+        header('Location: ?page=patrimonio&success=arquivado');
         exit;
     }
 }
@@ -155,12 +156,18 @@ $sector_filter = $_GET['sector'] ?? '';
 $compId = getCurrentUserCompanyId();
 
 // Filtro baseado no perfil do usuário - Agora liberado se tiver acesso ao menu
+$show_inactive = isset($_GET['inativos']) && $_GET['inativos'] == '1';
+
 $query = "SELECT a.*, u.name as unit_name, res.avatar_url as resp_avatar, res.name as resp_name 
           FROM assets a 
           LEFT JOIN units u ON CONVERT(a.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
           LEFT JOIN users res ON a.responsible_id = res.id
           WHERE a.company_id = ?";
 $params = [$compId];
+
+if (!$show_inactive) {
+    $query .= " AND a.status != 'Inativo'";
+}
 
 if ($search) {
     $query .= " AND (a.name LIKE ? OR a.patrimony_id LIKE ?)";
@@ -223,6 +230,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             <input type="text" id="search-patrimonio" class="form-input" placeholder="Filtrar ativos..." style="padding-left: 2.5rem; border-radius: 0.75rem; background: #fff;" onkeyup="filterTable('search-patrimonio', 'table-patrimonio')" autocomplete="off">
         </div>
         <div style="display: flex; gap: 1rem;">
+            <?php if ($show_inactive): ?>
+                <a href="?page=patrimonio" class="btn-secondary" style="text-decoration: none; border-color: #f59e0b; color: #f59e0b;">
+                    <i class="fa-solid fa-eye-slash"></i> Ocultar Inativos
+                </a>
+            <?php else: ?>
+                <a href="?page=patrimonio&inativos=1" class="btn-secondary" style="text-decoration: none;">
+                    <i class="fa-solid fa-eye"></i> Exibir Inativos
+                </a>
+            <?php endif; ?>
             <button class="btn-primary" style="background: #3b82f6; color: white;" onclick="document.getElementById('importModal').style.display='flex'">
                 <i class="fa-solid fa-file-import"></i>
                 Importar Excel
@@ -242,7 +258,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
 <?php if (isset($_GET['success'])): ?>
 <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%); border: 1px solid rgba(16, 185, 129, 0.3); color: #059669; padding: 1rem; border-radius: 1rem; margin-bottom: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
     <i class="fa-solid fa-circle-check"></i>
-    <?= $_GET['success'] == '1' ? 'Ativo cadastrado com sucesso!' : ($_GET['success'] == '2' ? 'Ativo atualizado com sucesso!' : ($_GET['success'] == 'deleted' ? 'Ativo excluído com sucesso!' : ($_GET['success'] == 'import' ? 'Planilha importada e banco de dados atualizado com sucesso!' : 'Categoria excluída com sucesso!'))) ?>
+    <?php
+        if ($_GET['success'] == '1') echo 'Ativo cadastrado com sucesso!';
+        elseif ($_GET['success'] == '2') echo 'Ativo atualizado com sucesso!';
+        elseif ($_GET['success'] == 'deleted') echo 'Ativo excluído com sucesso!';
+        elseif ($_GET['success'] == 'import') echo 'Planilha importada e banco de dados atualizado com sucesso!';
+        elseif ($_GET['success'] == 'arquivado') echo 'O ativo não pôde ser excluído pois possui histórico, mas foi marcado como Inativo e ocultado da lista!';
+        else echo 'Ação realizada com sucesso!';
+    ?>
 </div>
 <?php endif; ?>
 
