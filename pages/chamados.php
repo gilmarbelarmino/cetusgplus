@@ -932,7 +932,7 @@ $assets = $assets_stmt->fetchAll();
                 const mainText = (item[displayField] || '').toLowerCase();
                 const subText = subtitleField ? (item[subtitleField] || '').toLowerCase() : '';
                 return mainText.includes(val) || subText.includes(val);
-            }).slice(0, 15);
+            }).slice(0, 100);
 
             renderSuggestions(filtered);
         });
