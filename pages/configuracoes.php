@@ -45,8 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $logo_url = $_POST['current_logo'] ?? null;
     if (!empty($_FILES['logo']['name'])) {
         $ext = pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION);
-        $filename = 'company_logo.' . $ext;
+        $filename = 'company_logo_' . time() . '.' . $ext;
         $dest = __DIR__ . '/../uploads/' . $filename;
+        if (!is_dir(__DIR__ . '/../uploads/')) mkdir(__DIR__ . '/../uploads/', 0777, true);
         if (move_uploaded_file($_FILES['logo']['tmp_name'], $dest)) {
             $logo_url = 'uploads/' . $filename;
         }
@@ -55,8 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $sig_url = $_POST['current_signature'] ?? null;
     if (!empty($_FILES['signature']['name'])) {
         $ext = pathinfo($_FILES['signature']['name'], PATHINFO_EXTENSION);
-        $filename = 'certificate_signature.' . $ext;
+        $filename = 'certificate_signature_' . time() . '.' . $ext;
         $dest = __DIR__ . '/../uploads/' . $filename;
+        if (!is_dir(__DIR__ . '/../uploads/')) mkdir(__DIR__ . '/../uploads/', 0777, true);
         if (move_uploaded_file($_FILES['signature']['tmp_name'], $dest)) {
             $sig_url = 'uploads/' . $filename;
         }
