@@ -732,7 +732,7 @@ function calcEditTotal() {
                     <h2 style="font-size: 1.6rem; font-weight: 900; color: var(--text-main); margin: 0;"><?=htmlspecialchars($company['company_name']??'CETUSG')?></h2>
                 <?php endif; ?>
                 <h1 style="font-size: 3.5rem; font-weight: 900; color: var(--text-main); margin: 0; letter-spacing: 5px; line-height: 1;">CERTIFICADO</h1>
-                <h2 style="font-size: 1.65rem; font-weight: 400; color: #d4af37; margin: 0.25rem 0 0; font-family: 'EB Garamond', serif; font-style: italic;">Agradecemos pelo seu Empenho</h2>
+                <h2 style="font-size: 1.65rem; font-weight: 400; color: #475569; margin: 0.25rem 0 0; font-family: 'EB Garamond', serif; font-style: italic;">Agradecemos pelo seu empenho</h2>
             </div>
             
             <!-- SECTION 2: TEXTO -->
