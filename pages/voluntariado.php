@@ -762,7 +762,6 @@ function calcEditTotal() {
                     pela valiosa contribuição voluntária realizada entre <strong style="color: var(--text-main);"><?=date('d/m/Y',strtotime($certVol['start_date']))?></strong> 
                     e <strong style="color: var(--text-main);"><?=$certVol['end_date'] ? date('d/m/Y',strtotime($certVol['end_date'])) : date('d/m/Y')?></strong>, 
                     atuando na área de <strong><?=htmlspecialchars($certVol['work_area'])?></strong>, 
-                    setor <strong><?=htmlspecialchars($certVol['volunteering_sector'])?></strong>,
                     na modalidade <strong><?=htmlspecialchars($certVol['location'])?></strong>.
                 </p>
             </div>
