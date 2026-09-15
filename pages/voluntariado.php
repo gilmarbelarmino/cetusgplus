@@ -33,6 +33,23 @@ try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN end_date DATE NULL"); } catc
 try { $pdo->exec("ALTER TABLE volunteer_history ADD COLUMN points INT DEFAULT 0"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN document_link VARCHAR(255) NULL"); } catch(Exception $e) {}
 
+try { 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS volunteer_areas (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        company_id INT NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    $compId = getCurrentUserCompanyId();
+    $chk = $pdo->prepare("SELECT COUNT(*) FROM volunteer_areas WHERE company_id = ?");
+    $chk->execute([$compId]);
+    if($chk->fetchColumn() == 0) {
+        $defaults = ['Administração','Assistência Social','Comunicação','Contabilidade','Design','Educação','Engenharia','Eventos','Jurídico','Marketing','Psicologia','Recursos Humanos','Saúde','Tecnologia da Informação','Outros'];
+        $ins = $pdo->prepare("INSERT INTO volunteer_areas (name, company_id) VALUES (?, ?)");
+        foreach($defaults as $d) $ins->execute([$d, $compId]);
+    }
+} catch(Exception $e) {}
+
 // Helper para validar avatares
 function isValidAvatar($url) {
     if (empty($url) || trim((string)$url) === '') return false;
@@ -148,6 +165,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
     header('Location: ?page=voluntariado&editado=1'); exit;
 }
 
+// Adicionar Área
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_area') {
+    $compId = getCurrentUserCompanyId();
+    $pdo->prepare("INSERT INTO volunteer_areas (name, company_id) VALUES (?, ?)")->execute([trim($_POST['area_name']), $compId]);
+    header('Location: ?page=voluntariado&tab=areas&success_area=1'); exit;
+}
+// Editar Área
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_area') {
+    $compId = getCurrentUserCompanyId();
+    $pdo->prepare("UPDATE volunteer_areas SET name = ? WHERE id = ? AND company_id = ?")->execute([trim($_POST['area_name']), $_POST['area_id'], $compId]);
+    header('Location: ?page=voluntariado&tab=areas&success_area=1'); exit;
+}
+// Excluir Área
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_area') {
+    $compId = getCurrentUserCompanyId();
+    $areaId = $_POST['area_id'];
+    $stmt = $pdo->prepare("SELECT name FROM volunteer_areas WHERE id = ? AND company_id = ?");
+    $stmt->execute([$areaId, $compId]);
+    $areaName = $stmt->fetchColumn();
+    if ($areaName) {
+        $pdo->prepare("UPDATE volunteers SET work_area = 'Outros' WHERE work_area = ? AND company_id = ?")->execute([$areaName, $compId]);
+        $pdo->prepare("DELETE FROM volunteer_areas WHERE id = ? AND company_id = ?")->execute([$areaId, $compId]);
+    }
+    header('Location: ?page=voluntariado&tab=areas&success_area=1'); exit;
+}
+
 // ─── CARREGAR DADOS ───────────────────────────────────────────────────────────
 $compId = getCurrentUserCompanyId();
 $query = "SELECT v.*, u.name as unit_name FROM volunteers v LEFT JOIN units u ON CONVERT(v.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE v.company_id = ?";
@@ -167,6 +210,10 @@ $users = $users_stmt->fetchAll();
 $sectors_stmt = $pdo->prepare("SELECT s.id, s.name, s.unit_id FROM sectors s WHERE s.company_id = ? ORDER BY s.name");
 $sectors_stmt->execute([$compId]);
 $sectors = $sectors_stmt->fetchAll();
+
+$areas_stmt = $pdo->prepare("SELECT * FROM volunteer_areas WHERE company_id = ? ORDER BY name ASC");
+$areas_stmt->execute([$compId]);
+$workAreas = $areas_stmt->fetchAll();
 
 // Voluntário para edição
 $editVol = null;
@@ -258,6 +305,7 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
 <div style="display:flex; gap:1rem; border-bottom: 2px solid #e2e8f0; margin-bottom: 2rem; padding-bottom: 0.5rem;">
     <button onclick="switchVolTab('gestao')" id="tab-gestao" class="tab-btn active">Gestão de Voluntários</button>
     <button onclick="switchVolTab('ranking')" id="tab-ranking" class="tab-btn">Ranking de Engajamento</button>
+    <button onclick="switchVolTab('areas')" id="tab-areas" class="tab-btn">Áreas de Atuação</button>
 </div>
 
 <style>
@@ -468,6 +516,94 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
     </div>
 </div>
 
+<!-- ─── ABA ÁREAS DE ATUAÇÃO ────────────────────────────────────────────── -->
+<div id="content-areas" class="vol-content">
+    <?php if (isset($_GET['success_area'])): ?>
+    <div style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#059669;padding:1rem;border-radius:1rem;margin-bottom:1.5rem;font-weight:700;display:flex;align-items:center;gap:.75rem;">
+        <i class="fa-solid fa-check"></i> Área de Atuação atualizada com sucesso!
+    </div>
+    <?php endif; ?>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+        <div>
+            <h3 style="font-weight:900;color:var(--text-main);margin:0;">Gerenciar Áreas</h3>
+            <p style="color:var(--text-soft);margin:0;font-size:0.9rem;">Áreas de atuação disponíveis para o voluntariado</p>
+        </div>
+        <button class="btn-primary" onclick="document.getElementById('addAreaModal').style.display='flex'">
+            <i class="fa-solid fa-plus"></i> Nova Área
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table>
+            <thead><tr><th>Nome da Área</th><th style="text-align:center;">Ações</th></tr></thead>
+            <tbody>
+                <?php foreach($workAreas as $a): ?>
+                <tr>
+                    <td style="font-weight:700;color:var(--text-main);"><?=$a['name']?></td>
+                    <td style="text-align:center;width:120px;">
+                        <div class="vol-actions">
+                            <button class="vol-btn vol-btn-edit" onclick="openEditArea(<?=$a['id']?>, '<?=htmlspecialchars(addslashes($a['name']))?>')"><i class="fa-solid fa-pen"></i></button>
+                            <?php if ($a['name'] !== 'Outros'): ?>
+                            <form method="POST" style="display:inline;" onsubmit="return confirm('Excluir esta área? Voluntários vinculados a ela serão movidos para \'Outros\'.')">
+                                <input type="hidden" name="csrf_token" value="<?=$_SESSION['csrf_token']?>">
+                                <input type="hidden" name="action" value="delete_area">
+                                <input type="hidden" name="area_id" value="<?=$a['id']?>">
+                                <button type="submit" class="vol-btn vol-btn-del"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                            <?php endif; ?>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Adicionar Área -->
+<div id="addAreaModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center;padding:2rem;">
+    <div class="glass-panel" style="max-width:500px;width:100%;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+            <h3 style="font-weight:900;">Nova Área</h3>
+            <button onclick="document.getElementById('addAreaModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:1.5rem;">&times;</button>
+        </div>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?=$_SESSION['csrf_token']?>">
+            <input type="hidden" name="action" value="add_area">
+            <div class="form-group">
+                <label class="form-label">Nome da Área *</label>
+                <input type="text" name="area_name" class="form-input" required>
+            </div>
+            <div style="display:flex;gap:1rem;justify-content:flex-end;">
+                <button type="submit" class="btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Editar Área -->
+<div id="editAreaModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center;padding:2rem;">
+    <div class="glass-panel" style="max-width:500px;width:100%;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+            <h3 style="font-weight:900;">Editar Área</h3>
+            <button onclick="document.getElementById('editAreaModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:1.5rem;">&times;</button>
+        </div>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?=$_SESSION['csrf_token']?>">
+            <input type="hidden" name="action" value="edit_area">
+            <input type="hidden" name="area_id" id="editAreaId">
+            <div class="form-group">
+                <label class="form-label">Nome da Área *</label>
+                <input type="text" name="area_name" id="editAreaName" class="form-input" required>
+            </div>
+            <div style="display:flex;gap:1rem;justify-content:flex-end;">
+                <button type="submit" class="btn-primary">Salvar Alterações</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- ─── MODAL: EDITAR VOLUNTÁRIO ─────────────────────────────────────────── -->
 <?php if ($editVol): ?>
 <div id="editModal" style="display:flex;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center;padding:2rem;overflow-y:auto;">
@@ -512,7 +648,7 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
                 <div class="form-group">
                     <label class="form-label"><?= $l ?></label>
                     <input type="<?= $t ?>" name="<?= $n ?>" class="form-input" value="<?= htmlspecialchars($val) ?>"
-                        <?= in_array($n,['name','email','profession','volunteering_sector']) ? 'required' : '' ?>
+                        <?= in_array($n,['name']) ? 'required' : '' ?>
                         <?= $t==='number' ? 'step=0.01 min=0' : '' ?>>
                 </div>
                 <?php endforeach; ?>
@@ -527,8 +663,8 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
                 <div class="form-group">
                     <label class="form-label">Área de Atuação</label>
                     <select name="work_area" class="form-select">
-                        <?php foreach (['Administração','Assistência Social','Comunicação','Contabilidade','Design','Educação','Engenharia','Eventos','Jurídico','Marketing','Psicologia','Recursos Humanos','Saúde','Tecnologia da Informação','Outros'] as $opt): ?>
-                            <option value="<?=$opt?>" <?= $editVol['work_area']==$opt?'selected':'' ?>><?=$opt?></option>
+                        <?php foreach ($workAreas as $opt): ?>
+                            <option value="<?=htmlspecialchars($opt['name'])?>" <?= ($editVol['work_area']??'')==$opt['name']?'selected':'' ?>><?=htmlspecialchars($opt['name'])?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -633,39 +769,39 @@ function calcEditTotal() {
                     <input type="text" name="cpf" class="form-input" placeholder="000.000.000-00">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Sexo *</label>
-                    <select name="gender" class="form-select" required style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
+                    <label class="form-label">Sexo</label>
+                    <select name="gender" class="form-select" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
                         <option value="Masculino" style="background: var(--bg-card); color: var(--text-main);">Masculino</option>
                         <option value="Feminino" style="background: var(--bg-card); color: var(--text-main);">Feminino</option>
                         <option value="Outro" style="background: var(--bg-card); color: var(--text-main);">Outro</option>
                     </select>
                 </div>
-                <div class="form-group"><label class="form-label">E-mail *</label><input type="email" name="email" id="volunteerEmail" class="form-input" required></div>
+                <div class="form-group"><label class="form-label">E-mail</label><input type="email" name="email" id="volunteerEmail" class="form-input"></div>
                 <div class="form-group"><label class="form-label">Telefone</label><input type="text" name="phone" id="volunteerPhone" class="form-input"></div>
                 <div class="form-group">
-                    <label class="form-label">Unidade *</label>
+                    <label class="form-label">Unidade</label>
                     <!-- Modo sistema: exibe texto readonly -->
                     <input type="text" id="volunteerUnitDisplay" class="form-input" readonly style="display:block;">
                     <!-- Modo manual: exibe select -->
-                    <select name="unit_id" id="volunteerUnit" class="form-select" required style="display:none; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
+                    <select name="unit_id" id="volunteerUnit" class="form-select" style="display:none; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
                         <?php foreach ($units as $u): ?><option value="<?=$u['id']?>" style="background: var(--bg-card); color: var(--text-main);"><?=htmlspecialchars($u['name'])?></option><?php endforeach; ?>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Setor Responsável *</label>
-                    <input type="text" name="sector_id" id="volunteerSector" class="form-input" required>
+                    <label class="form-label">Setor Responsável</label>
+                    <input type="text" name="sector_id" id="volunteerSector" class="form-input">
                 </div>
-                <div class="form-group"><label class="form-label">Setor do Voluntariado *</label><input type="text" name="volunteering_sector" class="form-input" required></div>
+                <div class="form-group"><label class="form-label">Setor do Voluntariado</label><input type="text" name="volunteering_sector" class="form-input"></div>
                 <div class="form-group">
-                    <label class="form-label">Área de Atuação *</label>
-                    <select name="work_area" class="form-select" required style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
-                        <?php foreach (['Administração','Assistência Social','Comunicação','Contabilidade','Design','Educação','Engenharia','Eventos','Jurídico','Marketing','Psicologia','Recursos Humanos','Saúde','Tecnologia da Informação','Outros'] as $opt): ?>
-                            <option value="<?=$opt?>" style="background: var(--bg-card); color: var(--text-main);"><?=$opt?></option>
+                    <label class="form-label">Área de Atuação</label>
+                    <select name="work_area" class="form-select" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
+                        <?php foreach ($workAreas as $opt): ?>
+                            <option value="<?=htmlspecialchars($opt['name'])?>" style="background: var(--bg-card); color: var(--text-main);"><?=htmlspecialchars($opt['name'])?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Tipo de Trabalho *</label>
+                    <label class="form-label">Tipo de Trabalho</label>
                     <div style="display:flex; gap:1rem; flex-wrap:wrap; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main);">
                         <?php foreach (['Presencial','Remoto','Híbrido'] as $opt): ?>
                             <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:700; font-size:0.85rem; color:#475569;">
@@ -674,10 +810,10 @@ function calcEditTotal() {
                         <?php endforeach; ?>
                     </div>
                 </div>
-                <div class="form-group"><label class="form-label">Profissão *</label><input type="text" name="profession" class="form-input" required></div>
+                <div class="form-group"><label class="form-label">Profissão</label><input type="text" name="profession" class="form-input"></div>
                 <div class="form-group"><label class="form-label">Link de Documentos (URL)</label><input type="url" name="document_link" class="form-input" placeholder="https://..."></div>
-                <div class="form-group"><label class="form-label">Valor Hora (R$) *</label><input type="number" name="hourly_rate" class="form-input" step="0.01" required onchange="calcTotal()"></div>
-                <div class="form-group"><label class="form-label">Data de Início *</label><input type="date" name="start_date" class="form-input" value="<?=date('Y-m-d')?>" required></div>
+                <div class="form-group"><label class="form-label">Valor Hora (R$)</label><input type="number" name="hourly_rate" class="form-input" step="0.01" value="0.00" onchange="calcTotal()"></div>
+                <div class="form-group"><label class="form-label">Data de Início</label><input type="date" name="start_date" class="form-input" value="<?=date('Y-m-d')?>"></div>
             </div>
             <h4 style="font-size:1rem;font-weight:900;margin:2rem 0 1rem;border-top:2px solid var(--crm-gray-light);padding-top:1.5rem;">Horas Mensais de Voluntariado</h4>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1rem;">
@@ -992,6 +1128,15 @@ function switchVolTab(tab) {
     document.getElementById('content-' + tab).classList.add('active');
     document.getElementById('tab-' + tab).classList.add('active');
 }
+function openEditArea(id, name) {
+    document.getElementById('editAreaId').value = id;
+    document.getElementById('editAreaName').value = name;
+    document.getElementById('editAreaModal').style.display = 'flex';
+}
+document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if(urlParams.get("tab") === "areas") switchVolTab("areas");
+});
 
 <?php if (isset($_GET['edit'])): ?>
 document.getElementById('editModal').style.display = 'flex';
