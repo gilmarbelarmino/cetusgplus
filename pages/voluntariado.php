@@ -31,6 +31,7 @@ try {
 try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN points INT DEFAULT 0"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN end_date DATE NULL"); } catch(Exception $e) {}
 try { $pdo->exec("ALTER TABLE volunteer_history ADD COLUMN points INT DEFAULT 0"); } catch(Exception $e) {}
+try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN document_link VARCHAR(255) NULL"); } catch(Exception $e) {}
 
 // Helper para validar avatares
 function isValidAvatar($url) {
@@ -61,12 +62,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_v
     }
 
     $compId = getCurrentUserCompanyId();
-    $stmt = $pdo->prepare("INSERT INTO volunteers (id, name, cpf, avatar_url, gender, email, phone, unit_id, sector_id, volunteering_sector, action_type, location, profession, hourly_rate, start_date, work_area, hours_jan, hours_feb, hours_mar, hours_apr, hours_may, hours_jun, hours_jul, hours_aug, hours_sep, hours_oct, hours_nov, hours_dec, total_hours, points, status, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?)");
+    $stmt = $pdo->prepare("INSERT INTO volunteers (id, name, cpf, avatar_url, gender, email, phone, unit_id, sector_id, volunteering_sector, action_type, location, profession, hourly_rate, start_date, work_area, hours_jan, hours_feb, hours_mar, hours_apr, hours_may, hours_jun, hours_jul, hours_aug, hours_sep, hours_oct, hours_nov, hours_dec, total_hours, points, status, company_id, document_link) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?, ?)");
     $stmt->execute([$vid, $_POST['name'], $_POST['cpf'], $avatar_url, $_POST['gender'] ?? 'Outro', $_POST['email'], $_POST['phone'], $_POST['unit_id'], $_POST['sector_id'], $_POST['volunteering_sector'], $_POST['action_type'] ?? '', implode(', ', $_POST['location'] ?? []), $_POST['profession'], $_POST['hourly_rate'], $_POST['start_date'], $_POST['work_area'],
         floatval($_POST['hours_jan']??0), floatval($_POST['hours_feb']??0), floatval($_POST['hours_mar']??0), floatval($_POST['hours_apr']??0),
         floatval($_POST['hours_may']??0), floatval($_POST['hours_jun']??0), floatval($_POST['hours_jul']??0), floatval($_POST['hours_aug']??0),
         floatval($_POST['hours_sep']??0), floatval($_POST['hours_oct']??0), floatval($_POST['hours_nov']??0), floatval($_POST['hours_dec']??0),
-        $total, floor($total), $compId
+        $total, floor($total), $compId, $_POST['document_link'] ?? null
     ]);
     header('Location: ?page=voluntariado&success=1'); exit;
 }
@@ -137,12 +138,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
     $compId = getCurrentUserCompanyId();
     $pdo->prepare("UPDATE volunteers SET name=?, cpf=?, avatar_url=?, gender=?, email=?, phone=?, volunteering_sector=?, work_area=?, location=?, profession=?, hourly_rate=?,
         hours_jan=?,hours_feb=?,hours_mar=?,hours_apr=?,hours_may=?,hours_jun=?,hours_jul=?,hours_aug=?,hours_sep=?,hours_oct=?,hours_nov=?,hours_dec=?,
-        total_hours=?, points=?, last_edited_by=?, last_edited_at=NOW() WHERE id=? AND company_id=?")
+        total_hours=?, points=?, last_edited_by=?, last_edited_at=NOW(), document_link=? WHERE id=? AND company_id=?")
         ->execute([$_POST['name'], $_POST['cpf'], $avatar_url, $_POST['gender'] ?? 'Outro', $_POST['email'], $_POST['phone'], $_POST['volunteering_sector'], $_POST['work_area'], implode(', ', $_POST['location'] ?? []), $_POST['profession'], floatval($_POST['hourly_rate']),
         floatval($_POST['hours_jan']??0), floatval($_POST['hours_feb']??0), floatval($_POST['hours_mar']??0), floatval($_POST['hours_apr']??0),
         floatval($_POST['hours_may']??0), floatval($_POST['hours_jun']??0), floatval($_POST['hours_jul']??0), floatval($_POST['hours_aug']??0),
         floatval($_POST['hours_sep']??0), floatval($_POST['hours_oct']??0), floatval($_POST['hours_nov']??0), floatval($_POST['hours_dec']??0),
-        $total, floor($total), $user['id'], $_POST['volunteer_id'], $compId
+        $total, floor($total), $user['id'], $_POST['document_link'] ?? null, $_POST['volunteer_id'], $compId
     ]);
     header('Location: ?page=voluntariado&editado=1'); exit;
 }
@@ -231,6 +232,9 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
 
 .vol-btn-del    { background: #FEF2F2; color: #DC2626; border-color: #FEE2E2; }
 .vol-btn-del:hover { background: #DC2626; color: #fff; }
+
+.vol-btn-doc { background: #F3F4F6; color: #374151; border-color: #E5E7EB; }
+.vol-btn-doc:hover { background: #374151; color: #fff; }
 </style>
 
 <div class="page-header">
@@ -350,6 +354,17 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
                             onclick="verHistorico('<?= $v['id'] ?>','<?= htmlspecialchars(addslashes($v['name'])) ?>')">
                             <i class="fa-solid fa-list-check"></i>
                         </button>
+                        
+                        <!-- 📄 Documentos -->
+                        <?php if(!empty($v['document_link'])): ?>
+                        <a href="<?= htmlspecialchars($v['document_link']) ?>" target="_blank" class="vol-btn vol-btn-doc" title="Acessar Documentos">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </a>
+                        <?php else: ?>
+                        <button type="button" class="vol-btn vol-btn-doc" title="Nenhum documento vinculado" style="opacity: 0.5; cursor: not-allowed;" onclick="alert('Nenhum link de documento foi inserido para este voluntário.')">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </button>
+                        <?php endif; ?>
 
                         <?php if ($v['status'] == 'Ativo'): ?>
                         <!-- 🟠 Inativar — só ativo -->
@@ -492,6 +507,7 @@ $monthFields = ['jan'=>'Janeiro','feb'=>'Fevereiro','mar'=>'Março','apr'=>'Abri
                     ['profession','Profissão','text',$editVol['profession']??''],
                     ['hourly_rate','Valor Hora (R$)','number',$editVol['hourly_rate']??''],
                     ['volunteering_sector','Setor do Voluntariado','text',$editVol['volunteering_sector']??''],
+                    ['document_link','Link de Documentos (URL)','url',$editVol['document_link']??''],
                 ] as [$n,$l,$t,$val]): ?>
                 <div class="form-group">
                     <label class="form-label"><?= $l ?></label>
@@ -659,6 +675,7 @@ function calcEditTotal() {
                     </div>
                 </div>
                 <div class="form-group"><label class="form-label">Profissão *</label><input type="text" name="profession" class="form-input" required></div>
+                <div class="form-group"><label class="form-label">Link de Documentos (URL)</label><input type="url" name="document_link" class="form-input" placeholder="https://..."></div>
                 <div class="form-group"><label class="form-label">Valor Hora (R$) *</label><input type="number" name="hourly_rate" class="form-input" step="0.01" required onchange="calcTotal()"></div>
                 <div class="form-group"><label class="form-label">Data de Início *</label><input type="date" name="start_date" class="form-input" value="<?=date('Y-m-d')?>" required></div>
             </div>
