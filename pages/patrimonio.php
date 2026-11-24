@@ -91,11 +91,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         move_uploaded_file($_FILES['product_image']['tmp_name'], __DIR__ . '/../uploads/' . $image_name);
     }
     
-    $stmt = $pdo->prepare("INSERT INTO assets (id, name, category, patrimony_id, sector, unit_id, status, responsible_name, responsible_id, estimated_value, image_url, company_id) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?, ?)");
+    $allowed_statuses = ['Ativo', 'Manutenção', 'Inativo', 'Estoque'];
+    $status = in_array($_POST['status'] ?? 'Ativo', $allowed_statuses, true) ? $_POST['status'] : 'Ativo';
+
+    $stmt = $pdo->prepare("INSERT INTO assets (id, name, category, patrimony_id, sector, unit_id, status, responsible_name, responsible_id, estimated_value, image_url, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $estimated = floatval(str_replace(['.', ','], ['', '.'], $_POST['estimated_value'] ?? '0'));
     $patrimony_id = !empty($_POST['patrimony_id']) ? $_POST['patrimony_id'] : null;
     $responsible_id = !empty($_POST['responsible_select']) ? $_POST['responsible_select'] : null;
-    $stmt->execute(['A' . uniqid(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $_POST['responsible_name'], $responsible_id, $estimated, $image_name, $compId]);
+    $stmt->execute(['A' . uniqid(), $_POST['name'], $_POST['category'], $patrimony_id, $_POST['sector'], $_POST['unit_id'], $status, $_POST['responsible_name'], $responsible_id, $estimated, $image_name, $compId]);
     header('Location: ?page=patrimonio&success=1');
     exit;
 }
@@ -150,14 +153,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-$search = $_GET['search'] ?? '';
+$search = trim($_GET['search'] ?? '');
 $unit_filter = $_GET['unit'] ?? '';
 $sector_filter = $_GET['sector'] ?? '';
+$status_filter = $_GET['status'] ?? '';
+// Compatibilidade com links antigos (?inativos=1)
+if ($status_filter === '' && isset($_GET['inativos']) && $_GET['inativos'] == '1') {
+    $status_filter = 'Inativo';
+}
 $compId = getCurrentUserCompanyId();
 
-// Filtro baseado no perfil do usuário - Agora liberado se tiver acesso ao menu
-$show_inactive = isset($_GET['inativos']) && $_GET['inativos'] == '1';
+// Contadores por status para visão rápida
+$status_counts = ['Total' => 0, 'Ativo' => 0, 'Manutenção' => 0, 'Inativo' => 0, 'Estoque' => 0];
+$stmt_counts = $pdo->prepare("SELECT COALESCE(NULLIF(status, ''), 'Ativo') as st, COUNT(*) as total FROM assets WHERE company_id = ? GROUP BY st");
+$stmt_counts->execute([$compId]);
+foreach ($stmt_counts->fetchAll() as $row) {
+    $stKey = $row['st'];
+    $cnt = (int)$row['total'];
+    $status_counts['Total'] += $cnt;
+    if (isset($status_counts[$stKey])) {
+        $status_counts[$stKey] += $cnt;
+    } else {
+        $status_counts[$stKey] = $cnt;
+    }
+}
 
+// Listagem de ativos: exibe todos os status por padrão (inclusive Inativo) para não ocultar itens alterados
 $query = "SELECT a.*, u.name as unit_name, res.avatar_url as resp_avatar, res.name as resp_name 
           FROM assets a 
           LEFT JOIN units u ON CONVERT(a.unit_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(u.id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
@@ -165,8 +186,9 @@ $query = "SELECT a.*, u.name as unit_name, res.avatar_url as resp_avatar, res.na
           WHERE a.company_id = ?";
 $params = [$compId];
 
-if (!$show_inactive) {
-    $query .= " AND a.status != 'Inativo'";
+if ($status_filter !== '') {
+    $query .= " AND a.status = ?";
+    $params[] = $status_filter;
 }
 
 if ($search) {
@@ -188,6 +210,7 @@ if ($sector_filter) {
 $query .= " ORDER BY a.created_at DESC";
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
+$assets_list = $stmt->fetchAll();
 
 $stmt_units = $pdo->prepare("SELECT * FROM units WHERE company_id = ?");
 $stmt_units->execute([$compId]);
@@ -212,9 +235,25 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
     $stmt_edit->execute([$_GET['id'], $compId]);
     $editAsset = $stmt_edit->fetch();
 }
+
+// Helper para montar URL mantendo filtros atuais
+function patrimonioFilterUrl($overrides = []) {
+    $q = [
+        'page' => 'patrimonio',
+        'search' => $_GET['search'] ?? '',
+        'unit' => $_GET['unit'] ?? '',
+        'sector' => $_GET['sector'] ?? '',
+        'status' => $_GET['status'] ?? '',
+    ];
+    foreach ($overrides as $k => $v) {
+        $q[$k] = $v;
+    }
+    $q = array_filter($q, fn($v) => $v !== '' && $v !== null);
+    return '?' . http_build_query($q);
+}
 ?>
 
-<div class="page-header">
+<div class="page-header" style="flex-wrap: wrap; gap: 1.25rem;">
     <div class="page-header-info">
         <div class="page-header-icon">
             <i class="fa-solid fa-vault"></i>
@@ -224,21 +263,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             <p>Controle detalhado de inventário, movimentações e valores.</p>
         </div>
     </div>
-    <div class="page-header-actions" style="display: flex; gap: 1rem; align-items: center;">
-        <div style="flex: 1; min-width: 250px; position: relative;">
+    <div class="page-header-actions" style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;">
+        <div style="min-width: 200px; position: relative;">
             <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.875rem;"></i>
-            <input type="text" id="search-patrimonio" class="form-input" placeholder="Filtrar ativos..." style="padding-left: 2.5rem; border-radius: 0.75rem; background: #fff;" onkeyup="filterTable('search-patrimonio', 'table-patrimonio')" autocomplete="off">
+            <input type="text" id="search-patrimonio" class="form-input" placeholder="Busca rápida na tabela..." style="padding-left: 2.5rem; border-radius: 0.75rem; background: #fff;" onkeyup="filterTable('search-patrimonio', 'table-patrimonio')" autocomplete="off">
         </div>
-        <div style="display: flex; gap: 1rem;">
-            <?php if ($show_inactive): ?>
-                <a href="?page=patrimonio" class="btn-secondary" style="text-decoration: none; border-color: #f59e0b; color: #f59e0b;">
-                    <i class="fa-solid fa-eye-slash"></i> Ocultar Inativos
-                </a>
-            <?php else: ?>
-                <a href="?page=patrimonio&inativos=1" class="btn-secondary" style="text-decoration: none;">
-                    <i class="fa-solid fa-eye"></i> Exibir Inativos
-                </a>
-            <?php endif; ?>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
             <button class="btn-primary" style="background: #3b82f6; color: white;" onclick="document.getElementById('importModal').style.display='flex'">
                 <i class="fa-solid fa-file-import"></i>
                 Importar Excel
@@ -263,7 +293,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
         elseif ($_GET['success'] == '2') echo 'Ativo atualizado com sucesso!';
         elseif ($_GET['success'] == 'deleted') echo 'Ativo excluído com sucesso!';
         elseif ($_GET['success'] == 'import') echo 'Planilha importada e banco de dados atualizado com sucesso!';
-        elseif ($_GET['success'] == 'arquivado') echo 'O ativo não pôde ser excluído pois possui histórico, mas foi marcado como Inativo e ocultado da lista!';
+        elseif ($_GET['success'] == 'arquivado') echo 'O ativo não pôde ser excluído pois possui histórico, mas foi marcado como Inativo!';
         else echo 'Ação realizada com sucesso!';
     ?>
 </div>
@@ -278,17 +308,38 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
 </div>
 <?php endif; ?>
 
+<!-- Atalhos rápidos por Status -->
+<div style="display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1rem;">
+    <?php
+    $statusPills = [
+        '' => ['label' => 'Todos', 'count' => $status_counts['Total'], 'color' => '#5B21B6', 'bg' => 'rgba(91,33,182,0.1)', 'icon' => 'fa-layer-group'],
+        'Ativo' => ['label' => 'Ativos', 'count' => $status_counts['Ativo'], 'color' => '#166534', 'bg' => '#dcfce7', 'icon' => 'fa-circle-check'],
+        'Manutenção' => ['label' => 'Manutenção', 'count' => $status_counts['Manutenção'], 'color' => '#854d0e', 'bg' => '#fef9c3', 'icon' => 'fa-screwdriver-wrench'],
+        'Inativo' => ['label' => 'Inativos', 'count' => $status_counts['Inativo'], 'color' => '#991b1b', 'bg' => '#fee2e2', 'icon' => 'fa-ban'],
+        'Estoque' => ['label' => 'Estoque', 'count' => $status_counts['Estoque'], 'color' => '#075985', 'bg' => '#e0f2fe', 'icon' => 'fa-box-archive'],
+    ];
+    foreach ($statusPills as $stVal => $cfg):
+        $isActive = ($status_filter === $stVal);
+    ?>
+        <a href="<?= htmlspecialchars(patrimonioFilterUrl(['status' => $stVal])) ?>"
+           style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.95rem; border-radius: 999px; text-decoration: none; font-size: 0.82rem; font-weight: 700; transition: all 0.2s; border: 2px solid <?= $isActive ? $cfg['color'] : 'transparent' ?>; background: <?= $isActive ? $cfg['bg'] : 'var(--bg-card)' ?>; color: <?= $isActive ? $cfg['color'] : 'var(--text-soft)' ?>; box-shadow: var(--shadow-sm);">
+            <i class="fa-solid <?= $cfg['icon'] ?>" style="color: <?= $cfg['color'] ?>;"></i>
+            <span><?= $cfg['label'] ?></span>
+            <span style="background: <?= $cfg['bg'] ?>; color: <?= $cfg['color'] ?>; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 800;"><?= $cfg['count'] ?></span>
+        </a>
+    <?php endforeach; ?>
+</div>
 
 <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-    <form method="GET" style="display: flex; gap: 1rem; align-items: end;">
+    <form method="GET" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: end;">
         <input type="hidden" name="page" value="patrimonio">
         
-        <div style="flex: 1;">
+        <div style="flex: 1; min-width: 200px;">
             <label class="form-label">Buscar</label>
             <input type="text" name="search" class="form-input" placeholder="Nome ou patrimônio..." value="<?= htmlspecialchars($search) ?>">
         </div>
         
-        <div style="width: 250px;">
+        <div style="width: 200px;">
             <label class="form-label">Unidade</label>
             <select name="unit" class="form-select">
                 <option value="">Todas as Unidades</option>
@@ -300,7 +351,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             </select>
         </div>
 
-        <div style="width: 250px;">
+        <div style="width: 200px;">
             <label class="form-label">Setor</label>
             <select name="sector" class="form-select">
                 <option value="">Todos os Setores</option>
@@ -311,11 +362,29 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                 <?php endforeach; ?>
             </select>
         </div>
+
+        <div style="width: 180px;">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select">
+                <option value="">Todos os Status</option>
+                <option value="Ativo" <?= $status_filter === 'Ativo' ? 'selected' : '' ?>>Ativo</option>
+                <option value="Manutenção" <?= $status_filter === 'Manutenção' ? 'selected' : '' ?>>Manutenção</option>
+                <option value="Inativo" <?= $status_filter === 'Inativo' ? 'selected' : '' ?>>Inativo</option>
+                <option value="Estoque" <?= $status_filter === 'Estoque' ? 'selected' : '' ?>>Estoque</option>
+            </select>
+        </div>
         
         <button type="submit" class="btn-primary">
             <i class="fa-solid fa-magnifying-glass"></i>
             Filtrar
         </button>
+
+        <?php if ($search !== '' || $unit_filter !== '' || $sector_filter !== '' || $status_filter !== ''): ?>
+            <a href="?page=patrimonio" class="btn-secondary" style="text-decoration: none;">
+                <i class="fa-solid fa-rotate-left"></i>
+                Limpar
+            </a>
+        <?php endif; ?>
     </form>
 </div>
 
@@ -333,76 +402,86 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
             </tr>
         </thead>
         <tbody>
-            <?php while ($asset = $stmt->fetch()): ?>
-            <tr>
-                <td>
-                    <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <?php if (!empty($asset['image_url'])): ?>
-                            <img src="uploads/<?= htmlspecialchars($asset['image_url']) ?>" style="width: 40px; height: 40px; border-radius: 0.75rem; object-fit: cover;">
-                        <?php else: ?>
-                            <div style="width: 40px; height: 40px; background: var(--crm-gray-light); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; color: var(--text-soft);">
-                                <i class="fa-solid fa-desktop"></i>
-                            </div>
-                        <?php endif; ?>
-                        <span style="font-weight: 700;"><?= htmlspecialchars($asset['name']) ?></span>
-                    </div>
-                </td>
-                <td>
-                    <div style="font-weight: 700; color: var(--crm-purple); font-size: 0.75rem;">
-                        <?= htmlspecialchars($asset['unit_name']) ?>
-                    </div>
-                </td>
-                <td>
-                    <div style="font-size: 0.75rem; color: var(--text-soft); font-weight: 700; text-transform: uppercase;">
-                        <?= htmlspecialchars($asset['sector']) ?>
-                    </div>
-                </td>
-                <td style="font-family: monospace; font-size: 0.75rem; color: var(--text-soft);">
-                    <?= htmlspecialchars($asset['patrimony_id'] ?? 'N/A') ?>
-                </td>
-                <td>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--crm-purple); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; overflow: hidden; flex-shrink: 0;">
-                            <?php if (!empty($asset['resp_avatar'])): ?>
-                                <img src="<?= htmlspecialchars($asset['resp_avatar']) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+            <?php if (empty($assets_list)): ?>
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-soft);">
+                        <i class="fa-solid fa-box-open" style="font-size: 2rem; opacity: 0.4; display: block; margin-bottom: 0.75rem;"></i>
+                        Nenhum ativo encontrado com os filtros selecionados.
+                    </td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($assets_list as $asset): ?>
+                <tr <?= ($asset['status'] === 'Inativo') ? 'style="background: rgba(239, 68, 68, 0.03);"' : '' ?>>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <?php if (!empty($asset['image_url'])): ?>
+                                <img src="uploads/<?= htmlspecialchars($asset['image_url']) ?>" style="width: 40px; height: 40px; border-radius: 0.75rem; object-fit: cover;">
                             <?php else: ?>
-                                <?= strtoupper(substr($asset['responsible_name'] ?? 'U', 0, 1)) ?>
+                                <div style="width: 40px; height: 40px; background: var(--crm-gray-light); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; color: var(--text-soft);">
+                                    <i class="fa-solid fa-desktop"></i>
+                                </div>
                             <?php endif; ?>
+                            <span style="font-weight: 700;"><?= htmlspecialchars($asset['name']) ?></span>
                         </div>
-                        <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-main);"><?= htmlspecialchars($asset['responsible_name'] ?? 'Não atribuído') ?></span>
-                    </div>
-                </td>
-                <td>
-                    <span class="badge badge-<?= 
-                        $asset['status'] == 'Ativo' ? 'success' : 
-                        ($asset['status'] == 'Manutenção' ? 'warning' : 'info') 
-                    ?>">
-                        <?= htmlspecialchars($asset['status']) ?>
-                    </span>
-                </td>
-                <td>
-                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
-                        <a href="?page=patrimonio&hist_id=<?= $asset['id'] ?>" class="btn-icon" title="Histórico">
-                            <i class="fa-solid fa-clock-rotate-left"></i>
-                        </a>
-                        <a href="?page=patrimonio&action=edit&id=<?= $asset['id'] ?>" class="btn-icon" title="Editar">
-                            <i class="fa-solid fa-pen"></i>
-                        </a>
-                        <button onclick="deleteAsset('<?= $asset['id'] ?>', '<?= htmlspecialchars(addslashes($asset['name'])) ?>')" class="btn-icon" title="Excluir" style="color: #ef4444; border: none; background: none; cursor: pointer;">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <?php endwhile; ?>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--crm-purple); font-size: 0.75rem;">
+                            <?= htmlspecialchars($asset['unit_name']) ?>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-size: 0.75rem; color: var(--text-soft); font-weight: 700; text-transform: uppercase;">
+                            <?= htmlspecialchars($asset['sector']) ?>
+                        </div>
+                    </td>
+                    <td style="font-family: monospace; font-size: 0.75rem; color: var(--text-soft);">
+                        <?= htmlspecialchars($asset['patrimony_id'] ?? 'N/A') ?>
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--crm-purple); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; overflow: hidden; flex-shrink: 0;">
+                                <?php if (!empty($asset['resp_avatar'])): ?>
+                                    <img src="<?= htmlspecialchars($asset['resp_avatar']) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                                <?php else: ?>
+                                    <?= strtoupper(substr($asset['responsible_name'] ?? 'U', 0, 1)) ?>
+                                <?php endif; ?>
+                            </div>
+                            <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-main);"><?= htmlspecialchars($asset['responsible_name'] ?? 'Não atribuído') ?></span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-<?= 
+                            $asset['status'] == 'Ativo' ? 'success' : 
+                            ($asset['status'] == 'Manutenção' ? 'warning' : 
+                            ($asset['status'] == 'Inativo' ? 'danger' : 'info')) 
+                        ?>">
+                            <?= htmlspecialchars($asset['status'] ?: 'Ativo') ?>
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                            <a href="?page=patrimonio&hist_id=<?= $asset['id'] ?>" class="btn-icon" title="Histórico">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </a>
+                            <a href="?page=patrimonio&action=edit&id=<?= $asset['id'] ?>" class="btn-icon" title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+                            <button onclick="deleteAsset('<?= $asset['id'] ?>', '<?= htmlspecialchars(addslashes($asset['name'])) ?>')" class="btn-icon" title="Excluir" style="color: #ef4444; border: none; background: none; cursor: pointer;">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </tbody>
     </table>
 </div>
 
 <?php if (isset($_GET['hist_id'])): 
     $hist_id = $_GET['hist_id'];
-    $asset_info = $pdo->prepare("SELECT * FROM assets WHERE id = ?");
-    $asset_info->execute([$hist_id]);
+    $asset_info = $pdo->prepare("SELECT * FROM assets WHERE id = ? AND company_id = ?");
+    $asset_info->execute([$hist_id, $compId]);
     $asset_data = $asset_info->fetch();
     
     // Buscar Histórico de Empréstimos
@@ -488,7 +567,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
 
 <?php if (isset($_GET['action']) && $_GET['action'] === 'novo'): ?>
 <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 2rem;">
-    <div class="glass-panel" style="max-width: 800px; width: 100%;">
+    <div class="glass-panel" style="max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h3 style="font-size: 1.25rem; font-weight: 900;">Cadastrar Novo Ativo</h3>
             <button onclick="window.location.href='?page=patrimonio'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
@@ -569,17 +648,28 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                     <label class="form-label">Setor *</label>
                     <input type="text" name="sector" id="responsibleSector" class="form-input" readonly required>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">Status *</label>
+                    <select name="status" class="form-select" required>
+                        <option value="Ativo" selected>Ativo</option>
+                        <option value="Manutenção">Manutenção</option>
+                        <option value="Inativo">Inativo</option>
+                        <option value="Estoque">Estoque</option>
+                    </select>
+                </div>
             </div>
             <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
                 <button type="button" onclick="window.location.href='?page=patrimonio'" class="btn-secondary">Cancelar</button>
                 <button type="submit" class="btn-primary"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
             </div>
         </form>
+    </div>
+</div>
 <?php endif; ?>
 
 <?php if ($editAsset): ?>
 <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 2rem;">
-    <div class="glass-panel" style="max-width: 800px; width: 100%;">
+    <div class="glass-panel" style="max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h3 style="font-size: 1.25rem; font-weight: 900;">Editar Ativo: <?= htmlspecialchars($editAsset['name']) ?></h3>
             <button onclick="window.location.href='?page=patrimonio'" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">&times;</button>
@@ -619,6 +709,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                         <option value="Ativo" <?= $editAsset['status'] == 'Ativo' ? 'selected' : '' ?>>Ativo</option>
                         <option value="Manutenção" <?= $editAsset['status'] == 'Manutenção' ? 'selected' : '' ?>>Manutenção</option>
                         <option value="Inativo" <?= $editAsset['status'] == 'Inativo' ? 'selected' : '' ?>>Inativo</option>
+                        <option value="Estoque" <?= $editAsset['status'] == 'Estoque' ? 'selected' : '' ?>>Estoque</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -687,8 +778,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                 <?php else: ?>
                     <?php foreach ($categories as $c): 
                         // Contar ativos nesta categoria
-                        $countStmt = $pdo->prepare("SELECT COUNT(*) FROM assets WHERE category = ?");
-                        $countStmt->execute([$c['category']]);
+                        $countStmt = $pdo->prepare("SELECT COUNT(*) FROM assets WHERE category = ? AND company_id = ?");
+                        $countStmt->execute([$c['category'], $compId]);
                         $count = $countStmt->fetchColumn();
                     ?>
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main);">
